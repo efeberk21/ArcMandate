@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@arcmandate/core": "0.1.0",
+    "@noble/post-quantum": "0.7.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "viem": "2.57.0"

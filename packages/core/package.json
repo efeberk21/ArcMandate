@@ -3,6 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/config.ts" },
-  "dependencies": {}
+  "exports": {
+    ".": "./src/config.ts",
+    "./digest": "./src/digest.ts"
+  },
+  "dependencies": {
+    "viem": "2.57.0"
+  }
 }
