@@ -153,9 +153,9 @@ async function main(): Promise<void> {
   assert(balances[0].native >= parseEther('3'), 'Owner needs at least 3 native testnet USDC for gas');
   assert(balances[0].usdc >= 1_000_000n, 'Owner needs at least 1 ERC20 testnet USDC');
   assert(existsSync(artifactPath), `Missing ${artifactPath}; run npm run build:contracts`);
-  const artifact = JSON.parse(readFileSync(artifactPath, 'utf8')) as { abi: Abi; bytecode: { object: Hex }; metadata: string };
+  const artifact = JSON.parse(readFileSync(artifactPath, 'utf8')) as { abi: Abi; bytecode: { object: Hex }; metadata: string | { compiler: { version: string }; settings: { optimizer: unknown; evmVersion: string } } };
   const vaultAbi = artifact.abi;
-  const metadata = JSON.parse(artifact.metadata) as { compiler: { version: string }; settings: { optimizer: unknown; evmVersion: string } };
+  const metadata = typeof artifact.metadata === 'string' ? JSON.parse(artifact.metadata) as Exclude<typeof artifact.metadata, string> : artifact.metadata;
   const manifest: Manifest = {
     schemaVersion: 1,
     chainId: ARC_NETWORKS.testnet.chainId,
