@@ -11,6 +11,9 @@ ArcMandate is a planned Arc USDC vault that gives one software agent a bounded s
 - `npm run preflight` for read-only Arc RPC checks
 - `npm run pq:probe` for ephemeral-key SLH-DSA verification against Arc RPCs
 - `npm run dev` for the web development server
+- In the development page, **Run browser PQ check** signs a structured START intent inside a Worker and checks the result with Arc testnet. It is a development harness, not a vault UI.
+
+P1 authorization digest fixtures are in [fixtures/digest-vectors.json](fixtures/digest-vectors.json). `npm run fixtures:generate` regenerates them from the TypeScript implementation; Solidity tests independently compare their fixed expected values.
 
 Copy `.env.example` to `.env` only when overriding public RPC URLs. Never put private keys or PQ secrets in the frontend or Git repository.
 

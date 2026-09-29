@@ -1,0 +1,36 @@
+{
+  "description": "Public test-only inputs. Never use these addresses or values as deployment authority.",
+  "context": {
+    "chainId": "5042002",
+    "vault": "0x1111111111111111111111111111111111111111",
+    "owner": "0x2222222222222222222222222222222222222222"
+  },
+  "policy": {
+    "agent": "0x3333333333333333333333333333333333333333",
+    "totalBudget": "150000",
+    "perTxCap": "50000",
+    "expiresAt": "1900000000",
+    "recipients": [
+      "0x4444444444444444444444444444444444444444",
+      "0x5555555555555555555555555555555555555555"
+    ]
+  },
+  "auth": {
+    "nonce": "7",
+    "sessionId": "3",
+    "deadline": "1899999000"
+  },
+  "withdrawal": {
+    "to": "0x6666666666666666666666666666666666666666",
+    "amount": "77777"
+  },
+  "expected": {
+    "recipientsHash": "0x3297ea34cc6cfd21bc63dcfe8260887dee1f15d2357475e8ea4e49d86bcc7af1",
+    "startParamsHash": "0xdcb3c5dbf64e33660d7ef57a6f54ca9265361c6f15f5247cb65f144579327a1d",
+    "startDigest": "0x4477ad6fef783669b043225eb023c17df92d67f718b562f4600f0275c998b377",
+    "freezeParamsHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "freezeDigest": "0x75bd59c8cbf50220bf0652fdbe81d56a430517a1fc1355eb94fd2a84b2758a9f",
+    "withdrawParamsHash": "0xdcf40b2e11aed3282010a41b710af5fedf5407d05c3ec6f70915c4ed6e064107",
+    "withdrawDigest": "0x1e907c88981e0cb1dd694ad3f4fe29aa32f62eb15362991cb42eb2790de18499"
+  }
+}

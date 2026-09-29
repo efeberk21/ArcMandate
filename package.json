@@ -19,7 +19,8 @@
     "dev": "npm run dev -w @arcmandate/web",
     "check": "npm run typecheck && npm run test:ts && npm run build:web && npm run build:contracts && npm run test:contracts",
     "preflight": "tsx scripts/preflight.ts && tsx scripts/pq-probe.ts",
-    "pq:probe": "tsx scripts/pq-probe.ts"
+    "pq:probe": "tsx scripts/pq-probe.ts",
+    "fixtures:generate": "tsx scripts/generate-digest-fixtures.ts"
   },
   "devDependencies": {
     "@types/node": "26.6.3",
