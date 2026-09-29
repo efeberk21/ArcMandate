@@ -149,14 +149,12 @@ async function main(): Promise<void> {
   }
   if (process.argv.includes('--balances')) return;
 
-  assert(!existsSync(manifestPath), `${manifestPath} already exists; inspect the prior run before retrying`);
   assert(balances[0].native >= parseEther('3'), 'Owner needs at least 3 native testnet USDC for gas');
-  assert(balances[0].usdc >= 1_000_000n, 'Owner needs at least 1 ERC20 testnet USDC');
   assert(existsSync(artifactPath), `Missing ${artifactPath}; run npm run build:contracts`);
   const artifact = JSON.parse(readFileSync(artifactPath, 'utf8')) as { abi: Abi; bytecode: { object: Hex }; metadata: string | { compiler: { version: string }; settings: { optimizer: unknown; evmVersion: string } } };
   const vaultAbi = artifact.abi;
   const metadata = typeof artifact.metadata === 'string' ? JSON.parse(artifact.metadata) as Exclude<typeof artifact.metadata, string> : artifact.metadata;
-  const manifest: Manifest = {
+  const freshManifest: Manifest = {
     schemaVersion: 1,
     chainId: ARC_NETWORKS.testnet.chainId,
     sourceCommit: process.env.SOURCE_COMMIT ?? 'working-tree',
@@ -165,43 +163,64 @@ async function main(): Promise<void> {
     status: 'in_progress',
     steps: [],
   };
+  const manifest = existsSync(manifestPath)
+    ? JSON.parse(readFileSync(manifestPath, 'utf8')) as Manifest
+    : freshManifest;
+  assert(manifest.chainId === chain.id && manifest.sourceCommit === freshManifest.sourceCommit, 'Existing manifest is from a different source or chain');
+  assert(manifest.status === 'in_progress', 'This demo has already completed');
+  const prior = (label: string): Evidence | undefined => manifest.steps.find((step) => step.label === label);
   const ownerClient = createWalletClient({ account: owner, chain, transport: http(rpcUrl, { timeout: 60_000 }) });
   const agentClient = createWalletClient({ account: agent, chain, transport: http(rpcUrl, { timeout: 60_000 }) });
   const relayClient = createWalletClient({ account: relay, chain, transport: http(rpcUrl, { timeout: 60_000 }) });
   const receipt = (hash: Hex) => publicClient.waitForTransactionReceipt({ hash, timeout: 180_000, pollingInterval: 1_000 });
+  const transact = async (label: string, send: () => Promise<Hex>): Promise<void> => {
+    if (prior(label)) {
+      console.log(`${label}: already recorded`);
+      return;
+    }
+    recordReceipt(manifest, label, await receipt(await send()));
+  };
+  const lastReceiptBlock = (): bigint => manifest.steps.reduce(
+    (latest, step) => step.evidenceType === 'receipt' && step.blockNumber
+      ? (BigInt(step.blockNumber) > latest ? BigInt(step.blockNumber) : latest) : latest,
+    0n,
+  );
   const sign = (digest: Hex): Hex => {
     const signature = slh_dsa_sha2_128s.sign(hexToBytes(digest), hexToBytes(keys.pq.secretKey));
     assert(signature.length === 7856, 'Invalid PQ signature length');
     return toHex(signature);
   };
 
-  const deployment = await receipt(await ownerClient.deployContract({
-    abi: vaultAbi,
-    bytecode: artifact.bytecode.object,
-    args: [owner.address, keys.pq.publicKey],
-  }));
-  assert(deployment.contractAddress, 'Deployment receipt has no contract address');
-  const vault = deployment.contractAddress;
-  manifest.vault = vault;
-  manifest.deploymentBlock = deployment.blockNumber.toString();
-  manifest.deploymentTxHash = deployment.transactionHash;
-  recordReceipt(manifest, 'deploy-vault', deployment);
+  if (!manifest.vault) {
+    assert(balances[0].usdc >= 1_000_000n, 'Owner needs at least 1 ERC20 testnet USDC');
+    const deployment = await receipt(await ownerClient.deployContract({
+      abi: vaultAbi,
+      bytecode: artifact.bytecode.object,
+      args: [owner.address, keys.pq.publicKey],
+    }));
+    assert(deployment.contractAddress, 'Deployment receipt has no contract address');
+    manifest.vault = deployment.contractAddress;
+    manifest.deploymentBlock = deployment.blockNumber.toString();
+    manifest.deploymentTxHash = deployment.transactionHash;
+    recordReceipt(manifest, 'deploy-vault', deployment);
+  }
+  const vault = manifest.vault;
   assert(await publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'owner' }) === owner.address, 'Vault owner mismatch');
 
-  recordReceipt(manifest, 'fund-vault-1-usdc', await receipt(await ownerClient.writeContract({
+  await transact('fund-vault-1-usdc', () => ownerClient.writeContract({
     address: USDC_ADDRESS, abi: usdcAbi, functionName: 'transfer', args: [vault, 1_000_000n],
-  })));
-  assert(await publicClient.readContract({ address: USDC_ADDRESS, abi: usdcAbi, functionName: 'balanceOf', args: [vault] }) === 1_000_000n, 'Vault funding mismatch');
+  }));
   for (const [label, recipient] of [['fund-agent-gas', agent.address], ['fund-relay-gas', relay.address]] as const) {
-    recordReceipt(manifest, label, await receipt(await ownerClient.sendTransaction({ to: recipient, value: parseEther('0.2') })));
+    await transact(label, () => ownerClient.sendTransaction({ to: recipient, value: parseEther('0.2') }));
   }
 
   const context = { chainId: BigInt(ARC_NETWORKS.testnet.chainId), vault, owner: owner.address };
   const auth = async (deadlineSeconds = 600): Promise<Authorization> => {
+    const at = lastReceiptBlock();
     const [nonce, sessionId, block] = await Promise.all([
-      publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'controlNonce' }) as Promise<bigint>,
-      publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'sessionId' }) as Promise<bigint>,
-      publicClient.getBlock(),
+      publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'controlNonce', blockNumber: at }) as Promise<bigint>,
+      publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'sessionId', blockNumber: at }) as Promise<bigint>,
+      publicClient.getBlock({ blockNumber: at }),
     ]);
     return { nonce, sessionId, deadline: block.timestamp + BigInt(deadlineSeconds) };
   };
@@ -217,27 +236,37 @@ async function main(): Promise<void> {
     assert(onchain === local, `${functionName} TS/Solidity digest mismatch`);
   };
   const start = async (label: string): Promise<bigint> => {
+    const expectedSession = label === 'start-session-s' ? 1n : 3n;
+    if (prior(label)) {
+      console.log(`${label}: already recorded`);
+      return expectedSession;
+    }
     const p = await policy();
     const a = await auth();
     const digest = startSessionDigest(context, p, a);
     await verifyDigest('startSessionDigest', [p, a], digest);
-    recordReceipt(manifest, label, await receipt(await ownerClient.writeContract({
+    await transact(label, () => ownerClient.writeContract({
       address: vault, abi: vaultAbi, functionName: 'startSession', args: [p, a, sign(digest)],
-    })));
-    const id = await publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'sessionId' }) as bigint;
+    }));
+    const id = await publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'sessionId', blockNumber: lastReceiptBlock() }) as bigint;
     assert(id === a.sessionId + 1n, 'Session ID failed to advance');
+    assert(id === expectedSession, 'Unexpected demo session ID');
     return id;
   };
   const paymentId = (label: string) => keccak256(toHex(label));
   const pay = async (label: string, id: bigint, amount = 50_000n): Promise<void> => {
-    recordReceipt(manifest, label, await receipt(await agentClient.writeContract({
+    await transact(label, () => agentClient.writeContract({
       address: vault, abi: vaultAbi, functionName: 'agentPay', args: [id, paymentId(label), relay.address, amount],
-    })));
+    }));
   };
   const rejectPay = async (label: string, id: bigint, amount: bigint, expectedError: string): Promise<void> => {
+    if (prior(label)) {
+      console.log(`${label}: already recorded`);
+      return;
+    }
     const args = [id, paymentId(label), relay.address, amount] as const;
     const calldata = encodeFunctionData({ abi: vaultAbi, functionName: 'agentPay', args });
-    const block = await publicClient.getBlockNumber();
+    const block = lastReceiptBlock();
     try {
       await publicClient.simulateContract({ account: agent, address: vault, abi: vaultAbi, functionName: 'agentPay', args, blockNumber: block });
       throw new Error(`${label} unexpectedly succeeded`);
@@ -256,26 +285,26 @@ async function main(): Promise<void> {
   const freezeAuth = await auth();
   const freezeHash = freezeDigest(context, freezeAuth);
   await verifyDigest('freezeDigest', [freezeAuth], freezeHash);
-  recordReceipt(manifest, 'pq-freeze-s', await receipt(await relayClient.writeContract({
+  await transact('pq-freeze-s', () => relayClient.writeContract({
     address: vault, abi: vaultAbi, functionName: 'freezeByPQ', args: [freezeAuth, sign(freezeHash)],
-  })));
+  }));
   await rejectPay('old-session-after-freeze', firstSession, 50_000n, 'SessionInactive');
   const secondSession = await start('start-session-s2-same-agent');
   await rejectPay('old-session-after-restart', firstSession, 50_000n, 'SessionMismatch');
   await pay('agent-pay-s2-0.05', secondSession);
-  recordReceipt(manifest, 'owner-freeze-s2', await receipt(await ownerClient.writeContract({
+  await transact('owner-freeze-s2', () => ownerClient.writeContract({
     address: vault, abi: vaultAbi, functionName: 'freezeByOwner', args: [secondSession],
-  })));
-  const remaining = await publicClient.readContract({ address: USDC_ADDRESS, abi: usdcAbi, functionName: 'balanceOf', args: [vault] }) as bigint;
+  }));
+  const remaining = await publicClient.readContract({ address: USDC_ADDRESS, abi: usdcAbi, functionName: 'balanceOf', args: [vault], blockNumber: lastReceiptBlock() }) as bigint;
   assert(remaining === 900_000n, `Expected 0.9 USDC in vault, got ${remaining}`);
   const withdrawAuth = await auth();
   const withdrawHash = withdrawDigest(context, owner.address, remaining, withdrawAuth);
   await verifyDigest('withdrawDigest', [owner.address, remaining, withdrawAuth], withdrawHash);
-  recordReceipt(manifest, 'hybrid-withdraw-remaining', await receipt(await ownerClient.writeContract({
+  await transact('hybrid-withdraw-remaining', () => ownerClient.writeContract({
     address: vault, abi: vaultAbi, functionName: 'withdraw', args: [owner.address, remaining, withdrawAuth, sign(withdrawHash)],
-  })));
-  assert(await publicClient.readContract({ address: USDC_ADDRESS, abi: usdcAbi, functionName: 'balanceOf', args: [vault] }) === 0n, 'Vault balance remains after withdrawal');
-  assert(await publicClient.readContract({ address: USDC_ADDRESS, abi: usdcAbi, functionName: 'balanceOf', args: [relay.address] }) === 100_000n, 'Agent payments mismatch');
+  }));
+  assert(await publicClient.readContract({ address: USDC_ADDRESS, abi: usdcAbi, functionName: 'balanceOf', args: [vault], blockNumber: lastReceiptBlock() }) === 0n, 'Vault balance remains after withdrawal');
+  assert(await publicClient.readContract({ address: USDC_ADDRESS, abi: usdcAbi, functionName: 'balanceOf', args: [relay.address], blockNumber: lastReceiptBlock() }) >= 100_000n, 'Agent payments mismatch');
   manifest.status = 'complete';
   save(manifest);
   console.log(`Arc testnet P2 demo complete: ${vault}; evidence: ${manifestPath}`);

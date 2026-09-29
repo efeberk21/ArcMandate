@@ -17,31 +17,31 @@ Offline signer, factory, backend, relayer servisi, LLM, x402, günlük limit, ta
 
 ### 29 Eylül — P0: Ortam, repo, ağ kontrolü
 
-- [ ] Mevcut repo/kod ve yerel kuralları incele; çalışan parçaları tespit et.
-- [ ] Solidity/Foundry, TS/Vite/React/viem düzenini kur; sürümleri sabitle.
-- [ ] Secret dosyalarını ignore et; public `.env.example` ve root komutları hazırla.
-- [ ] Testnet/mainnet chain ID, RPC, USDC decimals ve gerçek PQ probe için config oluştur.
-- [ ] Testnet faucet erişimini kontrol et; mainnet fon ihtiyacını erken kaydet.
+- [x] Mevcut repo/kod ve yerel kuralları incele; çalışan parçaları tespit et.
+- [x] Solidity/Foundry, TS/Vite/React/viem düzenini kur; sürümleri sabitle.
+- [x] Secret dosyalarını ignore et; public `.env.example` ve root komutları hazırla.
+- [x] Testnet/mainnet chain ID, RPC, USDC decimals ve gerçek PQ probe için config oluştur.
+- [x] Testnet faucet erişimini kontrol et; mainnet fon ihtiyacını erken kaydet.
 
 Çıkış: Yerel build çalışıyor; bağlantı sonuçları `docs/IMPLEMENTATION-STATUS.md` içinde. Boş/eksik vault'a fon gönderilmez.
 
 ### 30 Eylül — P1: Digest ve gerçek PQ uyumu
 
-- [ ] Implementation plan'daki kesin ABI/digest şemasını Solidity ve TS'de uygula.
-- [ ] START/FREEZE/WITHDRAW için ortak test fixture'ları üret.
-- [ ] Geçerli imzayı ve bozuk mesaj/imzayı gerçek RPC ile dene.
-- [ ] Tarayıcı Worker'ında anahtar üretme ve imzalama süresini ölç; çıktıyı Arc verifier'a gönder.
-- [ ] Testnet desteğini gerçekten doğrula. Çalışmıyorsa testnet fallback kararını kaydet.
+- [x] Implementation plan'daki kesin ABI/digest şemasını Solidity ve TS'de uygula.
+- [x] START/FREEZE/WITHDRAW için ortak test fixture'ları üret.
+- [x] Geçerli imzayı ve bozuk mesaj/imzayı gerçek RPC ile dene.
+- [x] Tarayıcı Worker'ında anahtar üretme ve imzalama süresini ölç; çıktıyı Arc verifier'a gönder.
+- [x] Testnet desteğini gerçekten doğrula. Çalışmıyorsa testnet fallback kararını kaydet.
 
 Çıkış: TS/Solidity digest eşit, gerçek verifier pozitif ve negatif örnekleri ayırıyor, Worker UI'ı kilitlemiyor. Gerçek vault transaction doğrulaması P2'de tamamlanır.
 
 ### 1–2 Ekim — P2: Tam kontrat akışı ve ilk kritik kontrol
 
-- [ ] startSession, agentPay, freezeByOwner, freezeByPQ ve withdraw uygula.
-- [ ] sessionId/controlNonce, paymentId, recipient sıralaması ve event'leri tamamla.
-- [ ] Unit testleri fonksiyonlarla birlikte yaz; aktarım hatalarının rollback'ini dene.
-- [ ] Arc üzerinde fonla → oturum aç → ödeme → ret → PQ freeze → çekim akışını çalıştır.
-- [ ] Aynı agent'a yeni oturum açıldığında eski sessionId çağrısının reddini göster.
+- [x] startSession, agentPay, freezeByOwner, freezeByPQ ve withdraw uygula.
+- [x] sessionId/controlNonce, paymentId, recipient sıralaması ve event'leri tamamla.
+- [x] Unit testleri fonksiyonlarla birlikte yaz; aktarım hatalarının rollback'ini dene.
+- [x] Arc üzerinde fonla → oturum aç → ödeme → ret → PQ freeze → çekim akışını çalıştır.
+- [x] Aynı agent'a yeni oturum açıldığında eski sessionId çağrısının reddini göster.
 
 **2 Ekim kontrolü:** Gerçek PQ kullanan bir vault işlemi, gerçek USDC ödemesi, freeze ve hybrid çekim çalışmalı. Eski oturum reddi ve iki anahtar zorunluluğu test edilmiş olmalı.
 
