@@ -1,6 +1,6 @@
 # ArcMandate
 
-ArcMandate is an Arc USDC vault prototype that gives one software agent a bounded spending session. Owner wallet plus SLH-DSA-SHA2-128s signature authorizes a session and withdrawals. The owner or the PQ key can freeze a session. P2 contract implementation and a complete Arc testnet transaction sequence have passed; the product keyfile and management UI are upcoming P3/P4 work.
+ArcMandate is an Arc USDC vault prototype that gives one software agent a bounded spending session. Owner wallet plus SLH-DSA-SHA2-128s signature authorizes a session and withdrawals. The owner or the PQ key can freeze a session. P2 contract implementation and a complete Arc testnet transaction sequence have passed. P3 encrypted key backup and Worker recovery are implemented; the management UI is upcoming P4 work.
 
 ## Development
 
@@ -11,7 +11,7 @@ ArcMandate is an Arc USDC vault prototype that gives one software agent a bounde
 - `npm run preflight` for read-only Arc RPC checks
 - `npm run pq:probe` for ephemeral-key SLH-DSA verification against Arc RPCs
 - `npm run dev` for the web development server
-- In the development page, **Run browser PQ check** signs a structured START intent inside a Worker and checks the result with Arc testnet. It is a development harness, not a vault UI.
+- The development page can generate a PQ key, download an encrypted keyfile, lock the Worker, restore a keyfile, and check a structured START signature against Arc testnet. It is a development harness, not a vault management UI. The password is not persisted; losing the encrypted file or password prevents withdrawal from a vault using that key.
 
 The P2 vault contract is in [contracts/src/ArcMandateVault.sol](contracts/src/ArcMandateVault.sol). Testnet evidence is in [deployments/arc-testnet.json](deployments/arc-testnet.json): deployment, 1 USDC funding, two sessions, two agent payments, a PQ freeze, an owner freeze, hybrid withdrawal, and block-pinned negative simulations. The deployed testnet vault is [`0x91e4467997d28ad3443f910261f4d65b4c867bbd`](https://testnet.arcscan.app/address/0x91e4467997d28ad3443f910261f4d65b4c867bbd). It was emptied after the demo.
 

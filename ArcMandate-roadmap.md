@@ -49,8 +49,8 @@ Geçmezse sorun sınıfını kaydet: toolchain, PQ/ABI, ağ, kontrat veya anahta
 
 ### 3–4 Ekim — P3/P4: Anahtar dosyası ve temel web
 
-- [ ] Şifreli export/import, yanlış parola/bozuk dosya kontrolleri ve Worker lock ekle.
-- [ ] Worker kapatılıp dosya yeniden açılarak restore + deneme imzası testini geçir.
+- [x] Şifreli export/import, yanlış parola/bozuk dosya kontrolleri ve Worker lock ekle.
+- [x] Worker kapatılıp dosya yeniden açılarak restore + deneme imzası testini geçir. İndirilen aynı dosyanın tarayıcıda tekrar seçilmesi P4 smoke testinde ayrıca yapılacak; bkz. `docs/IMPLEMENTATION-STATUS.md`.
 - [ ] Tek sayfada wallet/ağ, vault açma/deploy ve ERC-20 fonlama ekle.
 - [ ] Session formu, yetki özeti, iki freeze yolu ve hybrid çekim ekle.
 - [ ] Bekleyen, wallet'ta reddedilen, simülasyonda reddedilen ve mined işlemleri ayır.

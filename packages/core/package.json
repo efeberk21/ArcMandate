@@ -5,9 +5,12 @@
   "type": "module",
   "exports": {
     ".": "./src/config.ts",
-    "./digest": "./src/digest.ts"
+    "./digest": "./src/digest.ts",
+    "./keyfile": "./src/keyfile.ts"
   },
   "dependencies": {
+    "@noble/hashes": "2.4.0",
+    "@noble/post-quantum": "0.7.1",
     "viem": "2.57.0"
   }
 }
