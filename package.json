@@ -13,10 +13,12 @@
   "scripts": {
     "build:contracts": "node scripts/forge.mjs build --root contracts",
     "test:contracts": "node scripts/forge.mjs test --root contracts",
+    "artifacts": "npm run build:contracts && node scripts/export-artifacts.mjs",
     "test:ts": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit && npm run typecheck -w @arcmandate/web",
-    "build:web": "npm run build -w @arcmandate/web",
+    "build:web": "npm run artifacts && npm run build -w @arcmandate/web",
     "dev": "npm run dev -w @arcmandate/web",
+    "smoke:web": "node scripts/web-smoke-server.mjs",
     "check": "npm run typecheck && npm run test:ts && npm run build:web && npm run build:contracts && npm run test:contracts",
     "preflight": "tsx scripts/preflight.ts && tsx scripts/pq-probe.ts",
     "pq:probe": "tsx scripts/pq-probe.ts",

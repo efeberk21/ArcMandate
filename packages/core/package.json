@@ -6,7 +6,9 @@
   "exports": {
     ".": "./src/config.ts",
     "./digest": "./src/digest.ts",
-    "./keyfile": "./src/keyfile.ts"
+    "./keyfile": "./src/keyfile.ts",
+    "./policy": "./src/policy.ts",
+    "./contracts": "./src/generated/vault.ts"
   },
   "dependencies": {
     "@noble/hashes": "2.4.0",
