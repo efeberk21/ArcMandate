@@ -1,4 +1,4 @@
-# Implementation status — 2026-09-30, P3 implementation complete
+# Implementation status — 2026-09-30, P4 implementation complete
 
 ## Completed packages
 
@@ -6,6 +6,7 @@
 - P1: Shared TypeScript/Solidity START, FREEZE and WITHDRAW digest fixtures; strict SLH-DSA-SHA2-128s precompile wrapper; browser Worker signing and Arc testnet verifier probe. Commit `e91ffa6`.
 - P2: One-session Arc USDC vault with owner/PQ hybrid START and withdrawal, agent payment controls, both freeze paths, state counters, replay protection, events and rollback tests. Contract source was deployed from commit `e23da59` with solc 0.8.28, Paris EVM and optimizer 200.
 - P3: Versioned encrypted PQ keyfile (`scrypt` N=131072/r=8/p=1, 32-byte salt, AES-256-GCM with 12-byte IV and authenticated metadata), strict 16 KiB/profile/field validation, Worker generate/export/import/structured sign/local verify/lock, and a browser recovery test harness. Secret bytes stay inside the Worker; import proves the restored key by signing a random challenge.
+- P4: English single-page EIP-1193 wallet UI: wallet/network checks, vault opening and deployment, restored-key funding gate, policy review, hybrid sessions, both freeze paths, hybrid withdrawal, receipt links and wallet-free read-only view. ABI/bytecode are generated from the pinned Foundry artifact. Mainnet reads are available; management is testnet-only until release gates. P4 extends the pushed P3 baseline `a6da1f7`; see Git history for the package commit.
 
 ## Verification
 
@@ -17,13 +18,18 @@
 - Two agent payments of 0.05 USDC succeeded. A 0.20 payment reverted with `PerPaymentLimitExceeded` in simulation at block 64646360. An old session call reverted with `SessionInactive` after PQ freeze at block 64646365 and `SessionMismatch` after a new session with the same agent at block 64646574. Simulations are block-specific and have no transaction receipt.
 - Owner froze the second session and hybrid withdrawal returned 0.9 USDC; the vault's ERC20 balance was zero after the withdrawal. The relay had received at least 0.1 USDC from the two payments.
 - Browser P3 check: generated a key in the Worker, exported an encrypted backup, terminated the Worker, then imported an encrypted test keyfile in a fresh Worker. Import signed and verified a random challenge (9,270 ms); the restored key signed a structured START digest (2,218 ms), accepted by Arc testnet and rejected for a changed digest. Wrong-password import returned `Wrong password or damaged keyfile` and left signing disabled. The test keyfile was generated locally for this smoke test and removed afterward.
+- P4 `npm run check` passed: TypeScript checks, 13 Vitest tests in 4 files, generated web production build, Solidity compilation and all 18 Foundry tests. New tests cover strict six-decimal amounts and recipient/policy validation, wrong account/network, simulation failure without a hash, wallet rejection, mined revert, receipt timeout/recheck without resending, and stale context cancellation. Existing Foundry lint notes and Vite's 500 kB chunk-size advisory remain; they are not test failures.
+- P4 browser smoke used a local EIP-1193 development adapter with disposable testnet accounts; real chain transactions were submitted through the product's wallet interface. Vault [`0x88db7377c1f0fd8a10cfa41bd63ab586dcf351cb`](https://explorer.testnet.arc.io/address/0x88db7377c1f0fd8a10cfa41bd63ab586dcf351cb): deploy, fund 1 USDC, first hybrid START, PQ freeze from a non-owner relay, second hybrid START, owner freeze, hybrid withdrawal of 1 USDC. All 7 receipts succeeded. Final state at withdrawal block 64826186: inactive, sessionId=4, controlNonce=5, ERC20 USDC=0. Public receipt/gas/bytecode evidence is in [`deployments/p4-browser-smoke.json`](../deployments/p4-browser-smoke.json); screenshot in [`docs/p4-browser-smoke.png`](p4-browser-smoke.png).
+- P4 recovery used the exact encrypted bytes exported by the browser Worker, captured to an ignored disk file. After reload, a fresh Worker imported that file, matched public key `0x790cde322a9cd73081467ca7614b8456c6ef1b7e4e352b9372e8e3de7bc34664`, and proved a fresh signature (2,167 ms in the first correct restore). Wrong password and a file for another vault were rejected. Form edits during signing cancelled the intent; account changes cancelled review and locked the key; wrong wallet network locked the key and disabled management. Synthetic wallet rejection had no hash. Mined-revert and receipt-timeout distinctions were tested at the transaction module, not fabricated as mined browser receipts.
+- P4 production assets were searched for the smoke bridge, ignored keyfile path and private-key identifiers; none were present. The private backend/keys and captured encrypted file are excluded from Git and the production entry.
 
 ## Code quality cross-check
 
 - P0–P2 claims were compared with the current roadmap, plan, source, test names, and public manifest. The base authorization model and onchain flow match the plan; `npm run check` confirms the existing local tests still pass. The public manifest distinguishes mined receipts from block-pinned revert simulations.
 - T01–T13 have base unit coverage, but the full T10 field matrix and stateful fuzz/invariant work remain for P6. Do not describe the current suite as a completed security audit.
 - `scripts/testnet-demo.ts` can resume from saved manifest steps, but a process interruption after transaction submission and before saving its hash can leave an unrecorded pending transaction. P5's journal/retry work should close this gap before claiming robust restart behavior.
-- The browser tool could not expose the path of its `blob:` download, so one uninterrupted browser export → select that exact downloaded file → import run was not recorded. The TS test proves same-key file roundtrip; the browser smoke test proves Worker file import and Arc verification separately. Repeat the literal download/import flow during P4's clean-browser smoke test.
+- P4 closes the same-browser-export/fresh-Worker restore gap by capturing the exported encrypted file unchanged to disk and selecting it through the test harness after reload. A literal OS Downloads/file-picker roundtrip and real extension-wallet compatibility remain untested; include them in P6's release-browser check. This limitation is explicit in the public smoke manifest.
+- During P4 smoke, Arc RPC returned `Request exceeds defined limit` during repeated full snapshot checks. Those attempts did not submit a transaction. Guard checks now read only changing authorization fields at one block, preserving account/network/session/nonce/deadline validation. The completed sequence passed after that change; RPC availability still remains an external dependency.
 
 ## Limits and decisions
 
@@ -35,4 +41,4 @@
 
 ## Next
 
-P4: wallet-based management UI with deploy/fund/session/freeze/withdraw and read-only view. Run the literal downloaded-file restore smoke test, then T16 account/network/transaction-state checks. P5 follows with the agent journal and reusable demo.
+P5: add a paymentId journal before submission, close the submission-to-hash-save crash gap, and prove restart/retry cannot duplicate payment. Build a reusable demo manifest from real receipts and block-pinned simulations, then repeat the full agent payment/freeze/old-session/new-session/withdrawal sequence. P4's read-only view is already implemented. P6 retains full T10 mutation coverage, fuzz/invariants, clean-checkout build, real extension-wallet and OS file-picker checks, source verification and mainnet cost/release preparation.

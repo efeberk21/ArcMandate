@@ -14,7 +14,7 @@ export type SigningIntent =
 export type WorkerRequest =
   | { id: number; type: 'generate' }
   | { id: number; type: 'export'; password: string }
-  | { id: number; type: 'import'; keyfile: string; password: string }
+  | { id: number; type: 'import'; keyfile: string; password: string; expectedPublicKey?: Hex }
   | { id: number; type: 'sign'; intent: SigningIntent }
   | { id: number; type: 'verify'; intent: SigningIntent; signature: Hex; publicKey: Hex }
   | { id: number; type: 'lock' };
@@ -62,6 +62,9 @@ async function handle(request: WorkerRequest): Promise<WorkerResponse> {
       discardKey();
       const restored = await decryptKeyfile(request.keyfile, request.password);
       try {
+        if (request.expectedPublicKey && restored.publicKey.toLowerCase() !== request.expectedPublicKey.toLowerCase()) {
+          throw new Error('Keyfile does not match this vault’s onchain PQ public key');
+        }
         const challenge = crypto.getRandomValues(new Uint8Array(32));
         const started = performance.now();
         const signature = slh_dsa_sha2_128s.sign(challenge, restored.secretKey);

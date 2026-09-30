@@ -50,10 +50,10 @@ Geçmezse sorun sınıfını kaydet: toolchain, PQ/ABI, ağ, kontrat veya anahta
 ### 3–4 Ekim — P3/P4: Anahtar dosyası ve temel web
 
 - [x] Şifreli export/import, yanlış parola/bozuk dosya kontrolleri ve Worker lock ekle.
-- [x] Worker kapatılıp dosya yeniden açılarak restore + deneme imzası testini geçir. İndirilen aynı dosyanın tarayıcıda tekrar seçilmesi P4 smoke testinde ayrıca yapılacak; bkz. `docs/IMPLEMENTATION-STATUS.md`.
-- [ ] Tek sayfada wallet/ağ, vault açma/deploy ve ERC-20 fonlama ekle.
-- [ ] Session formu, yetki özeti, iki freeze yolu ve hybrid çekim ekle.
-- [ ] Bekleyen, wallet'ta reddedilen, simülasyonda reddedilen ve mined işlemleri ayır.
+- [x] Worker kapatılıp dosya yeniden açılarak restore + deneme imzası testini geçir. P4'te tarayıcı export'u değişmeden diske kaydedilip temiz sayfada aynı dosya geri yüklendi; OS dosya seçicisi/gerçek wallet eklentisi kontrolü P6'da. Bkz. `docs/IMPLEMENTATION-STATUS.md`.
+- [x] Tek sayfada wallet/ağ, vault açma/deploy ve ERC-20 fonlama ekle.
+- [x] Session formu, yetki özeti, iki freeze yolu ve hybrid çekim ekle.
+- [x] Bekleyen, wallet'ta reddedilen, simülasyonda reddedilen ve mined işlemleri ayır.
 
 Çıkış: Temiz tarayıcı oturumunda şifreli dosya geri yükleniyor ve temel yönetim işlemleri çalışıyor. Arayüz İngilizce tek dil; anlamlı hata metni ve receipt bağlantıları var.
 
@@ -62,7 +62,7 @@ Geçmezse sorun sınıfını kaydet: toolchain, PQ/ABI, ağ, kontrat veya anahta
 - [ ] Agent CLI için gönderim öncesi paymentId journal'ı ve receipt/state kontrollü retry yap.
 - [ ] Script yeniden başlasa da aynı ödeme ikinci kez gitmiyor testini geçir.
 - [ ] Demo manifestini gerçek transaction/simulation sonuçlarından üret.
-- [ ] Wallet gerektirmeyen okuma modunu aynı sayfaya ekle.
+- [x] Wallet gerektirmeyen okuma modunu aynı sayfaya ekle (P4'te tamamlandı).
 - [ ] Tüm demo ve çekimi testnet'te tekrar et; fallback kullanıldıysa açık kaydet.
 
 Çıkış: Tekrarlanabilir demo; eski session denemesinde ret sebebi kontrat kontrolü. Anahtarlar ve private journal public kanıt dosyasına girmiyor.
