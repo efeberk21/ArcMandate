@@ -28,8 +28,8 @@ Bu belge `contracts/src`, `packages/core/src`, `apps/web/src`, `scripts` ve mevc
 ## Açık işler ve öncelik
 
 1. **P5 tamamlandı:** Testnet prova ve CLI restart kontrolü `deployments/arc-testnet-p5.json` ile doğrulandı. RPC timeout'u receipt yokluğu demek değildir; önce receipt ve `usedPaymentIds` kontrolü yapılır. Kullanılmış ID için `AgentPaid` event'i/receipt aranır. Yeni session'a otomatik geçilmez.
-2. **P6:** T10 tam alan mutasyon matrisi, stateful fuzz/invariant testleri, clean checkout, gerçek wallet extension ve OS dosya seçici testi eksik. P4 browser smoke yerel development adapter ile yapıldı.
-3. **P6/P7:** Mainnet öncesi mevcut fee ile maliyet hesabı ve explorer source verification gerçek başarı olarak kaydedilmeli.
+2. **P6 tamamlandı (kararlaştırılan kapsam):** T10 tam alan mutasyon matrisi ve stateful invariant testi geçti. Temiz kaynak kurulumunda `npm ci` ve tüm kontroller geçti. Chrome MetaMask ile Arc testnet uçtan uca akış ve kullanıcının Windows dosya seçicisiyle anahtar geri yükleme testi geçti; kanıtlar `docs/P6-TEST-MATRIX.md` ve `deployments/p6-metamask-browser.json` içinde. Ek temiz Git clone/build kontrolü kullanıcının kararıyla atlandı.
+3. **P7 ön koşulları:** P6 maliyet taslağı `deployments/p6-release-snapshot.json` içinde. Mainnet hesabı, güncel fon/bakiye ve harcama yetkisi P7 öncesinde netleştirilmeli; explorer source verification ise mainnet dağıtımından sonra gerçek başarı olarak kaydedilmeli.
 
 ## Sınır
 

@@ -1,0 +1,36 @@
+{
+  "capturedAt": "2026-10-02T15:26:22.257Z",
+  "scope": "Read-only release preparation; no mainnet transaction or source verification was performed",
+  "artifact": {
+    "compiler": "0.8.28+commit.7893614a",
+    "evmVersion": "paris",
+    "optimizer": {
+      "enabled": true,
+      "runs": 200
+    },
+    "creationBytecodeKeccak256": "0x9af8f2305693fdf8f21f92b662e34ece19b2d5cccd3751da6f1a0b3a53667e82",
+    "deployedBytecodeTemplateKeccak256": "0xe5fe7f54c65ddbf268393405a7a09a392d6d62db86d68e9ac91dda9b113d0301"
+  },
+  "p5Testnet": {
+    "vault": "0x609d94e7bfe6eff3694c95e823494016ecb35d55",
+    "deploymentTxHash": "0xc9fa60ba882c1d02f7713fadd801ceea2bb8953c8f02c1074cfcf43a1cb654a7",
+    "constructorArgs": {
+      "owner": "0x5704BF0960c1701f2a73086623bAf6fD5707649A",
+      "pqPublicKey": "0x544b202d350f99cfb6f2b06a3e5cd2583b7d8d78adea5d4cde71f5bc5f485e31"
+    },
+    "deploymentInputMatchesArtifact": true,
+    "onchainRuntimeCodeKeccak256": "0x6b3464af64b65df9d01d21f0e00b55de9876e3bf58eda03bd5b93ccf18509be1",
+    "minedTransactionCount": 11,
+    "totalGasUsed": "4250124",
+    "actualFeesNativeUsdc": "0.1062531"
+  },
+  "mainnetFeeSnapshot": {
+    "chainId": 5042,
+    "blockNumber": "23900517",
+    "gasPriceWei": "20000000000",
+    "estimatedSameSequenceFeesNativeUsdc": "0.08500248",
+    "estimatedFeesWithTwentyPercentBufferNativeUsdc": "0.102002976",
+    "vaultFundingUsdc": "1.0",
+    "note": "Uses P5 testnet gas quantities at one mainnet RPC gas-price snapshot; not a fee guarantee or funding authorization."
+  }
+}

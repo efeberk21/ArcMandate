@@ -50,7 +50,7 @@ Geçmezse sorun sınıfını kaydet: toolchain, PQ/ABI, ağ, kontrat veya anahta
 ### 3–4 Ekim — P3/P4: Anahtar dosyası ve temel web
 
 - [x] Şifreli export/import, yanlış parola/bozuk dosya kontrolleri ve Worker lock ekle.
-- [x] Worker kapatılıp dosya yeniden açılarak restore + deneme imzası testini geçir. P4'te tarayıcı export'u değişmeden diske kaydedilip temiz sayfada aynı dosya geri yüklendi; OS dosya seçicisi/gerçek wallet eklentisi kontrolü P6'da. Bkz. `docs/IMPLEMENTATION-STATUS.md`.
+- [x] Worker kapatılıp dosya yeniden açılarak restore + deneme imzası testini geçir. P4'te tarayıcı export'u değişmeden diske kaydedilip temiz sayfada aynı dosya geri yüklendi; P6'da Windows dosya seçicisi ve gerçek MetaMask eklentisi ayrıca test edildi. Bkz. `docs/IMPLEMENTATION-STATUS.md`.
 - [x] Tek sayfada wallet/ağ, vault açma/deploy ve ERC-20 fonlama ekle.
 - [x] Session formu, yetki özeti, iki freeze yolu ve hybrid çekim ekle.
 - [x] Bekleyen, wallet'ta reddedilen, simülasyonda reddedilen ve mined işlemleri ayır.
@@ -69,14 +69,17 @@ Geçmezse sorun sınıfını kaydet: toolchain, PQ/ABI, ağ, kontrat veya anahta
 
 ### 6 Ekim — P6: İnceleme ve release hazırlığı
 
-- [ ] Implementation plan T01–T16 test matrisi ve fuzz sonuçlarını tamamla.
-- [ ] Temiz clone/build ve tek tarayıcı uçtan uca smoke testi yap.
-- [ ] İmza formatı, tüm para çıkışları, replay ve key restore akışını tekrar incele.
-- [ ] README, THREAT-MODEL, derleme ayarları ve bilinen sınırlamaları yaz.
-- [ ] Deployment artifact, constructor argümanları ve canlı gas tahminini hazırla.
-- [ ] Mainnet funding, yayın hesabı veya yetki eksikse somut ihtiyacı bu aşamada çöz.
+- [x] Implementation plan T01–T16 test matrisi ve fuzz sonuçlarını belgeleyip çalıştır.
+- [x] P6 çalışma ağacının temiz kaynak dışa aktarımında `npm ci` ve tam kontrolü geçir.
+- [x] Chrome MetaMask ile testnet uçtan uca yönetim ve Windows dosya seçicisiyle anahtar geri yükleme testini geçir.
+- [x] İmza formatı, tüm para çıkışları, replay ve key restore akışını tekrar incele.
+- [x] README, THREAT-MODEL, derleme ayarları ve bilinen sınırlamaları yaz.
+- [x] Deployment artifact, constructor argümanları ve canlı gas tahminini hazırla.
+- [x] Mainnet için maliyet ve gerekli hesap/fon/yetki ihtiyacını somutlaştır; gerçek fonlama ve yayın P7'ye ait.
 
-Çıkış: Açık kritik hata yok; release paketi hazır. Yapılan kod incelemesi bağımsız audit olarak sunulmaz.
+Temiz Git clone/build kontrolü kullanıcının kararıyla bu aşamada atlandı; P6 çalışma ağacının temiz kaynak kurulumunda aynı build ve testler geçti. Mainnet kaynak doğrulaması dağıtımdan sonra P7'de yapılabilir.
+
+Çıkış: P6'nın kararlaştırılan test ve hazırlık kapsamı tamamlandı. Bu, mainnet release onayı veya bağımsız audit değildir.
 
 ### 7 Ekim — P7: Mainnet ve gerçek kanıtlar
 

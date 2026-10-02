@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "network": "Arc testnet",
+  "chainId": 5042002,
+  "sourceState": "P6 working tree after P5 commit 4c27c51; P6 changes were uncommitted during this run",
+  "wallet": "MetaMask Chrome extension",
+  "owner": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+  "vault": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+  "pqPublicKey": "0x8307b2bd3e50ce2a94f58fd27bfa9db84b99c9079655603311fb3532975dccdf",
+  "agent": "0x2C5158C975d135FBB1f003580118aEE84F4827B3",
+  "keyRecovery": {
+    "method": "Chrome encrypted-backup download, page reload, user selection through the Windows native file picker, fresh Worker import and challenge-signature verification",
+    "downloadedFile": "arcmandate-keyfile (1).json",
+    "matchingPublicKey": true,
+    "firstRestoreSignatureCheckMs": 2188,
+    "postDeploymentRestoreSignatureCheckMs": 2183,
+    "note": "The browser automation file-upload API was blocked by its file-URL permission; the user selected the downloaded file in the native picker. No password, secret key, or keyfile content is recorded here."
+  },
+  "transactions": [
+    {
+      "label": "wallet-native-topup",
+      "hash": "0x930764b6f30cb9444dbd8af0bfeead3339f817400bc7c093caa57744a47f9340",
+      "blockNumber": "65142298",
+      "gasUsed": "21000",
+      "receiptStatus": "success",
+      "amount": "0.5 native testnet USDC"
+    },
+    {
+      "label": "wallet-token-topup",
+      "hash": "0x90d036ae24d1f47dda5d6fe30fe14aa8666f061cf8874bc36b14dc559a406a63",
+      "blockNumber": "65142307",
+      "gasUsed": "48950",
+      "receiptStatus": "success",
+      "amount": "1 ERC-20 testnet USDC"
+    },
+    {
+      "label": "metamask-deploy",
+      "hash": "0xc8aaaddf841bcb93a2a3aa0b0b60ef5cf60455165bca3e047f5268153ed8919d",
+      "blockNumber": "65142526",
+      "gasUsed": "1784868",
+      "receiptStatus": "success"
+    },
+    {
+      "label": "metamask-fund-vault",
+      "hash": "0xd3398885b5e42870e64b58aacce5ca7c72539b65b386228d02e5598a92f5b40a",
+      "blockNumber": "65142894",
+      "gasUsed": "48950",
+      "receiptStatus": "success",
+      "amount": "0.5 ERC-20 testnet USDC"
+    },
+    {
+      "label": "metamask-hybrid-start",
+      "hash": "0x0e93d7b3f55225214c459dc262e57538356545ca8a839c57a8e11b4caaf286a4",
+      "blockNumber": "65143035",
+      "gasUsed": "620244",
+      "receiptStatus": "success",
+      "sessionId": "1",
+      "totalBudget": "0.15 ERC-20 testnet USDC",
+      "perPaymentCap": "0.05 ERC-20 testnet USDC"
+    },
+    {
+      "label": "agent-cli-payment",
+      "hash": "0xc88400d9d76e1820422a5fdeebd731da3d447bfeb930e52af0065b3d606e234e",
+      "blockNumber": "65143166",
+      "gasUsed": "120113",
+      "receiptStatus": "success",
+      "paymentId": "0x47fcda3f1f45a2f8a7e0796d1aa909f65948386100d4c610cabe4e90049ac24f",
+      "amount": "0.05 ERC-20 testnet USDC"
+    },
+    {
+      "label": "metamask-owner-freeze",
+      "hash": "0xa7763ddb2ba8b29cba864e26d710a346453c90ce79c70c6dc9e191ee6deff294",
+      "blockNumber": "65143324",
+      "gasUsed": "60311",
+      "receiptStatus": "success"
+    },
+    {
+      "label": "metamask-hybrid-withdraw",
+      "hash": "0xbfb197d743ac514f28d8503daf563b9e486b9b53b68c00e973e666aba00e6331",
+      "blockNumber": "65143441",
+      "gasUsed": "447087",
+      "receiptStatus": "success",
+      "amount": "0.45 ERC-20 testnet USDC"
+    }
+  ],
+  "finalState": {
+    "blockNumber": "65143675",
+    "owner": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+    "pqPublicKey": "0x8307b2bd3e50ce2a94f58fd27bfa9db84b99c9079655603311fb3532975dccdf",
+    "sessionId": "2",
+    "controlNonce": "3",
+    "active": false,
+    "erc20UsdcBalance": "0"
+  },
+  "limits": [
+    "All currency and transactions were on Arc testnet.",
+    "The user approved MetaMask transaction prompts; browser automation did not inspect the extension popup internals.",
+    "The user operated the Windows native file picker; the application then verified the imported key.",
+    "This run exercised owner freeze, not a second PQ freeze through MetaMask."
+  ]
+}
