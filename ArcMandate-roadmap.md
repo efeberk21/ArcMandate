@@ -59,11 +59,11 @@ Geçmezse sorun sınıfını kaydet: toolchain, PQ/ABI, ağ, kontrat veya anahta
 
 ### 5 Ekim — P5: Agent, kanıtlar ve tam prova
 
-- [ ] Agent CLI için gönderim öncesi paymentId journal'ı ve receipt/state kontrollü retry yap.
-- [ ] Script yeniden başlasa da aynı ödeme ikinci kez gitmiyor testini geçir.
-- [ ] Demo manifestini gerçek transaction/simulation sonuçlarından üret.
+- [x] Agent CLI için gönderim öncesi paymentId journal'ı ve receipt/state kontrollü retry yap.
+- [x] Script yeniden başlasa da aynı ödeme ikinci kez gitmiyor testini geçir.
+- [x] Demo manifestini gerçek transaction/simulation sonuçlarından üret.
 - [x] Wallet gerektirmeyen okuma modunu aynı sayfaya ekle (P4'te tamamlandı).
-- [ ] Tüm demo ve çekimi testnet'te tekrar et; fallback kullanıldıysa açık kaydet.
+- [x] Tüm demo ve çekimi testnet'te tekrar et; fallback kullanıldıysa açık kaydet.
 
 Çıkış: Tekrarlanabilir demo; eski session denemesinde ret sebebi kontrat kontrolü. Anahtarlar ve private journal public kanıt dosyasına girmiyor.
 

@@ -1,0 +1,164 @@
+{
+  "schemaVersion": 2,
+  "chainId": 5042002,
+  "sourceCommit": "working-tree",
+  "compiler": "0.8.28+commit.7893614a; paris; optimizer {\"enabled\":true,\"runs\":200}",
+  "createdAt": "2026-10-02T15:02:32.371Z",
+  "status": "complete",
+  "steps": [
+    {
+      "label": "deploy-vault",
+      "expectedOutcome": "success",
+      "evidenceType": "mined_success",
+      "txHash": "0xc9fa60ba882c1d02f7713fadd801ceea2bb8953c8f02c1074cfcf43a1cb654a7",
+      "blockNumber": "65133845",
+      "blockHash": "0x8a5d741d67d6a2ed19427a2860c1a9181b65a195ff93c068486cd0a6cddf40d3",
+      "receiptStatus": "success",
+      "gasUsed": "1784868",
+      "effectiveGasPrice": "25000000000"
+    },
+    {
+      "label": "fund-vault-1-usdc",
+      "expectedOutcome": "success",
+      "evidenceType": "mined_success",
+      "txHash": "0x101cec748c3f17d87e7582cbc8b025f18764f061bc6fafa36428fb0a22b3f2bc",
+      "blockNumber": "65133848",
+      "blockHash": "0xeea4fb7b16cbb0dc6daa56565525b4d6f4699222d8eff48cd2dce619417b7ed4",
+      "receiptStatus": "success",
+      "gasUsed": "48950",
+      "effectiveGasPrice": "25000000000"
+    },
+    {
+      "label": "fund-agent-gas",
+      "expectedOutcome": "success",
+      "evidenceType": "mined_success",
+      "txHash": "0x52c99872998180b89caca1e49080c819650561f5b1c6024364a2e6acb021748d",
+      "blockNumber": "65133851",
+      "blockHash": "0xd0213d5a06e285e38307df5ba706422217b4ae03551a4015c68442b7dd8f0549",
+      "receiptStatus": "success",
+      "gasUsed": "21000",
+      "effectiveGasPrice": "25000000000"
+    },
+    {
+      "label": "fund-relay-gas",
+      "expectedOutcome": "success",
+      "evidenceType": "mined_success",
+      "txHash": "0xb013bc0fffac8f2b9973a734ebbfa67bda4e08f500e2994b79d1a445a2ea1799",
+      "blockNumber": "65133854",
+      "blockHash": "0xf3a8f6d7d1ca1976effd0ea2a7b205eb3426c0499e0d6d9fd71ad63bc2ee4c15",
+      "receiptStatus": "success",
+      "gasUsed": "21000",
+      "effectiveGasPrice": "25000000000"
+    },
+    {
+      "label": "start-session-s",
+      "expectedOutcome": "success",
+      "evidenceType": "mined_success",
+      "txHash": "0x936de648d4d96009deb072c8572b99dda6c0b2f54a9dd2a5215cee7731fe8676",
+      "blockNumber": "65133860",
+      "blockHash": "0x88d58d31233e51ec9a04c5f7230786692ee6f5a09bff102718ed10f3dfcfe0b2",
+      "receiptStatus": "success",
+      "gasUsed": "620220",
+      "effectiveGasPrice": "25000000000"
+    },
+    {
+      "label": "agent-pay-s-0.05",
+      "expectedOutcome": "success",
+      "evidenceType": "mined_success",
+      "txHash": "0x6faa20ce3382d0ac4444a18abc2700e142acd5d27e8354d3621f271e6f036b6d",
+      "blockNumber": "65133863",
+      "blockHash": "0x16155742e25d4192b7260182948179cebe928d5033ea7b2c10ca8f29b1b70b24",
+      "receiptStatus": "success",
+      "gasUsed": "120125",
+      "effectiveGasPrice": "25000000000"
+    },
+    {
+      "label": "over-cap-0.20",
+      "expectedOutcome": "revert",
+      "evidenceType": "simulation_rejection",
+      "from": "0x2C5158C975d135FBB1f003580118aEE84F4827B3",
+      "to": "0x609d94e7bfe6eff3694c95e823494016ecb35d55",
+      "calldata": "0x89f1e6170000000000000000000000000000000000000000000000000000000000000001bd8ef3210e76522382c654b52969c2ac2b6ab0cb3cbf5df8ac91d789848943b10000000000000000000000003b870569a0442c6857db96f88afbaa3e20aa52010000000000000000000000000000000000000000000000000000000000030d40",
+      "block": "65133863",
+      "decodedError": "PerPaymentLimitExceeded"
+    },
+    {
+      "label": "pq-freeze-s",
+      "expectedOutcome": "success",
+      "evidenceType": "mined_success",
+      "txHash": "0x54068db6dfeb3ba98bd1857019234c28ee1f2a1aa7e27317960f0adc59993581",
+      "blockNumber": "65133867",
+      "blockHash": "0x5f16074f16982ad39b93c7542ec8a13a84d49710b2478d73a144851d6c38b597",
+      "receiptStatus": "success",
+      "gasUsed": "420490",
+      "effectiveGasPrice": "25000000000"
+    },
+    {
+      "label": "old-session-after-freeze",
+      "expectedOutcome": "revert",
+      "evidenceType": "simulation_rejection",
+      "from": "0x2C5158C975d135FBB1f003580118aEE84F4827B3",
+      "to": "0x609d94e7bfe6eff3694c95e823494016ecb35d55",
+      "calldata": "0x89f1e6170000000000000000000000000000000000000000000000000000000000000001f768b53b1070f4df367498d971b61f84c90759533a613494ac0081f357096d580000000000000000000000003b870569a0442c6857db96f88afbaa3e20aa5201000000000000000000000000000000000000000000000000000000000000c350",
+      "block": "65133867",
+      "decodedError": "SessionInactive"
+    },
+    {
+      "label": "start-session-s2-same-agent",
+      "expectedOutcome": "success",
+      "evidenceType": "mined_success",
+      "txHash": "0x2e9b73ee8d27326d46bc6846973e592e9f9a37355f470bc01f5a963e0b198ceb",
+      "blockNumber": "65133874",
+      "blockHash": "0x150f4fdd41ff4ecf6347c9e1e2918f9e45e2e96689556108bb9c370dadb171a0",
+      "receiptStatus": "success",
+      "gasUsed": "585972",
+      "effectiveGasPrice": "25000000000"
+    },
+    {
+      "label": "old-session-after-restart",
+      "expectedOutcome": "revert",
+      "evidenceType": "simulation_rejection",
+      "from": "0x2C5158C975d135FBB1f003580118aEE84F4827B3",
+      "to": "0x609d94e7bfe6eff3694c95e823494016ecb35d55",
+      "calldata": "0x89f1e6170000000000000000000000000000000000000000000000000000000000000001e6d46769d1f7427be76f506aed07c0f498a23d446382dac01383352473d239880000000000000000000000003b870569a0442c6857db96f88afbaa3e20aa5201000000000000000000000000000000000000000000000000000000000000c350",
+      "block": "65133874",
+      "decodedError": "SessionMismatch"
+    },
+    {
+      "label": "agent-pay-s2-0.05",
+      "expectedOutcome": "success",
+      "evidenceType": "mined_success",
+      "txHash": "0x79592b862d1cbb6e6aeb9afb71fb558b3783f9e73e2a8c51603957254d835b1d",
+      "blockNumber": "65133877",
+      "blockHash": "0x320039af5ef001d8de5db334e5d800c80f6e10bd9cfb8ae8b62c268e3433768a",
+      "receiptStatus": "success",
+      "gasUsed": "120125",
+      "effectiveGasPrice": "25000000000"
+    },
+    {
+      "label": "owner-freeze-s2",
+      "expectedOutcome": "success",
+      "evidenceType": "mined_success",
+      "txHash": "0x9d771a370e4e5fb141a46b4df75723d49aa69b8b1fb911358b04e1c37dba4db2",
+      "blockNumber": "65133878",
+      "blockHash": "0x4483336e338489c88f168b01f8708b54d16bb20d017180f5c46353b1f1578859",
+      "receiptStatus": "success",
+      "gasUsed": "60311",
+      "effectiveGasPrice": "25000000000"
+    },
+    {
+      "label": "hybrid-withdraw-remaining",
+      "expectedOutcome": "success",
+      "evidenceType": "mined_success",
+      "txHash": "0x5a3ec7af6e442496e0d184c97f2d18d20f3f0367071ee09a4d6233e96d0873f3",
+      "blockNumber": "65133883",
+      "blockHash": "0x525d939db157a631caede3c33b245247d00b58ea53fe9be0d475058df9763433",
+      "receiptStatus": "success",
+      "gasUsed": "447063",
+      "effectiveGasPrice": "25000000000"
+    }
+  ],
+  "vault": "0x609d94e7bfe6eff3694c95e823494016ecb35d55",
+  "deploymentBlock": "65133845",
+  "deploymentTxHash": "0xc9fa60ba882c1d02f7713fadd801ceea2bb8953c8f02c1074cfcf43a1cb654a7"
+}

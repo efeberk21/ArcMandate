@@ -1,4 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname } from 'node:path';
 import { loadEnvFile } from 'node:process';
 import { slh_dsa_sha2_128s } from '@noble/post-quantum/slh-dsa.js';
 import {
@@ -14,6 +15,7 @@ import {
   http,
   keccak256,
   parseAbi,
+  parseAbiItem,
   parseEther,
   toHex,
   type Abi,
@@ -30,10 +32,12 @@ import {
   type Authorization,
   type Policy,
 } from '../packages/core/src/digest.js';
+import { runPayment, type PaymentIntent, type PaymentPort } from './agent-journal.js';
 
 // This script uses disposable local accounts and the Arc testnet only.
+if (existsSync('.env')) loadEnvFile('.env');
 const keyPath = 'private/arc-testnet-keys.json';
-const manifestPath = 'deployments/arc-testnet.json';
+const manifestPath = process.env.ARC_DEMO_MANIFEST_PATH ?? 'deployments/arc-testnet.json';
 const artifactPath = 'contracts/out/ArcMandateVault.sol/ArcMandateVault.json';
 const rpcUrl = process.env.ARC_TESTNET_RPC_URL ?? ARC_NETWORKS.testnet.rpcUrl;
 const chain = defineChain({
@@ -47,6 +51,7 @@ const usdcAbi = parseAbi([
   'function balanceOf(address) view returns (uint256)',
   'function transfer(address,uint256) returns (bool)',
 ]);
+const paidEvent = parseAbiItem('event AgentPaid(uint256 indexed sessionId,bytes32 indexed paymentId,address indexed to,uint256 amount,uint256 spent)');
 
 type StoredAccount = { address: Address; privateKey: Hex };
 type Keys = {
@@ -59,7 +64,7 @@ type Keys = {
 type Evidence = {
   label: string;
   expectedOutcome: 'success' | 'revert';
-  evidenceType: 'receipt' | 'simulation';
+  evidenceType: 'mined_success' | 'mined_revert' | 'simulation_rejection';
   txHash?: Hex;
   blockNumber?: string;
   blockHash?: Hex;
@@ -90,7 +95,7 @@ function assert(condition: unknown, message: string): asserts condition {
 }
 
 function save(manifest: Manifest): void {
-  mkdirSync('deployments', { recursive: true });
+  mkdirSync(dirname(manifestPath), { recursive: true });
   writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 }
 
@@ -99,7 +104,7 @@ function recordReceipt(manifest: Manifest, label: string, receipt: TransactionRe
   manifest.steps.push({
     label,
     expectedOutcome: 'success',
-    evidenceType: 'receipt',
+    evidenceType: 'mined_success',
     txHash: receipt.transactionHash,
     blockNumber: receipt.blockNumber.toString(),
     blockHash: receipt.blockHash,
@@ -130,7 +135,6 @@ function errorName(error: unknown, abi: Abi): string {
 }
 
 async function main(): Promise<void> {
-  if (existsSync('.env')) loadEnvFile('.env');
   assert(existsSync(keyPath), `Missing ${keyPath}; run npm run accounts:testnet`);
   const keys = JSON.parse(readFileSync(keyPath, 'utf8')) as Keys;
   assert(keys.chainId === ARC_NETWORKS.testnet.chainId, 'Key file is not for Arc testnet');
@@ -155,7 +159,7 @@ async function main(): Promise<void> {
   const vaultAbi = artifact.abi;
   const metadata = typeof artifact.metadata === 'string' ? JSON.parse(artifact.metadata) as Exclude<typeof artifact.metadata, string> : artifact.metadata;
   const freshManifest: Manifest = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     chainId: ARC_NETWORKS.testnet.chainId,
     sourceCommit: process.env.SOURCE_COMMIT ?? 'working-tree',
     compiler: `${metadata.compiler.version}; ${metadata.settings.evmVersion}; optimizer ${JSON.stringify(metadata.settings.optimizer)}`,
@@ -166,7 +170,8 @@ async function main(): Promise<void> {
   const manifest = existsSync(manifestPath)
     ? JSON.parse(readFileSync(manifestPath, 'utf8')) as Manifest
     : freshManifest;
-  assert(manifest.chainId === chain.id && manifest.sourceCommit === freshManifest.sourceCommit, 'Existing manifest is from a different source or chain');
+  assert(manifest.schemaVersion === 2 && manifest.chainId === chain.id && manifest.sourceCommit === freshManifest.sourceCommit,
+    'Existing manifest has a different schema, source or chain; set ARC_DEMO_MANIFEST_PATH for a new run');
   assert(manifest.status === 'in_progress', 'This demo has already completed');
   const prior = (label: string): Evidence | undefined => manifest.steps.find((step) => step.label === label);
   const ownerClient = createWalletClient({ account: owner, chain, transport: http(rpcUrl, { timeout: 60_000 }) });
@@ -181,7 +186,7 @@ async function main(): Promise<void> {
     recordReceipt(manifest, label, await receipt(await send()));
   };
   const lastReceiptBlock = (): bigint => manifest.steps.reduce(
-    (latest, step) => step.evidenceType === 'receipt' && step.blockNumber
+    (latest, step) => step.evidenceType === 'mined_success' && step.blockNumber
       ? (BigInt(step.blockNumber) > latest ? BigInt(step.blockNumber) : latest) : latest,
     0n,
   );
@@ -255,9 +260,50 @@ async function main(): Promise<void> {
   };
   const paymentId = (label: string) => keccak256(toHex(label));
   const pay = async (label: string, id: bigint, amount = 50_000n): Promise<void> => {
-    await transact(label, () => agentClient.writeContract({
-      address: vault, abi: vaultAbi, functionName: 'agentPay', args: [id, paymentId(label), relay.address, amount],
-    }));
+    if (prior(label)) { console.log(`${label}: already recorded`); return; }
+    const journalDirectory = `private/agent-journal/demo-${vault.toLowerCase()}`;
+    const intended = {
+      requestId: label, chainId: chain.id, vault, sessionId: id.toString(),
+      to: relay.address, amount: amount.toString(), deploymentBlock: manifest.deploymentBlock!,
+    };
+    const port: PaymentPort = {
+      async sign(intent: PaymentIntent) {
+        const data = encodeFunctionData({ abi: vaultAbi, functionName: 'agentPay',
+          args: [BigInt(intent.sessionId), intent.paymentId, intent.to, BigInt(intent.amount)] });
+        const prepared = await agentClient.prepareTransactionRequest({ account: agent, chain, to: vault, data, value: 0n });
+        const signedTx = await agentClient.signTransaction(prepared);
+        return { signedTx, txHash: keccak256(signedTx) };
+      },
+      async receipt(hash) {
+        try {
+          const found = await publicClient.getTransactionReceipt({ hash });
+          return { status: found.status, blockNumber: found.blockNumber };
+        } catch (error) {
+          if (error instanceof Error && error.name === 'TransactionReceiptNotFoundError') return null;
+          throw error;
+        }
+      },
+      used(intent) {
+        return publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'usedPaymentIds',
+          args: [BigInt(intent.sessionId), intent.paymentId] }) as Promise<boolean>;
+      },
+      async paymentEvent(intent) {
+        const latest = await publicClient.getBlockNumber();
+        for (let from = BigInt(intent.deploymentBlock); from <= latest; from += 10_000n) {
+          const logs = await publicClient.getLogs({ address: vault, event: paidEvent,
+            args: { sessionId: BigInt(intent.sessionId), paymentId: intent.paymentId, to: intent.to },
+            fromBlock: from, toBlock: from + 9_999n < latest ? from + 9_999n : latest });
+          const match = logs.find((log) => log.args.amount === BigInt(intent.amount));
+          if (match) return { txHash: match.transactionHash, blockNumber: match.blockNumber };
+        }
+        return null;
+      },
+      async broadcast(signedTx) { await agentClient.sendRawTransaction({ serializedTransaction: signedTx }); },
+    };
+    const result = await runPayment(journalDirectory, intended, port);
+    assert(result.status !== 'reverted' && result.status !== 'used', `${label}: payment ${result.status}; inspect private journal`);
+    assert(result.journal.txHash, `${label}: no transaction hash available`);
+    recordReceipt(manifest, label, await receipt(result.journal.txHash));
   };
   const rejectPay = async (label: string, id: bigint, amount: bigint, expectedError: string): Promise<void> => {
     if (prior(label)) {
@@ -273,7 +319,7 @@ async function main(): Promise<void> {
     } catch (error) {
       const decodedError = errorName(error, vaultAbi);
       assert(decodedError === expectedError, `${label}: expected ${expectedError}, got ${decodedError}`);
-      manifest.steps.push({ label, expectedOutcome: 'revert', evidenceType: 'simulation', from: agent.address, to: vault, calldata, block: block.toString(), decodedError });
+      manifest.steps.push({ label, expectedOutcome: 'revert', evidenceType: 'simulation_rejection', from: agent.address, to: vault, calldata, block: block.toString(), decodedError });
       save(manifest);
       console.log(`${label}: ${decodedError} at block ${block}`);
     }

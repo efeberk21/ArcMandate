@@ -24,6 +24,18 @@ Copy `.env.example` to `.env` only when overriding public RPC URLs. Never put pr
 
 `npm run accounts:testnet` creates disposable testnet keys in ignored `private/arc-testnet-keys.json`; it refuses to overwrite an existing file. `npm run demo:testnet -- --balances` reads their public balances. After obtaining testnet funds and building the contract, `npm run demo:testnet` runs the testnet sequence and writes `deployments/arc-testnet.json`. It never targets mainnet. The disposable file is unencrypted and used only for integration scripts; the product uses encrypted Worker keyfiles.
 
+## P5 agent payments and testnet evidence
+
+The standalone agent CLI reads an ignored JSON file containing only `{ "privateKey": "0x..." }`. It never needs the owner wallet or PQ key. Use a unique, stable request ID for each intended payment and supply the session ID explicitly:
+
+```text
+npm run agent:pay -- --request invoice-42 --vault 0x... --to 0x... --amount 0.05 --session 1 --deployment-block 65133845 --key-file private/agent-testnet-key.json
+```
+
+The CLI targets Arc testnet only. Its ignored `private/agent-journal` records the exact request, a random `paymentId`, the signed transaction and its hash before broadcast. Repeat the same command after a timeout; a changed amount, recipient, vault or session is rejected. `confirmed` means the receipt or matching `AgentPaid` event was found; `pending` and `used` need further checking. An existing signed transaction is rebroadcast with its original nonce and bytes. Automatic higher-fee replacement is not implemented; inspect a persistently pending request's nonce and chain state before manual intervention. Keep this journal backed up while a payment is unresolved and do not run the same request concurrently. If a process crashes while holding a lock, the next run removes the lock only when its PID no longer exists.
+
+For a new full demo, set `ARC_DEMO_MANIFEST_PATH` to a new file under `deployments/` before `npm run demo:testnet`; the default path is the completed P2 manifest and is intentionally not overwritten. The P5 rerun is recorded in [the P5 testnet manifest](deployments/arc-testnet-p5.json). It contains mined receipts and block-pinned rejection simulations; payment journals and keys remain private. The demo's owner/relay/deployment steps do not yet have the agent payment's crash recovery guarantee.
+
 ## Browser integration smoke test
 
 `npm run smoke:web` serves `http://127.0.0.1:5173/smoke.html` with a development-only EIP-1193 adapter for the disposable owner/relay accounts above. Every **Send wallet transaction** button submits a real testnet transaction. Keep this page local. The bridge refuses mainnet, checks Host/Origin and a request token, and never sends account private keys to the browser. It is excluded from the production entry point.

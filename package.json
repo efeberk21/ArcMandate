@@ -24,6 +24,7 @@
     "pq:probe": "tsx scripts/pq-probe.ts",
     "fixtures:generate": "tsx scripts/generate-digest-fixtures.ts",
     "accounts:testnet": "tsx scripts/create-testnet-accounts.ts",
+    "agent:pay": "tsx scripts/agent-pay.ts",
     "demo:testnet": "tsx scripts/testnet-demo.ts"
   },
   "devDependencies": {

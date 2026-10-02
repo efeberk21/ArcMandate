@@ -29,4 +29,4 @@ ArcMandate is an immutable, single-session USDC vault prototype. This document d
 
 - Disposable testnet keys and journals are ignored under `private/`. The optional localhost smoke wallet uses those keys in Node, binds `127.0.0.1`, checks Host/Origin and a request token, and refuses mainnet. It is excluded from the production entry point.
 - Mainnet management is disabled pending P6/P7 release gates. Current testnet evidence does not establish mainnet readiness.
-- Full signature mutation coverage, stateful fuzz/invariants, clean-checkout release verification and restart-safe agent journaling remain planned work.
+- Full signature mutation coverage, stateful fuzz/invariants and clean-checkout release verification remain planned work. P5 added a restart-safe agent payment journal for testnet; owner/relay/deployment steps in the demo still have a submission-to-record crash window.
