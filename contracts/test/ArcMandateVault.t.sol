@@ -400,6 +400,8 @@ contract ArcMandateVaultTest {
         altered = _policy();
         altered.recipients[1] = address(0xDDD);
         _rejectSignature(altered, auth);
+        pq.configure(expected, PQ_KEY, 0);
+        _rejectSignature(policy, ArcMandateDigest.Authorization(auth.nonce, auth.sessionId, auth.deadline + 1));
 
         pq.configure(
             ArcMandateDigest.startSessionDigest(block.chainid + 1, address(vault), OWNER, policy, auth),
@@ -424,6 +426,12 @@ contract ArcMandateVaultTest {
         pq.configure(expected, bytes32(uint256(999)), 0);
         _rejectSignature(policy, auth);
 
+        ArcMandateVault anotherVault = new ArcMandateVault(OWNER, PQ_KEY);
+        pq.configure(expected, PQ_KEY, 0);
+        VM.prank(OWNER);
+        VM.expectRevert(ArcMandateVault.InvalidPQSignature.selector);
+        anotherVault.startSession(policy, auth, _sig());
+
         VM.prank(OWNER);
         VM.expectRevert(ArcMandateVault.InvalidNonce.selector);
         vault.startSession(policy, ArcMandateDigest.Authorization(auth.nonce + 1, auth.sessionId, auth.deadline), _sig());
@@ -439,6 +447,80 @@ contract ArcMandateVaultTest {
         VM.prank(OWNER);
         VM.expectRevert(ArcMandateVault.InvalidPQSignature.selector);
         vault.startSession(policy, auth, _sig());
+    }
+
+    function _rejectFreezeSignature(ArcMandateDigest.Authorization memory auth) internal {
+        VM.expectRevert(ArcMandateVault.InvalidPQSignature.selector);
+        vault.freezeByPQ(auth, _sig());
+        require(vault.active(), "invalid freeze changed session");
+    }
+
+    function testT10FreezeFieldMatrix() public {
+        _start();
+        ArcMandateDigest.Authorization memory auth = _auth();
+        bytes32 expected = vault.freezeDigest(auth);
+        pq.configure(expected, PQ_KEY, 0);
+        _rejectFreezeSignature(ArcMandateDigest.Authorization(auth.nonce, auth.sessionId, auth.deadline + 1));
+
+        pq.configure(ArcMandateDigest.freezeDigest(block.chainid + 1, address(vault), OWNER, auth), PQ_KEY, 0);
+        _rejectFreezeSignature(auth);
+        pq.configure(ArcMandateDigest.freezeDigest(block.chainid, address(0xBAD), OWNER, auth), PQ_KEY, 0);
+        _rejectFreezeSignature(auth);
+        pq.configure(ArcMandateDigest.freezeDigest(block.chainid, address(vault), AGENT, auth), PQ_KEY, 0);
+        _rejectFreezeSignature(auth);
+        pq.configure(vault.startSessionDigest(_policy(), auth), PQ_KEY, 0);
+        _rejectFreezeSignature(auth);
+        pq.configure(expected, bytes32(uint256(999)), 0);
+        _rejectFreezeSignature(auth);
+
+        pq.configure(expected, PQ_KEY, 0);
+        VM.expectRevert(ArcMandateVault.InvalidNonce.selector);
+        vault.freezeByPQ(ArcMandateDigest.Authorization(auth.nonce + 1, auth.sessionId, auth.deadline), _sig());
+        VM.expectRevert(ArcMandateVault.SessionMismatch.selector);
+        vault.freezeByPQ(ArcMandateDigest.Authorization(auth.nonce, auth.sessionId + 1, auth.deadline), _sig());
+        vault.freezeByPQ(auth, _sig());
+        require(!vault.active(), "valid freeze failed");
+    }
+
+    function _rejectWithdrawSignature(address to, uint256 amount, ArcMandateDigest.Authorization memory auth)
+        internal
+    {
+        VM.prank(OWNER);
+        VM.expectRevert(ArcMandateVault.InvalidPQSignature.selector);
+        vault.withdraw(to, amount, auth, _sig());
+        require(usdc.balanceOf(to) == 0, "invalid withdrawal moved funds");
+    }
+
+    function testT10WithdrawFieldMatrix() public {
+        ArcMandateDigest.Authorization memory auth = _auth();
+        bytes32 expected = vault.withdrawDigest(RECIPIENT, 100, auth);
+        pq.configure(expected, PQ_KEY, 0);
+        _rejectWithdrawSignature(RECIPIENT_2, 100, auth);
+        _rejectWithdrawSignature(RECIPIENT, 101, auth);
+        _rejectWithdrawSignature(RECIPIENT, 100,
+            ArcMandateDigest.Authorization(auth.nonce, auth.sessionId, auth.deadline + 1));
+
+        pq.configure(ArcMandateDigest.withdrawDigest(block.chainid + 1, address(vault), OWNER, RECIPIENT, 100, auth), PQ_KEY, 0);
+        _rejectWithdrawSignature(RECIPIENT, 100, auth);
+        pq.configure(ArcMandateDigest.withdrawDigest(block.chainid, address(0xBAD), OWNER, RECIPIENT, 100, auth), PQ_KEY, 0);
+        _rejectWithdrawSignature(RECIPIENT, 100, auth);
+        pq.configure(ArcMandateDigest.withdrawDigest(block.chainid, address(vault), AGENT, RECIPIENT, 100, auth), PQ_KEY, 0);
+        _rejectWithdrawSignature(RECIPIENT, 100, auth);
+        pq.configure(vault.freezeDigest(auth), PQ_KEY, 0);
+        _rejectWithdrawSignature(RECIPIENT, 100, auth);
+        pq.configure(expected, bytes32(uint256(999)), 0);
+        _rejectWithdrawSignature(RECIPIENT, 100, auth);
+
+        pq.configure(expected, PQ_KEY, 0);
+        VM.prank(OWNER);
+        VM.expectRevert(ArcMandateVault.InvalidNonce.selector);
+        vault.withdraw(RECIPIENT, 100, ArcMandateDigest.Authorization(auth.nonce + 1, auth.sessionId, auth.deadline), _sig());
+        VM.prank(OWNER);
+        VM.expectRevert(ArcMandateVault.SessionMismatch.selector);
+        vault.withdraw(RECIPIENT, 100, ArcMandateDigest.Authorization(auth.nonce, auth.sessionId + 1, auth.deadline), _sig());
+        VM.prank(OWNER);
+        vault.withdraw(RECIPIENT, 100, auth, _sig());
+        require(usdc.balanceOf(RECIPIENT) == 100, "valid withdrawal failed");
     }
 
     function testT11VerifierFailuresFailClosed() public {

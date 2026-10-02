@@ -5,6 +5,7 @@ dist/
 coverage/
 contracts/out/
 contracts/cache/
+/cache/
 contracts/broadcast/
 contracts/lib/
 .env

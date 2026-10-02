@@ -25,6 +25,7 @@
     "fixtures:generate": "tsx scripts/generate-digest-fixtures.ts",
     "accounts:testnet": "tsx scripts/create-testnet-accounts.ts",
     "agent:pay": "tsx scripts/agent-pay.ts",
+    "release:snapshot": "tsx scripts/release-snapshot.ts",
     "demo:testnet": "tsx scripts/testnet-demo.ts"
   },
   "devDependencies": {
