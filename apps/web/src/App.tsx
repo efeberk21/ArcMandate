@@ -6,6 +6,7 @@ import { addressInput, buildPolicy, usdcInput } from '@arcmandate/core/policy';
 import { freezeDigest, startSessionDigest, withdrawDigest, type Policy } from '@arcmandate/core/digest';
 import manifest from '../../../deployments/arc-testnet.json';
 import { KeyPanel } from './components/KeyPanel';
+import { SessionPlate, StatusBadge, TechnicalIcon } from './components/SessionPlate';
 import { arcClient, DEMO_VAULT, readVault, simulate, usdcAbi, type ArcClient, type Network, type VaultSnapshot } from './lib/chain';
 import { assertWallet, ContextChanged, sendWalletTransaction, switchNetwork, walletContext } from './lib/wallet';
 import { errorMessage, prepareTransaction, submitTransaction, trackReceipt, type Quote, type Receipt, type TransactionInput, type TransactionPort, type TransactionState } from './lib/transactions';
@@ -29,8 +30,8 @@ const initialAddress = initialUrl.searchParams.get('vault');
 function PolicySummary({ policy }: { policy: Policy }) {
   return <dl className="summary">
     <dt>Agent</dt><dd className="mono">{policy.agent}</dd>
-    <dt>Total budget</dt><dd>{usd(policy.totalBudget)}</dd>
-    <dt>Per-payment cap</dt><dd>{usd(policy.perTxCap)}</dd>
+    <dt>Session budget</dt><dd className="mono">{usd(policy.totalBudget)}</dd>
+    <dt>Per payment cap</dt><dd className="mono">{usd(policy.perTxCap)}</dd>
     <dt>Expires</dt><dd>{date(policy.expiresAt)}</dd>
     <dt>Recipients</dt><dd>{policy.recipients.map((address) => <div className="mono" key={address}>{address}</div>)}</dd>
   </dl>;
@@ -40,6 +41,7 @@ export default function App() {
   const [network, setNetwork] = useState<Network>(initialNetwork);
   const [vault, setVault] = useState<Address | null>(initialAddress && isAddress(initialAddress) ? getAddress(initialAddress) : initialNetwork === 'testnet' ? getAddress(DEMO_VAULT) : null);
   const [vaultInput, setVaultInput] = useState(vault ?? '');
+  const [vaultError, setVaultError] = useState('');
   const [mode, setMode] = useState<'read' | 'manage'>('read');
   const [snapshot, setSnapshot] = useState<VaultSnapshot | null>(null);
   const [readError, setReadError] = useState('');
@@ -131,11 +133,11 @@ export default function App() {
   function openVault() {
     try {
       const next = addressInput(vaultInput, 'Vault');
-      invalidate(); pq.lock(); setVault(next); setWalletError('');
+      invalidate(); pq.lock(); setVault(next); setVaultError('');
       const url = new URL(window.location.href); url.searchParams.set('network', network); url.searchParams.set('vault', next);
       window.history.replaceState(null, '', url);
       if (next === vault) void refresh();
-    } catch (error) { setWalletError(errorMessage(error)); }
+    } catch (error) { setVaultError(errorMessage(error)); }
   }
 
   async function exclusive(task: () => Promise<void>) {
@@ -168,7 +170,7 @@ export default function App() {
       const next = vault ? await currentVault(client, vault, network) : undefined;
       if (ticket !== epoch.current) throw new ContextChanged('Context changed during preparation');
       if (next) setSnapshot(next);
-      const titles: Record<Action, string> = { deploy: 'Deploy a personal vault', fund: 'Fund the vault', start: next?.active ? 'Replace the spending session' : 'Start a spending session', 'owner-freeze': 'Freeze with owner wallet', 'pq-freeze': 'Freeze with PQ key', withdraw: 'Withdraw USDC' };
+      const titles: Record<Action, string> = { deploy: 'Deploy a personal vault', fund: 'Fund the vault', start: next?.active ? 'Replace the spending session' : 'Open a spending session', 'owner-freeze': 'Lock out with owner wallet', 'pq-freeze': 'Lock out with PQ key', withdraw: 'Withdraw USDC' };
       const result: Review = { action, title: titles[action], network, account, epoch: ticket, snapshot: next, publicKey: pq.publicKey ?? undefined };
       if (action === 'deploy') {
         if (vault) throw new Error('Choose “New vault” before deploying');
@@ -318,56 +320,69 @@ export default function App() {
 
   const unresolved = transaction.stage === 'unknown' && (!!transaction.hash || !!transaction.walletRequested);
   const controlsDisabled = busy || pq.busy || !canManage || unresolved || !!readError || (!snapshot && !!vault);
+  const transactionTone = ['simulation-rejected', 'wallet-rejected', 'reverted', 'unknown'].includes(transaction.stage) ? 'overload' : transaction.stage === 'confirmed' ? 'verified' : 'neutral';
   return <main>
-    <header><div><p className="eyebrow">ARC · BOUNDED AGENT SPENDING</p><h1>ArcMandate</h1><p>Give an agent a defined USDC budget. Keep control of every new session.</p></div><span className="badge">Testnet prototype</span></header>
-    <section className="panel connection">
-      <div><label>Network<select value={network} onChange={(e) => { invalidate(); pq.lock(); setNetwork(e.target.value as Network); setVault(null); setVaultInput(''); setMode('read'); }}><option value="testnet">Arc Testnet</option><option value="mainnet">Arc Mainnet · read only</option></select></label>
-        <p className="muted">Chain {ARC_NETWORKS[network].chainId}</p></div>
-      <div className="wallet-info">{account ? <><p className="mono">{account}</p><p>Wallet chain: {walletChain}{walletChain !== ARC_NETWORKS[network].chainId && <strong className="error"> · wrong network</strong>}</p>
-        {walletBalance !== null && <p>Wallet USDC available for gas: {formatUnits(walletBalance, 18)}. This is the native view of the same wallet USDC balance.</p>}
+    <a className="skip-link" href="#vault">Skip to vault</a>
+    <header className="masthead"><a className="brand" href="#vault"><span className="brand-mark"><TechnicalIcon kind="orbit" /></span><span>ArcMandate<small>Agent spending control</small></span></a><div className="masthead-meta"><span>Arc / USDC</span><StatusBadge label={network === 'testnet' ? 'Testnet prototype' : 'Mainnet / read only'} /></div></header>
+    <div className="workspace">
+    <aside className="sidebar" aria-label="Workspace navigation"><nav><a className="nav-item" href="#vault"><span>01</span>Vault & session</a>{mode === 'manage' && <><a className="nav-item" href="#key-backup"><span>02</span>Authorization key</a><a className="nav-item" href="#controls"><span>03</span>Session controls</a></>}<a className="nav-item" href="#records"><span>04</span>Testnet records</a></nav><div className="sidebar-note"><TechnicalIcon /><p>Bounded authority.<br />Defined recipients.<br />Revocable sessions.</p><span className="plate-label">OWNER + PQ CONTROL</span></div></aside>
+    <div className="workspace-content">
+    <div className="page-heading"><div><h1>Your authority, anchored.</h1><p>A defined budget. A connected agent. Control stays with you.</p></div><span className="workspace-mode">{mode === 'read' ? 'Observer workspace' : 'Management workspace'}</span></div>
+    <section className="panel connection" aria-label="Network and wallet">
+      <div><label>Network<select aria-label="Network" value={network} onChange={(e) => { invalidate(); pq.lock(); setNetwork(e.target.value as Network); setVault(null); setVaultInput(''); setVaultError(''); setMode('read'); }}><option value="testnet">Arc Testnet</option><option value="mainnet">Arc Mainnet / read only</option></select></label>
+        <p className="muted">Chain <span className="mono">{ARC_NETWORKS[network].chainId}</span></p></div>
+      <div className="wallet-info">{account ? <><p className="mono">{account}</p><p>Wallet chain: <span className="mono">{walletChain}</span>{walletChain !== ARC_NETWORKS[network].chainId && <StatusBadge label="WRONG NETWORK" tone="overload" />}</p>
+        {walletBalance !== null && <p>Wallet USDC available for gas: <span className="mono">{formatUnits(walletBalance, 18)}</span>. This is the native view of the same wallet USDC balance.</p>}
         <div className="actions"><button className="secondary" onClick={() => { connected.current = false; invalidate(); pq.lock(); setAccount(null); setWalletChain(null); }}>Disconnect</button>
           {walletChain !== ARC_NETWORKS[network].chainId && <button onClick={() => { if (provider) void switchNetwork(provider, network).then(connect).catch((error) => setWalletError(errorMessage(error))); }}>Switch wallet network</button>}</div></>
-        : <button onClick={() => void connect()}>Connect wallet</button>}</div>
+        : <><span className="plate-label">Owner wallet disconnected</span><p className="muted">Read the vault freely. Connect to manage authority.</p><button onClick={() => void connect()}>Connect wallet</button></>}</div>
       {walletError && <p className="error" role="alert">{walletError}</p>}
     </section>
-    <section className="panel">
-      <div className="section-heading"><h2>Vault</h2><span className="badge">{mode === 'read' ? 'Read only' : 'Management'}</span></div>
-      <div className="address-row"><label>Vault address<input value={vaultInput} placeholder="0x…" onChange={(e) => { invalidate(); setVaultInput(e.target.value); }} /></label><button onClick={openVault}>Open vault</button></div>
-      <div className="actions"><button className="secondary" disabled={network !== 'testnet'} onClick={() => { setVault(getAddress(DEMO_VAULT)); setVaultInput(DEMO_VAULT); setMode('read'); invalidate(); pq.lock(); }}>View demo</button>
+    <section className="panel vault-panel" id="vault" aria-labelledby="vault-heading">
+      <div className="section-heading"><h2 id="vault-heading">Vault & session</h2><StatusBadge label={mode === 'read' ? 'Read only' : 'Management'} /></div>
+      <div className="vault-toolbar">
+      <details className="vault-address-editor" open={!vault || !!vaultError}><summary>{vault ? 'Open another vault' : 'Open a vault by address'}</summary>
+      <div className="address-row"><label>Vault address<input value={vaultInput} placeholder="0x…" aria-invalid={!!vaultError} aria-describedby={vaultError ? 'vault-error' : undefined} onChange={(e) => { invalidate(); setVaultError(''); setVaultInput(e.target.value); }} /></label><button onClick={openVault}>Open vault</button></div>
+      {vaultError && <p className="error" id="vault-error" role="alert">{vaultError}</p>}
+      </details>
+      <div className="actions"><button className="secondary" disabled={network !== 'testnet'} onClick={() => { setVault(getAddress(DEMO_VAULT)); setVaultInput(DEMO_VAULT); setVaultError(''); setMode('read'); invalidate(); pq.lock(); }}>View demo</button>
         <button className="secondary" disabled={network !== 'testnet'} onClick={() => { invalidate(); pq.lock(); setMode(mode === 'read' ? 'manage' : 'read'); }}>{mode === 'read' ? 'Enter management mode' : 'Return to read only'}</button>
-        {mode === 'manage' && <button className="secondary" disabled={busy} onClick={() => { invalidate(); pq.lock(); setVault(null); setVaultInput(''); }}>New vault</button>}
+        {mode === 'manage' && <button className="secondary" disabled={busy} onClick={() => { invalidate(); pq.lock(); setVault(null); setVaultInput(''); setVaultError(''); }}>New vault</button>}
         {vault && <button className="secondary" disabled={reading} onClick={() => void refresh()}>Refresh state</button>}</div>
+      </div>
       {readError && <p className="error" role="alert">Live state unavailable: {readError}</p>}
-      {reading && !snapshot && <p role="status">Reading vault state…</p>}
+      {reading && !snapshot && <div className="loading-state" role="status"><TechnicalIcon /><p>Reading vault state…</p><span className="muted">Loading session limits and authorization register.</span></div>}
       {snapshot && <>
-        <p className="mono"><a href={`${ARC_NETWORKS[network].explorerUrl}/address/${snapshot.address}`} target="_blank" rel="noreferrer">{snapshot.address}</a></p>
-        <div className="metrics"><div><span>Vault balance</span><strong>{usd(snapshot.balance)}</strong></div><div><span>Remaining authority</span><strong>{usd(snapshot.policy.totalBudget - snapshot.spent)}</strong></div><div><span>Session</span><strong>{snapshot.sessionId.toString()}</strong></div><div><span>Status</span><strong>{!snapshot.active ? 'Frozen / inactive' : snapshot.timestamp >= snapshot.policy.expiresAt ? 'Expired · active onchain' : snapshot.spent >= snapshot.policy.totalBudget ? 'Budget used · active onchain' : 'Active'}</strong></div></div>
-        <p className="mono">Owner: {snapshot.owner}</p><p className="mono">PQ public key: {snapshot.publicKey}</p>
-        {snapshot.active && <PolicySummary policy={snapshot.policy} />}
-        <p className="muted">State at block {snapshot.blockNumber.toString()} · control nonce {snapshot.nonce.toString()}. New deposits do not increase the session budget.</p>
+        <div className="vault-serial"><span className="plate-label">Vault</span><a className="mono" href={`${ARC_NETWORKS[network].explorerUrl}/address/${snapshot.address}`} target="_blank" rel="noreferrer">{snapshot.address}</a></div>
+        <SessionPlate snapshot={snapshot}
+          onManage={mode === 'read' && network === 'testnet' ? () => { invalidate(); pq.lock(); setMode('manage'); } : undefined}
+          onLockOut={mode === 'manage' ? () => prepare(ownerConnected ? 'owner-freeze' : 'pq-freeze') : undefined}
+          lockDisabled={controlsDisabled || (!ownerConnected && !matchingKey)} />
       </>}
+      {!vault && <div className="empty-state"><TechnicalIcon kind="plate" /><h3>NO VAULT SELECTED</h3><p>{mode === 'manage' ? 'Restore an authorization key below, then deploy a vault.' : 'Enter a vault address above or open the testnet demo.'}</p></div>}
       {network === 'mainnet' && <p>Mainnet management opens after the release checks are complete.</p>}
     </section>
     {mode === 'manage' && <>
       <KeyPanel key={`${network}:${vault}:${account}:${walletChain}`} pq={pq} expectedKey={snapshot?.publicKey} disabled={busy || (!!vault && !snapshot)} onChange={invalidate} />
-      {!vault ? <section className="panel"><h2>Create your vault</h2><p>Your connected wallet becomes the immutable owner. The restored PQ key becomes the second management key.</p><button disabled={controlsDisabled || pq.phase !== 'restored'} onClick={() => prepare('deploy')}>Review deployment</button></section> : <>
-        <section className="panel"><h2>Fund with USDC</h2><p>Funding adds balance without changing spending authority. Keep enough USDC in your wallet for network fees.</p><label>Funding amount (USDC)<input inputMode="decimal" value={fundAmount} onChange={(e) => { invalidate(); setFundAmount(e.target.value); }} /></label><button disabled={controlsDisabled || !matchingKey} onClick={() => prepare('fund')}>Review funding</button></section>
-        <section className="panel"><h2>{snapshot?.active ? 'Replace session' : 'Authorize a session'}</h2><p>Owner wallet + PQ approval. A new session replaces the previous authority and resets spent to zero.</p>
-          <div className="fields">{(['agent', 'budget', 'cap', 'minutes'] as const).map((field) => <label key={field}>{({ agent: 'Agent wallet', budget: 'Total budget (USDC)', cap: 'Per-payment cap (USDC)', minutes: 'Duration (minutes)' })[field]}<input value={sessionForm[field]} onChange={(e) => { invalidate(); setSessionForm((previous) => ({ ...previous, [field]: e.target.value })); }} /></label>)}</div>
+      <div id="controls" className="controls-heading"><h2><span className="section-index">03</span>Session controls</h2><p className="muted">Each action requires review before wallet submission.</p>{!canManage && <p className="notice">Connect the owner wallet on Arc testnet to enable management controls.</p>}{canManage && vault && snapshot && !ownerConnected && <p className="notice">This wallet is not the vault owner. A matching PQ key can still authorize lock out.</p>}{canManage && !matchingKey && vault && <p className="notice">Restore the matching PQ backup to enable funding, session authorization and withdrawal.</p>}</div>
+      {!vault ? <section className="panel"><h2>Create your vault</h2><p>Your connected wallet becomes the immutable owner. The restored PQ key becomes the second management key.</p><button disabled={controlsDisabled || pq.phase !== 'restored'} onClick={() => prepare('deploy')}>Review deployment</button></section> : <div className="management-grid">
+        <section className="panel session-form"><h2>{snapshot?.active ? 'Replace session' : 'Open session'}</h2><p>Owner wallet + PQ approval. A new session replaces the previous authority and resets spent to zero.</p>
+          <div className="fields">{(['agent', 'budget', 'cap', 'minutes'] as const).map((field) => <label key={field}>{({ agent: 'Agent wallet', budget: 'Session budget (USDC)', cap: 'Per payment cap (USDC)', minutes: 'Hold window (minutes)' })[field]}<input inputMode={field === 'agent' ? 'text' : field === 'minutes' ? 'numeric' : 'decimal'} value={sessionForm[field]} onChange={(e) => { invalidate(); setSessionForm((previous) => ({ ...previous, [field]: e.target.value })); }} /></label>)}</div>
           <label>Allowed recipients (1–5 addresses)<textarea value={sessionForm.recipients} placeholder="One address per line" onChange={(e) => { invalidate(); setSessionForm((previous) => ({ ...previous, recipients: e.target.value })); }} /></label>
-          <button disabled={controlsDisabled || !ownerConnected || !matchingKey} onClick={() => prepare('start')}>Review session</button>
+          <button disabled={controlsDisabled || !ownerConnected || !matchingKey} onClick={() => prepare('start')}>{snapshot?.active ? 'Review replacement' : 'Review open session'}</button>
         </section>
-        <section className="panel"><h2>Freeze spending</h2><p>Either management key can revoke the session. Transfers ordered before freeze may still execute. Expired or exhausted sessions must also be frozen before withdrawal.</p>
-          <div className="actions"><button disabled={controlsDisabled || !ownerConnected || !snapshot?.active} onClick={() => prepare('owner-freeze')}>Review owner freeze</button><button disabled={controlsDisabled || !matchingKey || !snapshot?.active} onClick={() => prepare('pq-freeze')}>Review PQ freeze</button></div>
+        <section className="panel"><h2>Fund with USDC</h2><p>Funding adds balance without changing spending authority. Keep enough USDC in your wallet for network fees.</p><label>Funding amount (USDC)<input inputMode="decimal" value={fundAmount} onChange={(e) => { invalidate(); setFundAmount(e.target.value); }} /></label><button disabled={controlsDisabled || !matchingKey} onClick={() => prepare('fund')}>Review funding</button></section>
+        <section className="panel lock-panel"><h2><TechnicalIcon kind="lock" />Lock out</h2><p>Either management key can revoke the session. Transfers ordered before freeze may still execute. Expired or exhausted sessions must also be frozen before withdrawal.</p>
+          <div className="actions"><button className="danger" disabled={controlsDisabled || !ownerConnected || !snapshot?.active} onClick={() => prepare('owner-freeze')}>Review owner lock out</button><button className="danger" disabled={controlsDisabled || !matchingKey || !snapshot?.active} onClick={() => prepare('pq-freeze')}>Review PQ lock out</button></div>
           <p className="muted">PQ freeze can be submitted by a wallet other than the owner.</p>
         </section>
         <section className="panel"><h2>Withdraw</h2><p>Requires the owner wallet, restored PQ key, and an inactive session.</p><div className="fields"><label>Withdrawal recipient<input value={withdrawTo} placeholder={account ?? '0x…'} onChange={(e) => { invalidate(); setWithdrawTo(e.target.value); }} /></label><label>Withdrawal amount (USDC)<input inputMode="decimal" value={withdrawAmount} onChange={(e) => { invalidate(); setWithdrawAmount(e.target.value); }} /></label></div>
           <button disabled={controlsDisabled || !ownerConnected || !matchingKey || !!snapshot?.active} onClick={() => prepare('withdraw')}>Review withdrawal</button>
         </section>
-      </>}
+      </div>}
     </>}
     {(review || transaction.stage !== 'idle') && <section className="panel transaction" aria-label="Transaction review">
-      <div className="section-heading"><h2>{review?.title ?? 'Transaction status'}</h2><span className="badge">{transaction.stage}</span></div>
+      <div className="section-heading"><h2>{review?.title ?? 'Transaction status'}</h2><StatusBadge label={transaction.stage.replaceAll('-', ' ').toUpperCase()} tone={transactionTone} /></div>
       {review && <>
         <dl className="summary"><dt>Network</dt><dd>Arc {review.network} · {ARC_NETWORKS[review.network].chainId}</dd><dt>Sender</dt><dd className="mono">{review.account}</dd>{review.snapshot && <><dt>Vault</dt><dd className="mono">{review.snapshot.address}</dd><dt>Session / nonce</dt><dd>{review.snapshot.sessionId.toString()} / {review.snapshot.nonce.toString()}</dd></>}{review.amount !== undefined && <><dt>Amount</dt><dd>{usd(review.amount)}</dd></>}{review.to && <><dt>Recipient</dt><dd className="mono">{review.to}</dd></>}{review.action === 'deploy' && <><dt>PQ public key</dt><dd className="mono">{review.publicKey}</dd></>}{review.intent && <><dt>Authorization deadline</dt><dd>{date(review.intent.auth.deadline)}</dd></>}</dl>
         {review.policy && <>
@@ -385,9 +400,10 @@ export default function App() {
       {transaction.stage === 'unknown' && transaction.hash && <button disabled={busy} onClick={retryReceipt}>Check receipt again</button>}
       {transaction.stage === 'unknown' && transaction.walletRequested && !transaction.hash && <><p className="warning">The wallet request may have been submitted. Check your wallet activity before starting another action.</p><button onClick={() => setTransaction({ stage: 'idle', message: 'Wallet activity checked. Review a new action when ready.' })}>I checked wallet activity</button></>}
     </section>}
-    <section className="panel evidence"><h2>Testnet evidence</h2><p>The recorded P2 demo funded the vault with 1 USDC, paid twice, froze both sessions and withdrew 0.9 USDC. The demo vault was emptied. Open the demo vault to compare its current state with these historical receipts.</p>
-      <details><summary>Open transaction and simulation records</summary><table><thead><tr><th>Step</th><th>Evidence</th><th>Result</th></tr></thead><tbody>{manifest.steps.map((step) => <tr key={step.label}><td>{step.label}</td><td>{step.txHash ? <a href={`${ARC_NETWORKS.testnet.explorerUrl}/tx/${step.txHash}`} target="_blank" rel="noreferrer">Mined receipt</a> : `Simulation at block ${step.block}`}</td><td>{step.decodedError ?? step.receiptStatus}</td></tr>)}</tbody></table></details>
+    <section className="panel evidence" id="records"><div className="section-heading"><h2><span className="section-index">04</span>Testnet records</h2><StatusBadge label="HISTORICAL" /></div><p>The recorded P2 demo funded the vault with 1 USDC, paid twice, froze both sessions and withdrew 0.9 USDC. The demo vault was emptied. These receipts are historical records of the testnet run.</p>
+      <details><summary>Transaction and simulation log <span className="record-count">{manifest.steps.length} records</span></summary><div className="table-scroll" tabIndex={0} role="region" aria-label="Historical testnet records"><table><thead><tr><th>Step</th><th>Evidence</th><th>Result</th></tr></thead><tbody>{manifest.steps.map((step) => <tr key={step.label}><td>{step.label}</td><td>{step.txHash ? <a href={`${ARC_NETWORKS.testnet.explorerUrl}/tx/${step.txHash}`} target="_blank" rel="noreferrer">Mined receipt</a> : `Simulation at block ${step.block}`}</td><td><span className="log-result">{step.decodedError ?? step.receiptStatus}</span></td></tr>)}</tbody></table></div></details>
     </section>
-    <footer>Prototype · no key recovery or rotation · PQ protects application authorization, not the wallet transaction or the whole network.</footer>
+    <footer><span>ArcMandate / Testnet prototype</span><p>No key recovery or rotation. PQ protects application authorization, not the wallet transaction or the whole network.</p></footer>
+    </div></div>
   </main>;
 }
