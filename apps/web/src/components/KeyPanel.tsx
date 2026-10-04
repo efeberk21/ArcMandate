@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Hex } from 'viem';
 import type { PqKey } from '../lib/use-pq-key';
+import { StatusBadge } from './SessionPlate';
 
 export function KeyPanel({ pq, expectedKey, disabled, onChange }: { pq: PqKey; expectedKey?: Hex; disabled: boolean; onChange(): void }) {
   const [password, setPassword] = useState('');
@@ -11,8 +12,8 @@ export function KeyPanel({ pq, expectedKey, disabled, onChange }: { pq: PqKey; e
     setError('');
     try { await task(); } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)); }
   }
-  return <section className="panel" aria-label="PQ key backup">
-    <div className="section-heading"><h2>PQ key & backup</h2><span className={`badge ${pq.phase === 'restored' ? 'positive' : ''}`}>{pq.phase}</span></div>
+  return <section className="panel key-panel" id="key-backup" aria-label="PQ key backup">
+    <div className="section-heading"><h2><span className="section-index">02</span>Authorization key & backup</h2><StatusBadge label={pq.busy ? 'PENDING' : pq.phase === 'restored' ? 'VERIFIED' : pq.phase.toUpperCase()} tone={pq.phase === 'restored' && !pq.busy ? 'verified' : 'neutral'} /></div>
     <p>Keep your encrypted file and password. Losing either management key can prevent withdrawals. Using both keys on one device does not protect against a compromised device.</p>
     {pq.publicKey && <p className="mono">Public key: {pq.publicKey}</p>}
     <div className="actions">
@@ -32,6 +33,6 @@ export function KeyPanel({ pq, expectedKey, disabled, onChange }: { pq: PqKey; e
       const pass = password; setPassword(''); setConfirmation(''); onChange();
       if (file) void act(() => pq.importKey(file, pass, expectedKey));
     }}>Restore and verify backup</button>
-    <p role="status">{error || pq.message}</p>
+    <p className={error ? 'error' : 'key-status'} role={error ? 'alert' : 'status'}>{error || pq.message}</p>
   </section>;
 }
