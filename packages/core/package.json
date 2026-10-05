@@ -8,7 +8,8 @@
     "./digest": "./src/digest.ts",
     "./keyfile": "./src/keyfile.ts",
     "./policy": "./src/policy.ts",
-    "./contracts": "./src/generated/vault.ts"
+    "./contracts": "./src/generated/vault.ts",
+    "./runtime": "./src/runtime.ts"
   },
   "dependencies": {
     "@noble/hashes": "2.4.0",

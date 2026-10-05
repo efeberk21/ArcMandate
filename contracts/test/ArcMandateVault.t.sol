@@ -10,6 +10,7 @@ interface VaultVm {
     function warp(uint256 timestamp) external;
     function prank(address caller) external;
     function expectRevert(bytes4 selector) external;
+    function expectRevert(bytes calldata data) external;
     function expectRevert() external;
 }
 
@@ -19,6 +20,9 @@ contract MockArcUSDC is ERC20 {
     bytes4 public reentrySelector;
     address public vaultTarget;
     uint256 public reentrySession;
+    uint8 public returnMode;
+    function setReturnMode(uint8 value) external { returnMode = value; }
+    function burn(address from, uint256 amount) external { _burn(from, amount); }
 
     constructor() ERC20("Mock Arc USDC", "USDC") {}
 
@@ -42,6 +46,7 @@ contract MockArcUSDC is ERC20 {
 
     function transfer(address to, uint256 value) public override returns (bool) {
         if (failTransfers) revert("MOCK_TRANSFER_FAILED");
+        if (returnMode == 1) return false;
         if (attemptReentry) {
             attemptReentry = false;
             (bool ok, bytes memory result) = vaultTarget.call(
@@ -52,7 +57,9 @@ contract MockArcUSDC is ERC20 {
             assembly { selector := mload(add(result, 32)) }
             reentrySelector = selector;
         }
-        return super.transfer(to, value);
+        bool result = super.transfer(to, value);
+        if (returnMode == 2) assembly { return(0, 0) }
+        return result;
     }
 }
 
@@ -586,5 +593,80 @@ contract ArcMandateVaultTest {
         VM.prank(OWNER);
         vault.withdraw(RECIPIENT, 100, auth, _sig());
         require(vault.controlNonce() == nonceBefore + 1, "withdraw nonce not consumed");
+    }
+    function testR10FreezeAndWithdrawDeadlineBoundaries() public {
+        _start();
+        ArcMandateDigest.Authorization memory auth = _auth();
+        _authorizeFreeze(auth);
+        VM.warp(auth.deadline);
+        VM.expectRevert(ArcMandateVault.AuthorizationExpired.selector);
+        vault.freezeByPQ(auth, _sig());
+        require(vault.active() && vault.controlNonce() == auth.nonce, "expired freeze changed state");
+        auth = _auth();
+        _authorizeFreeze(auth);
+        VM.warp(auth.deadline - 1);
+        vault.freezeByPQ(auth, _sig());
+        auth = _auth();
+        _authorizeWithdraw(RECIPIENT, 100, auth);
+        VM.warp(auth.deadline);
+        VM.prank(OWNER);
+        VM.expectRevert(ArcMandateVault.AuthorizationExpired.selector);
+        vault.withdraw(RECIPIENT, 100, auth, _sig());
+        require(vault.controlNonce() == auth.nonce && usdc.balanceOf(RECIPIENT) == 0, "expired withdraw changed state");
+        auth = _auth();
+        _authorizeWithdraw(RECIPIENT, 100, auth);
+        VM.warp(auth.deadline - 1);
+        VM.prank(OWNER);
+        vault.withdraw(RECIPIENT, 100, auth, _sig());
+        require(usdc.balanceOf(RECIPIENT) == 100, "before-deadline withdraw failed");
+    }
+    function testR10FalseEmptyReturnAndWithdrawalReentry() public {
+        _start();
+        usdc.setReturnMode(1);
+        uint256 id = vault.sessionId();
+        VM.prank(AGENT);
+        VM.expectRevert(abi.encodeWithSelector(bytes4(keccak256("SafeERC20FailedOperation(address)")), USDC_ADDRESS));
+        vault.agentPay(id, bytes32(uint256(1)), RECIPIENT, 50);
+        require(vault.spent() == 0 && !vault.usedPaymentIds(id, bytes32(uint256(1))), "false pay rollback");
+        usdc.setReturnMode(2);
+        _pay(1, 50);
+        VM.prank(OWNER);
+        vault.freezeByOwner(id);
+        ArcMandateDigest.Authorization memory auth = _auth();
+        _authorizeWithdraw(RECIPIENT, 100, auth);
+        usdc.setReturnMode(1);
+        VM.prank(OWNER);
+        VM.expectRevert(abi.encodeWithSelector(bytes4(keccak256("SafeERC20FailedOperation(address)")), USDC_ADDRESS));
+        vault.withdraw(RECIPIENT, 100, auth, _sig());
+        require(vault.controlNonce() == auth.nonce && usdc.balanceOf(RECIPIENT) == 50, "false withdraw rollback");
+        usdc.setReturnMode(2);
+        usdc.setReentry(address(vault), vault.sessionId());
+        VM.prank(OWNER);
+        vault.withdraw(RECIPIENT, 100, auth, _sig());
+        require(usdc.reentrySelector() == bytes4(keccak256("ReentrancyGuardReentrantCall()")), "withdraw reentry escaped");
+        require(usdc.balanceOf(RECIPIENT) == 150 && vault.controlNonce() == auth.nonce + 1, "empty return withdrawal");
+    }
+    function testR10FreezeWithdrawReplayAfterRevocationAndRestart() public {
+        _start();
+        ArcMandateDigest.Authorization memory old = _auth();
+        _authorizeFreeze(old);
+        vault.freezeByPQ(old, _sig());
+        VM.prank(OWNER);
+        VM.expectRevert(ArcMandateVault.InvalidNonce.selector);
+        vault.withdraw(RECIPIENT, 100, old, _sig());
+        _start();
+        VM.expectRevert(ArcMandateVault.InvalidNonce.selector);
+        vault.freezeByPQ(old, _sig());
+        uint256 session = vault.sessionId();
+        VM.prank(OWNER);
+        vault.freezeByOwner(session);
+        ArcMandateDigest.Authorization memory fresh = _auth();
+        _authorizeWithdraw(RECIPIENT, 100, fresh);
+        VM.prank(OWNER);
+        vault.withdraw(RECIPIENT, 100, fresh, _sig());
+        VM.prank(OWNER);
+        VM.expectRevert(ArcMandateVault.InvalidNonce.selector);
+        vault.withdraw(RECIPIENT, 100, fresh, _sig());
+        require(usdc.balanceOf(RECIPIENT) == 100, "withdraw replay transferred twice");
     }
 }

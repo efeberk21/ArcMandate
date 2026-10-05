@@ -18,3 +18,4 @@ contracts/lib/
 *.journal.json
 private/
 *.log
+

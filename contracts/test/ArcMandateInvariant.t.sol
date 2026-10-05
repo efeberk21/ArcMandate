@@ -23,12 +23,21 @@ contract VaultHandler {
     uint256 public successfulFreezes;
     uint256 public failedTransferChecks;
     uint256 public staleRejections;
+    uint256 public successfulWithdrawals;
+    uint256 public cumulativeWithdrawn;
+    uint256 public funded;
+    uint256 public insufficientBalanceChecks;
+    uint256 public adversarialChecks;
+    uint256 public invalidAuthChecks;
+    uint256 public withdrawalRollbackChecks;
+    uint256 public immutable initialBalance;
     uint256 private paymentCounter;
 
     constructor(ArcMandateVault vault_, MockArcUSDC usdc_, MockArcPQ pq_) {
         vault = vault_;
         usdc = usdc_;
         pq = pq_;
+        initialBalance = usdc_.balanceOf(address(vault_));
     }
 
     function _signature() private pure returns (bytes memory) { return new bytes(7856); }
@@ -67,7 +76,11 @@ contract VaultHandler {
         uint256 remaining = vault.totalBudget() - vault.spent();
         if (remaining < limit) limit = remaining;
         uint256 amount = 1 + amountSeed % limit;
-        if (usdc.balanceOf(address(vault)) < amount) usdc.mint(address(vault), amount);
+        if (usdc.balanceOf(address(vault)) < amount) {
+            _rejectPay(AGENT, vault.sessionId(), bytes32(++paymentCounter), RECIPIENT, amount, ArcMandateVault.InsufficientBalance.selector);
+            ++insufficientBalanceChecks;
+            return;
+        }
         bytes32 id = bytes32(++paymentCounter);
         uint256 session = vault.sessionId();
         VM.prank(AGENT);
@@ -79,7 +92,7 @@ contract VaultHandler {
 
     function failTransfer(uint256 idSeed) external {
         _ensureSpendable();
-        if (usdc.balanceOf(address(vault)) == 0) usdc.mint(address(vault), 1);
+        if (usdc.balanceOf(address(vault)) == 0) fund(0);
         bytes32 id = bytes32(uint256(keccak256(abi.encode(idSeed, paymentCounter, vault.sessionId()))));
         if (id == bytes32(0) || vault.usedPaymentIds(vault.sessionId(), id)) id = bytes32(++paymentCounter);
         uint256 beforeSpent = vault.spent();
@@ -98,8 +111,11 @@ contract VaultHandler {
         ++failedTransferChecks;
     }
 
-    function fund(uint256 amountSeed) external {
-        usdc.mint(address(vault), 1 + amountSeed % 1_000_000);
+    function fund(uint256 amountSeed) public {
+        uint256 amount = 1 + amountSeed % 1_000_000;
+        usdc.mint(address(this), amount);
+        require(usdc.transfer(address(vault), amount), "fund transfer failed");
+        funded += amount;
     }
 
     function freezeOwner() public {
@@ -128,7 +144,7 @@ contract VaultHandler {
     function withdraw(uint256 amountSeed) external {
         if (vault.active()) freezeOwner();
         uint256 balance = usdc.balanceOf(address(vault));
-        if (balance == 0) { usdc.mint(address(vault), 1); balance = 1; }
+        if (balance == 0) { fund(0); balance = 1; }
         uint256 amount = 1 + amountSeed % balance;
         ArcMandateDigest.Authorization memory auth = ArcMandateDigest.Authorization(
             vault.controlNonce(), vault.sessionId(), block.timestamp + 600
@@ -136,6 +152,8 @@ contract VaultHandler {
         pq.configure(vault.withdrawDigest(OWNER, amount, auth), PQ_KEY, 0);
         VM.prank(OWNER);
         vault.withdraw(OWNER, amount, auth, _signature());
+        cumulativeWithdrawn += amount;
+        ++successfulWithdrawals;
     }
 
     function stalePay() external {
@@ -151,6 +169,75 @@ contract VaultHandler {
 
     function advanceTime(uint256 secondsSeed) external {
         VM.warp(block.timestamp + 1 + secondsSeed % 7_200);
+    }
+    function _rejectPay(address caller, uint256 session, bytes32 id, address to, uint256 amount, bytes4 selector) private {
+        uint256 spentBefore = vault.spent();
+        uint256 nonceBefore = vault.controlNonce();
+        uint256 balanceBefore = usdc.balanceOf(address(vault));
+        bool usedBefore = vault.usedPaymentIds(session, id);
+        VM.prank(caller);
+        VM.expectRevert(selector);
+        vault.agentPay(session, id, to, amount);
+        require(vault.spent() == spentBefore && vault.controlNonce() == nonceBefore && usdc.balanceOf(address(vault)) == balanceBefore && vault.usedPaymentIds(session, id) == usedBefore, "invalid payment changed state");
+    }
+    function adversarialPayments(uint256 seed) external {
+        _ensureSpendable();
+        uint256 id = vault.sessionId();
+        bytes32 paymentId = bytes32(++paymentCounter);
+        _rejectPay(OWNER, id, paymentId, RECIPIENT, 1, ArcMandateVault.Unauthorized.selector);
+        _rejectPay(AGENT, id, paymentId, address(uint160(0xD00 + seed % 100)), 1, ArcMandateVault.RecipientNotAllowed.selector);
+        _rejectPay(AGENT, id, paymentId, RECIPIENT, 0, ArcMandateVault.InvalidAmount.selector);
+        _rejectPay(AGENT, id, paymentId, RECIPIENT, vault.perTxCap() + 1 + seed % 100, ArcMandateVault.PerPaymentLimitExceeded.selector);
+        _rejectPay(AGENT, id, bytes32(0), RECIPIENT, 1, ArcMandateVault.InvalidPaymentId.selector);
+        // Deliberately narrow remaining budget without changing the payment cap.
+        start(9, 9, seed);
+        fund(10);
+        id = vault.sessionId();
+        VM.prank(AGENT);
+        vault.agentPay(id, paymentId, RECIPIENT, 9);
+        currentSessionPaid += 9; cumulativePaid += 9; ++successfulPayments;
+        _rejectPay(AGENT, id, bytes32(++paymentCounter), RECIPIENT, 2, ArcMandateVault.BudgetExceeded.selector);
+        // Duplicate check occurs only when budget remains; start a fresh funded session.
+        start(99, 49, seed);
+        id = vault.sessionId(); paymentId = bytes32(++paymentCounter);
+        VM.prank(AGENT);
+        vault.agentPay(id, paymentId, RECIPIENT, 1);
+        currentSessionPaid += 1; cumulativePaid += 1; ++successfulPayments;
+        _rejectPay(AGENT, id, paymentId, RECIPIENT, 1, ArcMandateVault.PaymentAlreadyUsed.selector);
+        // Drain via an authorized withdrawal, then probe absent balance without auto-mint.
+        freezeOwner();
+        uint256 amount = usdc.balanceOf(address(vault));
+        ArcMandateDigest.Authorization memory auth = ArcMandateDigest.Authorization(vault.controlNonce(), vault.sessionId(), block.timestamp + 600);
+        pq.configure(vault.withdrawDigest(OWNER, amount, auth), PQ_KEY, 0);
+        VM.prank(OWNER); vault.withdraw(OWNER, amount, auth, _signature());
+        cumulativeWithdrawn += amount; ++successfulWithdrawals;
+        start(99, 49, seed);
+        _rejectPay(AGENT, vault.sessionId(), bytes32(++paymentCounter), RECIPIENT, 1, ArcMandateVault.InsufficientBalance.selector);
+        ++insufficientBalanceChecks; ++adversarialChecks;
+    }
+    function invalidAuthorizationAndWithdrawalRollback(uint256 seed) external {
+        if (vault.active()) freezeOwner();
+        fund(seed);
+        ArcMandateDigest.Authorization memory auth = ArcMandateDigest.Authorization(vault.controlNonce(), vault.sessionId(), block.timestamp + 600);
+        uint256 nonce = auth.nonce;
+        pq.configure(vault.withdrawDigest(OWNER, 1, auth), PQ_KEY, 0);
+        auth.nonce++;
+        VM.prank(OWNER); VM.expectRevert(ArcMandateVault.InvalidNonce.selector);
+        vault.withdraw(OWNER, 1, auth, _signature());
+        auth.nonce = nonce; auth.sessionId++;
+        VM.prank(OWNER); VM.expectRevert(ArcMandateVault.SessionMismatch.selector);
+        vault.withdraw(OWNER, 1, auth, _signature());
+        auth.sessionId--; auth.deadline = block.timestamp;
+        VM.prank(OWNER); VM.expectRevert(ArcMandateVault.AuthorizationExpired.selector);
+        vault.withdraw(OWNER, 1, auth, _signature());
+        auth.deadline = block.timestamp + 600;
+        uint256 beforeBalance = usdc.balanceOf(address(vault));
+        usdc.setFailTransfers(true);
+        VM.prank(OWNER); VM.expectRevert();
+        vault.withdraw(OWNER, 1, auth, _signature());
+        usdc.setFailTransfers(false);
+        require(vault.controlNonce() == nonce && usdc.balanceOf(address(vault)) == beforeBalance, "withdraw rollback accounting");
+        ++invalidAuthChecks; ++withdrawalRollbackChecks;
     }
 }
 
@@ -201,6 +288,10 @@ contract ArcMandateInvariantTest {
     function excludeSelectors() public pure returns (FuzzSelector[] memory) { return new FuzzSelector[](0); }
 
     function invariant_SessionBudgetAndTransferAccounting() public view {
+        require(vault.controlNonce() == handler.successfulStarts() + handler.successfulFreezes() + handler.successfulWithdrawals(), "control nonce accounting");
+        require(vault.sessionId() == handler.successfulStarts() + handler.successfulFreezes(), "session accounting");
+        require(usdc.balanceOf(address(vault)) == handler.initialBalance() + handler.funded() - handler.cumulativePaid() - handler.cumulativeWithdrawn(), "vault conservation");
+        require(usdc.balanceOf(OWNER) == handler.cumulativeWithdrawn(), "withdrawal conservation");
         require(usdc.balanceOf(RECIPIENT) == handler.cumulativePaid(), "recipient and successful payments diverged");
         if (vault.active()) {
             require(vault.spent() <= vault.totalBudget(), "session budget exceeded");
@@ -219,5 +310,6 @@ contract ArcMandateInvariantTest {
             "campaign missed successful start/payment");
         require(handler.successfulFreezes() > 0 && handler.failedTransferChecks() > 0
             && handler.staleRejections() > 0, "campaign missed freeze/rollback/stale paths");
+        require(handler.successfulWithdrawals() > 0 && handler.adversarialChecks() > 0 && handler.insufficientBalanceChecks() > 0 && handler.invalidAuthChecks() > 0 && handler.withdrawalRollbackChecks() > 0, "campaign missed adversarial/withdrawal paths");
     }
 }

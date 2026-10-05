@@ -66,4 +66,21 @@ describe('wallet transaction lifecycle', () => {
     await submitTransaction(rpc, input, quote, (state) => { last = state; });
     expect(rpc.send).not.toHaveBeenCalled();
   });
+  it('does not confirm a successful cancellation or different-calldata replacement (R02)', async () => {
+    const rpc = port(); let last: TransactionState | undefined;
+    const replacement = `0x${'cd'.repeat(32)}` as Hex;
+    rpc.receipt = async () => ({ status: 'success', blockNumber: 123n, transactionHash: replacement, intentMatches: false, replacementReason: 'cancelled' });
+    expect(await trackReceipt(rpc, hash, (state) => { last = state; })).toBeUndefined();
+    expect(last?.stage).toBe('cancelled'); expect(last?.hash).toBe(replacement);
+  });
+  it('uses the actual repriced hash and requires expected effects (R02)', async () => {
+    const rpc = port(); let last: TransactionState | undefined;
+    const replacement = `0x${'cd'.repeat(32)}` as Hex;
+    rpc.receipt = async () => ({ status: 'success', blockNumber: 123n, transactionHash: replacement, intentMatches: true, effectVerified: true });
+    await trackReceipt(rpc, hash, (state) => { last = state; });
+    expect(last?.stage).toBe('confirmed'); expect(last?.hash).toBe(replacement);
+    rpc.receipt = async () => ({ status: 'success', blockNumber: 123n, intentMatches: true, effectVerified: false });
+    await trackReceipt(rpc, hash, (state) => { last = state; });
+    expect(last?.stage).toBe('unknown');
+  });
 });

@@ -2,7 +2,9 @@ import { BaseError, ExecutionRevertedError, createPublicClient, decodeErrorResul
 import { ARC_NETWORKS, PQ_VERIFIER_ADDRESS, USDC_ADDRESS } from '@arcmandate/core';
 import { vaultAbi } from '@arcmandate/core/contracts';
 import type { Policy } from '@arcmandate/core/digest';
+import { matchesVaultRuntime } from '@arcmandate/core/runtime';
 import { SimulationRejected, type TransactionInput } from './transactions';
+import { publicRpcUrl } from './rpc-config';
 
 export type Network = keyof typeof ARC_NETWORKS;
 export const DEMO_VAULT = '0x91e4467997d28ad3443f910261f4d65b4c867bbd' as const;
@@ -16,13 +18,14 @@ export function arcChain(network: Network) {
   return defineChain({
     id: config.chainId, name: network === 'testnet' ? 'Arc Testnet' : 'Arc',
     nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 },
-    rpcUrls: { default: { http: [config.rpcUrl] } },
+    rpcUrls: { default: { http: [publicRpcUrl(network, import.meta.env)] } },
     blockExplorers: { default: { name: 'Arc Explorer', url: config.explorerUrl } },
   });
 }
 
 export function arcClient(network: Network) {
-  return createPublicClient({ chain: arcChain(network), transport: http(ARC_NETWORKS[network].rpcUrl, { timeout: 20_000, retryCount: 1 }) });
+  const chain = arcChain(network);
+  return createPublicClient({ chain, transport: http(chain.rpcUrls.default.http[0], { timeout: 20_000, retryCount: 1 }) });
 }
 
 export type ArcClient = ReturnType<typeof arcClient>;
@@ -30,6 +33,7 @@ export type VaultSnapshot = {
   address: Address; owner: Address; publicKey: Hex; sessionId: bigint; nonce: bigint;
   active: boolean; policy: Policy; spent: bigint; balance: bigint;
   blockNumber: bigint; timestamp: bigint;
+  trusted: boolean;
 };
 
 export async function readVault(client: ArcClient, address: Address, blockNumber?: bigint): Promise<VaultSnapshot> {
@@ -51,10 +55,12 @@ export async function readVault(client: ArcClient, address: Address, blockNumber
   if (getAddress(token) !== getAddress(USDC_ADDRESS) || getAddress(verifier) !== getAddress(PQ_VERIFIER_ADDRESS)) {
     throw new Error('This contract does not use the expected Arc USDC and PQ verifier');
   }
+  const code = await client.getBytecode({ address, blockNumber: block.number });
   return {
     address, owner, publicKey, sessionId, nonce, active,
     policy: { ...policy, recipients: [...policy.recipients] }, spent, balance,
     blockNumber: block.number, timestamp: block.timestamp,
+    trusted: matchesVaultRuntime(code, owner, publicKey),
   };
 }
 

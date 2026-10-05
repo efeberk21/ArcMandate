@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { loadEnvFile } from 'node:process';
 import {
   createPublicClient, createWalletClient, defineChain, encodeFunctionData, getAddress, http,
-  keccak256, parseAbi, parseAbiItem, parseUnits, type Hex,
+  keccak256, parseAbi, parseAbiItem, parseTransaction, parseUnits, type Hex,
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { ARC_NETWORKS } from '../packages/core/src/config.js';
@@ -64,6 +64,8 @@ async function main(): Promise<void> {
   const journalDirectory = optionalOption('journal-dir') ?? 'private/agent-journal';
   const path = journalPath(journalDirectory, requestId);
   const port: PaymentPort = {
+    account: agent.address,
+    async nonceConsumed(journal) { return await publicClient.getTransactionCount({ address: agent.address, blockTag: 'latest' }) > parseTransaction(journal.signedTx!).nonce!; },
     async sign(intent: PaymentIntent) {
       const [active, currentSession, currentAgent] = await Promise.all([
         publicClient.readContract({ address: vault, abi, functionName: 'active' }),
@@ -105,11 +107,12 @@ async function main(): Promise<void> {
     },
     async broadcast(signedTx) { await wallet.sendRawTransaction({ serializedTransaction: signedTx }); },
   };
-  const result = await runPayment(journalDirectory, intended, port);
+  const result = await runPayment(journalDirectory, intended, port, { reconcileOnly: process.argv.includes('--reconcile'), retryConsumed: process.argv.includes('--retry-consumed') });
   console.log(JSON.stringify({ status: result.status, requestId, paymentId: result.journal.paymentId,
     txHash: result.journal.txHash, blockNumber: result.journal.receipt?.blockNumber, journal: path }, null, 2));
   if (result.status === 'reverted') process.exitCode = 2;
   if (result.status === 'pending' || result.status === 'used') process.exitCode = 3;
+  if (result.status === 'nonce-consumed') process.exitCode = 4;
 }
 
 main().catch((error: unknown) => {
