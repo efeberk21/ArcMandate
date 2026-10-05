@@ -4,7 +4,8 @@ import { ContextChanged } from './wallet';
 export type TransactionInput = { from: Address; to?: Address; data: Hex };
 export class SimulationRejected extends Error {}
 export type Quote = { gas: bigint; gasPrice: bigint };
-export type Receipt = { status: 'success' | 'reverted'; blockNumber: bigint; contractAddress?: Address | null };
+export type Receipt = { status: 'success' | 'reverted'; blockNumber: bigint; contractAddress?: Address | null;
+  transactionHash?: Hex; intentMatches?: boolean; replacementReason?: string; effectVerified?: boolean };
 export type TransactionState = {
   stage: 'idle' | 'preparing' | 'review' | 'signing' | 'simulating' | 'ready' | 'wallet' | 'submitted'
     | 'confirmed' | 'simulation-rejected' | 'wallet-rejected' | 'reverted' | 'unknown' | 'cancelled';
@@ -52,15 +53,22 @@ export async function prepareTransaction(port: TransactionPort, input: Transacti
 }
 
 export async function trackReceipt(port: Pick<TransactionPort, 'receipt'>, hash: Hex, emit: (state: TransactionState) => void): Promise<Receipt | undefined> {
+  let actualHash = hash;
   try {
     const receipt = await port.receipt(hash);
-    emit({ stage: receipt.status === 'success' ? 'confirmed' : 'reverted', hash,
+    actualHash = receipt.transactionHash ?? hash;
+    if (receipt.intentMatches === false) {
+      emit({ stage: 'cancelled', hash: actualHash, message: `Original action was replaced or cancelled (${receipt.replacementReason ?? 'different intent'}).` });
+      return;
+    }
+    if (receipt.status === 'success' && receipt.effectVerified === false) throw new Error('Receipt mined, but the expected action effect could not be verified');
+    emit({ stage: receipt.status === 'success' ? 'confirmed' : 'reverted', hash: actualHash,
       message: receipt.status === 'success' ? `Confirmed in block ${receipt.blockNumber}.` : `Transaction reverted in block ${receipt.blockNumber}.` });
     return receipt;
-  } catch (error) { fail(error, emit, hash); }
+  } catch (error) { fail(error, emit, actualHash); }
 }
 
-export async function submitTransaction(port: TransactionPort, input: TransactionInput, quote: Quote, emit: (state: TransactionState) => void): Promise<Receipt | undefined> {
+export async function broadcastTransaction(port: TransactionPort, input: TransactionInput, quote: Quote, emit: (state: TransactionState) => void): Promise<Hex | undefined> {
   let hash: Hex;
   let wallet = false;
   try {
@@ -73,5 +81,10 @@ export async function submitTransaction(port: TransactionPort, input: Transactio
     hash = await port.send(input, quote.gas);
   } catch (error) { fail(error, emit, undefined, wallet); return; }
   emit({ stage: 'submitted', hash, message: 'Submitted. Waiting for the transaction receipt…' });
-  return trackReceipt(port, hash, emit);
+  return hash;
+}
+
+export async function submitTransaction(port: TransactionPort, input: TransactionInput, quote: Quote, emit: (state: TransactionState) => void): Promise<Receipt | undefined> {
+  const hash = await broadcastTransaction(port, input, quote, emit);
+  if (hash) return trackReceipt(port, hash, emit);
 }

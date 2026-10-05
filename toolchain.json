@@ -1,0 +1,12 @@
+{
+  "supportedDevelopmentNode": ">=22.12.0",
+  "release": {
+    "node": "25.5.0",
+    "npm": "11.8.0",
+    "forgeVersion": "1.5.1",
+    "forgeCommit": "b0a9dd9ceda36f63e2326ce530c10e6916f4b8a2",
+    "solc": "0.8.28",
+    "evmVersion": "paris",
+    "optimizerRuns": 200
+  }
+}

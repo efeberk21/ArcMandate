@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { loadEnvFile } from 'node:process';
 import { slh_dsa_sha2_128s } from '@noble/post-quantum/slh-dsa.js';
@@ -9,6 +9,7 @@ import {
   decodeErrorResult,
   defineChain,
   encodeFunctionData,
+  encodeDeployData,
   formatEther,
   formatUnits,
   hexToBytes,
@@ -17,11 +18,14 @@ import {
   parseAbi,
   parseAbiItem,
   parseEther,
+  parseTransaction,
   toHex,
   type Abi,
   type Address,
   type Hex,
   type TransactionReceipt,
+  type Account,
+  type WalletClient,
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { ARC_NETWORKS, USDC_ADDRESS } from '../packages/core/src/config.js';
@@ -33,6 +37,11 @@ import {
   type Policy,
 } from '../packages/core/src/digest.js';
 import { runPayment, type PaymentIntent, type PaymentPort } from './agent-journal.js';
+import { atomicJson, withOsLock } from './durable.js';
+import { runManagementStep } from './management-journal.js';
+import { sourceProvenance, type Provenance } from './provenance.mjs';
+import { matchesVaultRuntime } from '../packages/core/src/runtime.js';
+import { freshAuthorization } from './demo-authorization.js';
 
 // This script uses disposable local accounts and the Arc testnet only.
 if (existsSync('.env')) loadEnvFile('.env');
@@ -88,6 +97,8 @@ type Manifest = {
   createdAt: string;
   status: 'in_progress' | 'complete';
   steps: Evidence[];
+  provenance?: Provenance;
+  owner?: Address; pqPublicKey?: Hex; creationBytecodeHash?: Hex; deploymentBlockHash?: Hex;
 };
 
 function assert(condition: unknown, message: string): asserts condition {
@@ -95,12 +106,12 @@ function assert(condition: unknown, message: string): asserts condition {
 }
 
 function save(manifest: Manifest): void {
-  mkdirSync(dirname(manifestPath), { recursive: true });
-  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  atomicJson(manifestPath, manifest);
 }
 
 function recordReceipt(manifest: Manifest, label: string, receipt: TransactionReceipt): void {
   assert(receipt.status === 'success', `${label} transaction reverted: ${receipt.transactionHash}`);
+  if (manifest.steps.some((step) => step.label === label)) return;
   manifest.steps.push({
     label,
     expectedOutcome: 'success',
@@ -161,7 +172,9 @@ async function main(): Promise<void> {
   const freshManifest: Manifest = {
     schemaVersion: 2,
     chainId: ARC_NETWORKS.testnet.chainId,
-    sourceCommit: process.env.SOURCE_COMMIT ?? 'working-tree',
+    sourceCommit: sourceProvenance().gitCommit,
+    provenance: sourceProvenance(),
+    owner: owner.address, pqPublicKey: keys.pq.publicKey, creationBytecodeHash: keccak256(artifact.bytecode.object),
     compiler: `${metadata.compiler.version}; ${metadata.settings.evmVersion}; optimizer ${JSON.stringify(metadata.settings.optimizer)}`,
     createdAt: new Date().toISOString(),
     status: 'in_progress',
@@ -173,17 +186,30 @@ async function main(): Promise<void> {
   assert(manifest.schemaVersion === 2 && manifest.chainId === chain.id && manifest.sourceCommit === freshManifest.sourceCommit,
     'Existing manifest has a different schema, source or chain; set ARC_DEMO_MANIFEST_PATH for a new run');
   assert(manifest.status === 'in_progress', 'This demo has already completed');
+  if (manifest.provenance && manifest.provenance.sourceTreeSha256 !== freshManifest.provenance!.sourceTreeSha256) throw new Error('Demo source tree changed; review the existing journal before resuming');
   const prior = (label: string): Evidence | undefined => manifest.steps.find((step) => step.label === label);
   const ownerClient = createWalletClient({ account: owner, chain, transport: http(rpcUrl, { timeout: 60_000 }) });
   const agentClient = createWalletClient({ account: agent, chain, transport: http(rpcUrl, { timeout: 60_000 }) });
   const relayClient = createWalletClient({ account: relay, chain, transport: http(rpcUrl, { timeout: 60_000 }) });
   const receipt = (hash: Hex) => publicClient.waitForTransactionReceipt({ hash, timeout: 180_000, pollingInterval: 1_000 });
-  const transact = async (label: string, send: () => Promise<Hex>): Promise<void> => {
+  const transact = async (label: string, wallet: WalletClient, account: Account, prepare: () => Promise<{ to?: Address; data?: Hex; value?: bigint }>): Promise<TransactionReceipt> => {
     if (prior(label)) {
       console.log(`${label}: already recorded`);
-      return;
+      return receipt(prior(label)!.txHash!);
     }
-    recordReceipt(manifest, label, await receipt(await send()));
+    const journalPath = `private/demo-journal/${keccak256(toHex(manifestPath))}/${label}.json`;
+    const result = await withOsLock(`private/agent-wallet-locks/${chain.id}-${account.address.toLowerCase()}.lock`, () => runManagementStep(journalPath, label, {
+      chainId: chain.id, account: account.address,
+      intentHash: keccak256(toHex(JSON.stringify({ label, chainId: chain.id, owner: owner.address, key: keys.pq.publicKey, vault: manifest.vault ?? null }))),
+      async sign() {
+        const input = await prepare();
+        const request = await wallet.prepareTransactionRequest({ ...input, account, chain });
+        return wallet.signTransaction(request);
+      },
+      async broadcast(raw) { await wallet.sendRawTransaction({ serializedTransaction: raw }); }, receipt,
+    }));
+    recordReceipt(manifest, label, result);
+    return result;
   };
   const lastReceiptBlock = (): bigint => manifest.steps.reduce(
     (latest, step) => step.evidenceType === 'mined_success' && step.blockNumber
@@ -198,37 +224,36 @@ async function main(): Promise<void> {
 
   if (!manifest.vault) {
     assert(balances[0].usdc >= 1_000_000n, 'Owner needs at least 1 ERC20 testnet USDC');
-    const deployment = await receipt(await ownerClient.deployContract({
-      abi: vaultAbi,
-      bytecode: artifact.bytecode.object,
-      args: [owner.address, keys.pq.publicKey],
-    }));
+    const deployment = await transact('deploy-vault', ownerClient, owner, async () => ({ data: encodeDeployData({ abi: vaultAbi, bytecode: artifact.bytecode.object, args: [owner.address, keys.pq.publicKey] }) }));
     assert(deployment.contractAddress, 'Deployment receipt has no contract address');
     manifest.vault = deployment.contractAddress;
     manifest.deploymentBlock = deployment.blockNumber.toString();
     manifest.deploymentTxHash = deployment.transactionHash;
+    manifest.deploymentBlockHash = deployment.blockHash;
     recordReceipt(manifest, 'deploy-vault', deployment);
+    save(manifest);
   }
   const vault = manifest.vault;
   assert(await publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'owner' }) === owner.address, 'Vault owner mismatch');
+  assert(matchesVaultRuntime(await publicClient.getBytecode({ address: vault }), owner.address, keys.pq.publicKey), 'Vault runtime mismatch; refusing funding');
 
-  await transact('fund-vault-1-usdc', () => ownerClient.writeContract({
-    address: USDC_ADDRESS, abi: usdcAbi, functionName: 'transfer', args: [vault, 1_000_000n],
-  }));
+  await transact('fund-vault-1-usdc', ownerClient, owner, async () => ({ to: USDC_ADDRESS, data: encodeFunctionData({ abi: usdcAbi, functionName: 'transfer', args: [vault, 1_000_000n] }) }));
   for (const [label, recipient] of [['fund-agent-gas', agent.address], ['fund-relay-gas', relay.address]] as const) {
-    await transact(label, () => ownerClient.sendTransaction({ to: recipient, value: parseEther('0.2') }));
+    await transact(label, ownerClient, owner, async () => ({ to: recipient, value: parseEther('0.2') }));
   }
 
   const context = { chainId: BigInt(ARC_NETWORKS.testnet.chainId), vault, owner: owner.address };
-  const auth = async (deadlineSeconds = 600): Promise<Authorization> => {
-    const at = lastReceiptBlock();
-    const [nonce, sessionId, block] = await Promise.all([
-      publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'controlNonce', blockNumber: at }) as Promise<bigint>,
-      publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'sessionId', blockNumber: at }) as Promise<bigint>,
-      publicClient.getBlock({ blockNumber: at }),
-    ]);
-    return { nonce, sessionId, deadline: block.timestamp + BigInt(deadlineSeconds) };
-  };
+  const auth = (): Promise<Authorization> => freshAuthorization(lastReceiptBlock(), {
+    head: () => publicClient.getBlockNumber({ cacheTime: 0 }),
+    async state(at) {
+      const [nonce, sessionId, block] = await Promise.all([
+        publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'controlNonce', blockNumber: at }) as Promise<bigint>,
+        publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'sessionId', blockNumber: at }) as Promise<bigint>,
+        publicClient.getBlock({ blockNumber: at }),
+      ]);
+      return { nonce, sessionId, timestamp: block.timestamp };
+    },
+  });
   const policy = async (): Promise<Policy> => ({
     agent: agent.address,
     totalBudget: 150_000n,
@@ -250,11 +275,9 @@ async function main(): Promise<void> {
     const a = await auth();
     const digest = startSessionDigest(context, p, a);
     await verifyDigest('startSessionDigest', [p, a], digest);
-    await transact(label, () => ownerClient.writeContract({
-      address: vault, abi: vaultAbi, functionName: 'startSession', args: [p, a, sign(digest)],
-    }));
+    await transact(label, ownerClient, owner, async () => ({ to: vault, data: encodeFunctionData({ abi: vaultAbi, functionName: 'startSession', args: [p, a, sign(digest)] }) }));
     const id = await publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'sessionId', blockNumber: lastReceiptBlock() }) as bigint;
-    assert(id === a.sessionId + 1n, 'Session ID failed to advance');
+    // A journaled start can already be mined when this run reconstructs fresh authorization.
     assert(id === expectedSession, 'Unexpected demo session ID');
     return id;
   };
@@ -267,6 +290,8 @@ async function main(): Promise<void> {
       to: relay.address, amount: amount.toString(), deploymentBlock: manifest.deploymentBlock!,
     };
     const port: PaymentPort = {
+      account: agent.address,
+      async nonceConsumed(journal) { return await publicClient.getTransactionCount({ address: agent.address, blockTag: 'latest' }) > parseTransaction(journal.signedTx!).nonce!; },
       async sign(intent: PaymentIntent) {
         const data = encodeFunctionData({ abi: vaultAbi, functionName: 'agentPay',
           args: [BigInt(intent.sessionId), intent.paymentId, intent.to, BigInt(intent.amount)] });
@@ -284,13 +309,13 @@ async function main(): Promise<void> {
         }
       },
       used(intent) {
-        return publicClient.readContract({ address: vault, abi: vaultAbi, functionName: 'usedPaymentIds',
+        return publicClient.readContract({ address: intent.vault, abi: vaultAbi, functionName: 'usedPaymentIds',
           args: [BigInt(intent.sessionId), intent.paymentId] }) as Promise<boolean>;
       },
       async paymentEvent(intent) {
         const latest = await publicClient.getBlockNumber();
         for (let from = BigInt(intent.deploymentBlock); from <= latest; from += 10_000n) {
-          const logs = await publicClient.getLogs({ address: vault, event: paidEvent,
+          const logs = await publicClient.getLogs({ address: intent.vault, event: paidEvent,
             args: { sessionId: BigInt(intent.sessionId), paymentId: intent.paymentId, to: intent.to },
             fromBlock: from, toBlock: from + 9_999n < latest ? from + 9_999n : latest });
           const match = logs.find((log) => log.args.amount === BigInt(intent.amount));
@@ -301,7 +326,7 @@ async function main(): Promise<void> {
       async broadcast(signedTx) { await agentClient.sendRawTransaction({ serializedTransaction: signedTx }); },
     };
     const result = await runPayment(journalDirectory, intended, port);
-    assert(result.status !== 'reverted' && result.status !== 'used', `${label}: payment ${result.status}; inspect private journal`);
+    assert(!['reverted','used','nonce-consumed'].includes(result.status), `${label}: payment ${result.status}; inspect private journal`);
     assert(result.journal.txHash, `${label}: no transaction hash available`);
     recordReceipt(manifest, label, await receipt(result.journal.txHash));
   };
@@ -331,24 +356,24 @@ async function main(): Promise<void> {
   const freezeAuth = await auth();
   const freezeHash = freezeDigest(context, freezeAuth);
   await verifyDigest('freezeDigest', [freezeAuth], freezeHash);
-  await transact('pq-freeze-s', () => relayClient.writeContract({
-    address: vault, abi: vaultAbi, functionName: 'freezeByPQ', args: [freezeAuth, sign(freezeHash)],
-  }));
+  await transact('pq-freeze-s', relayClient, relay, async () => ({ to: vault, data: encodeFunctionData({ abi: vaultAbi, functionName: 'freezeByPQ', args: [freezeAuth, sign(freezeHash)] }) }));
   await rejectPay('old-session-after-freeze', firstSession, 50_000n, 'SessionInactive');
   const secondSession = await start('start-session-s2-same-agent');
   await rejectPay('old-session-after-restart', firstSession, 50_000n, 'SessionMismatch');
   await pay('agent-pay-s2-0.05', secondSession);
-  await transact('owner-freeze-s2', () => ownerClient.writeContract({
-    address: vault, abi: vaultAbi, functionName: 'freezeByOwner', args: [secondSession],
-  }));
-  const remaining = await publicClient.readContract({ address: USDC_ADDRESS, abi: usdcAbi, functionName: 'balanceOf', args: [vault], blockNumber: lastReceiptBlock() }) as bigint;
-  assert(remaining === 900_000n, `Expected 0.9 USDC in vault, got ${remaining}`);
-  const withdrawAuth = await auth();
-  const withdrawHash = withdrawDigest(context, owner.address, remaining, withdrawAuth);
-  await verifyDigest('withdrawDigest', [owner.address, remaining, withdrawAuth], withdrawHash);
-  await transact('hybrid-withdraw-remaining', () => ownerClient.writeContract({
-    address: vault, abi: vaultAbi, functionName: 'withdraw', args: [owner.address, remaining, withdrawAuth, sign(withdrawHash)],
-  }));
+  await transact('owner-freeze-s2', ownerClient, owner, async () => ({ to: vault, data: encodeFunctionData({ abi: vaultAbi, functionName: 'freezeByOwner', args: [secondSession] }) }));
+  if (!prior('hybrid-withdraw-remaining')) {
+    // If withdrawal already mined but its manifest write crashed, reuse its raw journal
+    // before checking the pre-withdrawal balance or creating a fresh authorization.
+    await transact('hybrid-withdraw-remaining', ownerClient, owner, async () => {
+      const remaining = await publicClient.readContract({ address: USDC_ADDRESS, abi: usdcAbi, functionName: 'balanceOf', args: [vault], blockNumber: lastReceiptBlock() }) as bigint;
+      assert(remaining === 900_000n, `Expected 0.9 USDC in vault, got ${remaining}`);
+      const withdrawAuth = await auth();
+      const withdrawHash = withdrawDigest(context, owner.address, remaining, withdrawAuth);
+      await verifyDigest('withdrawDigest', [owner.address, remaining, withdrawAuth], withdrawHash);
+      return { to: vault, data: encodeFunctionData({ abi: vaultAbi, functionName: 'withdraw', args: [owner.address, remaining, withdrawAuth, sign(withdrawHash)] }) };
+    });
+  }
   assert(await publicClient.readContract({ address: USDC_ADDRESS, abi: usdcAbi, functionName: 'balanceOf', args: [vault], blockNumber: lastReceiptBlock() }) === 0n, 'Vault balance remains after withdrawal');
   assert(await publicClient.readContract({ address: USDC_ADDRESS, abi: usdcAbi, functionName: 'balanceOf', args: [relay.address], blockNumber: lastReceiptBlock() }) >= 100_000n, 'Agent payments mismatch');
   manifest.status = 'complete';
@@ -356,7 +381,9 @@ async function main(): Promise<void> {
   console.log(`Arc testnet P2 demo complete: ${vault}; evidence: ${manifestPath}`);
 }
 
-main().catch((error: unknown) => {
+const run = process.argv.includes('--balances') ? main()
+  : withOsLock(`private/demo-journal/${keccak256(toHex(manifestPath))}/run.lock`, main);
+run.catch((error: unknown) => {
   console.error(error instanceof BaseError ? error.shortMessage : error instanceof Error ? error.message : String(error));
   process.exitCode = 1;
 });

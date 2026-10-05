@@ -6,21 +6,21 @@ import { addressInput, buildPolicy, usdcInput } from '@arcmandate/core/policy';
 import { freezeDigest, startSessionDigest, withdrawDigest, type Policy } from '@arcmandate/core/digest';
 import manifest from '../../../deployments/arc-testnet.json';
 import { KeyPanel } from './components/KeyPanel';
+import { RecentEvents } from './components/RecentEvents';
 import { SessionPlate, StatusBadge, TechnicalIcon } from './components/SessionPlate';
 import { arcClient, DEMO_VAULT, readVault, simulate, usdcAbi, type ArcClient, type Network, type VaultSnapshot } from './lib/chain';
 import { assertWallet, ContextChanged, sendWalletTransaction, switchNetwork, walletContext } from './lib/wallet';
-import { errorMessage, prepareTransaction, submitTransaction, trackReceipt, type Quote, type Receipt, type TransactionInput, type TransactionPort, type TransactionState } from './lib/transactions';
+import { broadcastTransaction, errorMessage, prepareTransaction, trackReceipt, type Quote, type Receipt, type TransactionInput, type TransactionPort, type TransactionState } from './lib/transactions';
+import { canSubmitOperation, loadOperations, operationFromInput, operationReceipt, saveOperation, unresolvedOperation, type Action, type Operation } from './lib/operations';
 import { usePqKey } from './lib/use-pq-key';
 import type { SigningIntent } from './worker/pq.worker';
 
-type Action = 'deploy' | 'fund' | 'start' | 'owner-freeze' | 'pq-freeze' | 'withdraw';
 type Review = {
   action: Action; title: string; network: Network; account: Address; epoch: number;
   snapshot?: VaultSnapshot; intent?: SigningIntent; input?: TransactionInput;
   publicKey?: Hex; amount?: bigint; to?: Address; policy?: Policy;
 };
 type Ready = { review: Review; input: TransactionInput; quote: Quote; port: TransactionPort };
-type Tracked = { review: Review; port: TransactionPort; hash?: Hex };
 const usd = (value: bigint) => `${formatUnits(value, 6)} USDC`;
 const date = (timestamp: bigint) => new Date(Number(timestamp) * 1000).toLocaleString();
 const initialUrl = new URL(window.location.href);
@@ -51,6 +51,10 @@ export default function App() {
   const [walletBalance, setWalletBalance] = useState<bigint | null>(null);
   const [walletError, setWalletError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [operations, setOperations] = useState<Operation[]>([]);
+  const [historyError, setHistoryError] = useState('');
+  const [signingMs, setSigningMs] = useState<number | null>(null);
+  const [signingElapsed, setSigningElapsed] = useState(0);
   const [review, setReview] = useState<Review | null>(null);
   const [ready, setReady] = useState<Ready | null>(null);
   const [transaction, setTransaction] = useState<TransactionState>({ stage: 'idle', message: 'Review an action to begin.' });
@@ -66,17 +70,63 @@ export default function App() {
   const readEpoch = useRef(0);
   const connected = useRef(false);
   const running = useRef(false);
-  const tracked = useRef<Tracked | null>(null);
   const selection = useRef({ network, vault });
   selection.current = { network, vault };
   const minBlock = useRef(new Map<string, bigint>());
+  const activeOperation = useRef<string | null>(null);
+  const checking = useRef(new Set<string>());
+  const refreshLatest = useRef<(at?: bigint) => Promise<void>>(async () => {});
+
+  function recordOperation(op: Operation) {
+    try { setOperations(saveOperation(op)); }
+    catch (error) { setHistoryError(errorMessage(error)); throw error; }
+  }
+  async function reconcileOperation(op: Operation, item?: Review) {
+    if (!op.hash || checking.current.has(op.id)) return;
+    checking.current.add(op.id);
+    try {
+      const receipt = await trackReceipt({ receipt: (hash) => operationReceipt(arcClient(op.network), op, hash) }, op.hash, (state) => {
+        op = { ...op, stage: state.stage, hash: state.hash ?? op.hash, message: state.message };
+        recordOperation(op);
+        if (activeOperation.current === op.id) { setTransaction(state); setTransactionNetwork(op.network); }
+      });
+      if (receipt && item) await afterReceipt(item, receipt);
+      if (receipt) recordOperation({ ...op, blockNumber: receipt.blockNumber.toString(), deployedVault: receipt.contractAddress ?? undefined });
+      if (receipt && selection.current.network === op.network && selection.current.vault === op.vault) await refreshLatest.current(receipt.blockNumber);
+    } catch (error) { setHistoryError(errorMessage(error)); }
+    finally { checking.current.delete(op.id); }
+  }
+  useEffect(() => {
+    try {
+      const saved = loadOperations(); setOperations(saved);
+      for (const op of saved) {
+        const address = op.deployedVault ?? op.vault;
+        if (address && op.blockNumber && /^[0-9]+$/.test(op.blockNumber)) {
+          const key = `${op.network}:${address}`;
+          const prior = minBlock.current.get(key) ?? 0n;
+          if (BigInt(op.blockNumber) > prior) minBlock.current.set(key, BigInt(op.blockNumber));
+        }
+      }
+      for (const op of saved.filter(unresolvedOperation)) void reconcileOperation(op);
+    } catch (error) { setHistoryError(errorMessage(error)); }
+    const sync = () => { try { setOperations(loadOperations()); } catch (error) { setHistoryError(errorMessage(error)); } };
+    window.addEventListener('storage', sync);
+    return () => window.removeEventListener('storage', sync);
+  }, []);
 
   const invalidate = useCallback(() => {
     epoch.current++;
+    setSigningMs(null);
     setReview(null); setReady(null);
     setTransaction((state) => ['preparing', 'review', 'signing', 'simulating', 'ready'].includes(state.stage)
       ? { stage: 'cancelled', message: 'The form or context changed. Review the action again.' } : state);
   }, []);
+  useEffect(() => {
+    if (transaction.stage !== 'signing') return;
+    const start = performance.now(); setSigningElapsed(0);
+    const timer = setInterval(() => setSigningElapsed(performance.now() - start), 250);
+    return () => clearInterval(timer);
+  }, [transaction.stage]);
   useEffect(() => { invalidate(); pq.lock(); }, [network, vault, account, walletChain, mode, invalidate, pq.lock]);
 
   const refresh = useCallback(async (at?: bigint) => {
@@ -94,6 +144,7 @@ export default function App() {
       if (ticket === readEpoch.current) { setReadError(errorMessage(error)); setSnapshot(null); }
     } finally { if (ticket === readEpoch.current) setReading(false); }
   }, [client, network, vault]);
+  refreshLatest.current = refresh;
 
   useEffect(() => {
     setSnapshot(null); setReadError('');
@@ -159,7 +210,8 @@ export default function App() {
   }
 
   function prepare(action: Action) {
-    if (running.current || (transaction.stage === 'unknown' && (transaction.hash || transaction.walletRequested))) return;
+    if (running.current || historyError || !account || !canSubmitOperation(action, network, account, vault ?? undefined, loadOperations())) return;
+    activeOperation.current = null;
     invalidate();
     const ticket = epoch.current;
     void exclusive(async () => {
@@ -178,6 +230,7 @@ export default function App() {
         result.input = { from: account, data: encodeDeployData({ abi: vaultAbi, bytecode: vaultBytecode, args: [account, pq.publicKey] }) };
       } else {
         if (!next) throw new Error('Open a vault first');
+        if (!next.trusted) throw new Error('Vault runtime identity is unverified. Management and funding are disabled.');
         if (action !== 'pq-freeze' && action !== 'fund' && getAddress(next.owner) !== account) throw new Error('This action requires the vault owner wallet');
         if (action !== 'owner-freeze' && (pq.phase !== 'restored' || pq.publicKey?.toLowerCase() !== next.publicKey.toLowerCase())) throw new Error('Restore a backup matching this vault’s PQ key');
         const context = { chainId: BigInt(ARC_NETWORKS[network].chainId), vault: next.address, owner: next.owner };
@@ -213,8 +266,10 @@ export default function App() {
         if (item.epoch !== epoch.current || !provider) throw new ContextChanged('The form, key, wallet, network or vault changed. Review again.');
         await assertWallet(provider, item.account, ARC_NETWORKS[item.network].chainId);
         if (await rpc.getChainId() !== ARC_NETWORKS[item.network].chainId) throw new ContextChanged('RPC network mismatch');
-        // Owner/key are immutable and were checked during preparation. Read only
-        // changing authorization fields here, at one block, to limit RPC load.
+        if (item.snapshot) {
+          const identity = await currentVault(rpc, item.snapshot.address, item.network);
+          if (!identity.trusted) throw new ContextChanged('Vault runtime identity changed or is unverified');
+        }
         if (item.snapshot && (item.intent || item.action === 'owner-freeze')) {
           const head = await rpc.getBlockNumber({ cacheTime: 0 });
           const minimum = minBlock.current.get(`${item.network}:${item.snapshot.address}`);
@@ -254,6 +309,7 @@ export default function App() {
         setTransaction({ stage: 'signing', message: 'Signing the reviewed intent with your PQ key…' });
         const signed = await pq.sign(item.intent);
         await port.assertContext();
+        if (item.epoch === epoch.current) setSigningMs(signed.signingMs);
         const intent = item.intent;
         let expected: Hex;
         let onchain: Hex;
@@ -298,28 +354,37 @@ export default function App() {
     if (!ready) return;
     const current = ready;
     setReady(null); setReview(null);
-    tracked.current = { review: current.review, port: current.port };
     void exclusive(async () => {
-      const receipt = await submitTransaction(current.port, current.input, current.quote, (state) => {
-        if (state.hash && tracked.current) tracked.current.hash = state.hash;
-        setTransaction(state);
+      if (!navigator.locks) throw new Error('This browser needs Web Locks support to safely submit wallet operations.');
+      await navigator.locks.request('arcmandate-wallet-submit', { ifAvailable: true }, async (lock) => {
+        if (!lock) throw new Error('Another tab is submitting a wallet action');
+        const item = current.review;
+        if (!canSubmitOperation(item.action, item.network, item.account, item.snapshot?.address, loadOperations())) throw new Error('Reconcile the existing operation first. For an emergency PQ freeze, connect a distinct funded relay wallet.');
+        let op: Operation = { id: crypto.randomUUID(), network: item.network, action: item.action,
+          ...operationFromInput(current.input), vault: item.snapshot?.address, stage: 'wallet', createdAt: new Date().toISOString(),
+          sessionId: item.snapshot?.sessionId.toString(), nonce: item.snapshot?.nonce.toString(), amount: item.amount?.toString(),
+          recipient: item.to, publicKey: item.publicKey };
+        const port = { ...current.port, async send(input: TransactionInput, gas: bigint) {
+          recordOperation(op); // Durable non-secret intent before requesting wallet submission.
+          activeOperation.current = op.id;
+          return current.port.send(input, gas);
+        } };
+        const hash = await broadcastTransaction(port, current.input, current.quote, (state) => {
+          setTransaction(state);
+          if (activeOperation.current === op.id) {
+            op = { ...op, stage: state.stage, hash: state.hash ?? op.hash, message: state.message };
+            recordOperation(op);
+          }
+        });
+        if (hash) void reconcileOperation(op, item);
       });
-      if (receipt) await afterReceipt(current.review, receipt);
     });
   }
 
-  function retryReceipt() {
-    const current = tracked.current;
-    if (!current?.hash) return;
-    void exclusive(async () => {
-      setTransaction({ stage: 'submitted', hash: current.hash, message: 'Checking the submitted transaction receipt…' });
-      const receipt = await trackReceipt(current.port, current.hash!, setTransaction);
-      if (receipt) await afterReceipt(current.review, receipt);
-    });
-  }
-
-  const unresolved = transaction.stage === 'unknown' && (!!transaction.hash || !!transaction.walletRequested);
-  const controlsDisabled = busy || pq.busy || !canManage || unresolved || !!readError || (!snapshot && !!vault);
+  const unresolved = operations.some((op) => op.network === network && unresolvedOperation(op) && (op.account === account || op.vault === vault));
+  const baseDisabled = busy || pq.busy || !canManage || !!historyError || !!readError || (!!vault && !snapshot?.trusted);
+  const controlsDisabled = baseDisabled || unresolved;
+  const freezeDisabled = baseDisabled || !account || !canSubmitOperation('pq-freeze', network, account, vault ?? undefined, operations);
   const transactionTone = ['simulation-rejected', 'wallet-rejected', 'reverted', 'unknown'].includes(transaction.stage) ? 'overload' : transaction.stage === 'confirmed' ? 'verified' : 'neutral';
   return <main>
     <a className="skip-link" href="#vault">Skip to vault</a>
@@ -351,13 +416,15 @@ export default function App() {
         {vault && <button className="secondary" disabled={reading} onClick={() => void refresh()}>Refresh state</button>}</div>
       </div>
       {readError && <p className="error" role="alert">Live state unavailable: {readError}</p>}
+      {historyError && <p className="error" role="alert">Operation history unavailable: {historyError}. Reconcile wallet activity before submitting.</p>}
       {reading && !snapshot && <div className="loading-state" role="status"><TechnicalIcon /><p>Reading vault state…</p><span className="muted">Loading session limits and authorization register.</span></div>}
       {snapshot && <>
+        <p className={snapshot.trusted ? 'muted' : 'warning'}>{snapshot.trusted ? 'Vault runtime and all immutable fields verified.' : 'Unverified contract: read only. Funding and management are disabled.'}</p>
         <div className="vault-serial"><span className="plate-label">Vault</span><a className="mono" href={`${ARC_NETWORKS[network].explorerUrl}/address/${snapshot.address}`} target="_blank" rel="noreferrer">{snapshot.address}</a></div>
         <SessionPlate snapshot={snapshot}
           onManage={mode === 'read' && network === 'testnet' ? () => { invalidate(); pq.lock(); setMode('manage'); } : undefined}
           onLockOut={mode === 'manage' ? () => prepare(ownerConnected ? 'owner-freeze' : 'pq-freeze') : undefined}
-          lockDisabled={controlsDisabled || (!ownerConnected && !matchingKey)} />
+          lockDisabled={freezeDisabled || (!ownerConnected && !matchingKey)} />
       </>}
       {!vault && <div className="empty-state"><TechnicalIcon kind="plate" /><h3>NO VAULT SELECTED</h3><p>{mode === 'manage' ? 'Restore an authorization key below, then deploy a vault.' : 'Enter a vault address above or open the testnet demo.'}</p></div>}
       {network === 'mainnet' && <p>Mainnet management opens after the release checks are complete.</p>}
@@ -373,7 +440,8 @@ export default function App() {
         </section>
         <section className="panel"><h2>Fund with USDC</h2><p>Funding adds balance without changing spending authority. Keep enough USDC in your wallet for network fees.</p><label>Funding amount (USDC)<input inputMode="decimal" value={fundAmount} onChange={(e) => { invalidate(); setFundAmount(e.target.value); }} /></label><button disabled={controlsDisabled || !matchingKey} onClick={() => prepare('fund')}>Review funding</button></section>
         <section className="panel lock-panel"><h2><TechnicalIcon kind="lock" />Lock out</h2><p>Either management key can revoke the session. Transfers ordered before freeze may still execute. Expired or exhausted sessions must also be frozen before withdrawal.</p>
-          <div className="actions"><button className="danger" disabled={controlsDisabled || !ownerConnected || !snapshot?.active} onClick={() => prepare('owner-freeze')}>Review owner lock out</button><button className="danger" disabled={controlsDisabled || !matchingKey || !snapshot?.active} onClick={() => prepare('pq-freeze')}>Review PQ lock out</button></div>
+          <div className="actions"><button className="danger" disabled={freezeDisabled || !ownerConnected || !snapshot?.active} onClick={() => prepare('owner-freeze')}>Review owner lock out</button><button className="danger" disabled={freezeDisabled || !matchingKey || !snapshot?.active} onClick={() => prepare('pq-freeze')}>Review PQ lock out</button></div>
+          {unresolved && <p className="warning">A pending sender nonce can delay freeze. Connect a distinct funded relay wallet, restore the matching PQ backup, then review PQ lock out. Reconcile or cancel the original action in its wallet; funding remains protected against duplicate submission.</p>}
           <p className="muted">PQ freeze can be submitted by a wallet other than the owner.</p>
         </section>
         <section className="panel"><h2>Withdraw</h2><p>Requires the owner wallet, restored PQ key, and an inactive session.</p><div className="fields"><label>Withdrawal recipient<input value={withdrawTo} placeholder={account ?? '0x…'} onChange={(e) => { invalidate(); setWithdrawTo(e.target.value); }} /></label><label>Withdrawal amount (USDC)<input inputMode="decimal" value={withdrawAmount} onChange={(e) => { invalidate(); setWithdrawAmount(e.target.value); }} /></label></div>
@@ -393,14 +461,26 @@ export default function App() {
         </>}
         {ready ? <><p>Estimated network fee with gas buffer: <strong>{formatUnits(ready.quote.gas * ready.quote.gasPrice, 18)} USDC</strong>. Your wallet confirms the final fee.</p><button disabled={busy} onClick={send}>Send wallet transaction</button></>
           : <button disabled={busy || transaction.stage !== 'review'} onClick={approve}>{review.intent ? 'Approve intent and sign with PQ key' : 'Approve and simulate'}</button>}
-        <button className="secondary" onClick={invalidate}>Cancel review</button>
+        <button className="secondary" onClick={() => { invalidate(); if (transaction.stage === 'signing') pq.lock(); }}>Cancel review</button>
       </>}
       <p role="status">{transaction.message}</p>
+      {transaction.stage === 'signing' && signingMs === null && <p>Signing elapsed: {(signingElapsed / 1000).toFixed(1)} seconds.</p>}
+      {signingMs !== null && <p>PQ signing took {(signingMs / 1000).toFixed(2)} seconds.</p>}
       {transaction.hash && <p className="mono"><a target="_blank" rel="noreferrer" href={`${ARC_NETWORKS[transactionNetwork].explorerUrl}/tx/${transaction.hash}`}>View transaction {transaction.hash}</a></p>}
-      {transaction.stage === 'unknown' && transaction.hash && <button disabled={busy} onClick={retryReceipt}>Check receipt again</button>}
-      {transaction.stage === 'unknown' && transaction.walletRequested && !transaction.hash && <><p className="warning">The wallet request may have been submitted. Check your wallet activity before starting another action.</p><button onClick={() => setTransaction({ stage: 'idle', message: 'Wallet activity checked. Review a new action when ready.' })}>I checked wallet activity</button></>}
     </section>}
-    <section className="panel evidence" id="records"><div className="section-heading"><h2><span className="section-index">04</span>Testnet records</h2><StatusBadge label="HISTORICAL" /></div><p>The recorded P2 demo funded the vault with 1 USDC, paid twice, froze both sessions and withdrew 0.9 USDC. The demo vault was emptied. These receipts are historical records of the testnet run.</p>
+    {snapshot && <RecentEvents key={`${network}:${snapshot.address}`} snapshot={snapshot} network={network} deploymentBlock={network === 'testnet' && snapshot.address.toLowerCase() === DEMO_VAULT.toLowerCase() ? BigInt(manifest.deploymentBlock) : (() => { const op = operations.find((op) => op.deployedVault?.toLowerCase() === snapshot.address.toLowerCase() && op.network === network); return op?.blockNumber ? BigInt(op.blockNumber) : undefined; })()} />}
+    <section className="panel" aria-label="Saved wallet operations"><h2>Wallet operations</h2>
+      {operations.filter((op) => op.network === network && (op.vault === vault || op.action === 'deploy')).slice(-30).reverse().map((op) => <div key={op.id}>
+        <p>{op.action} · {op.stage} · {op.createdAt} {op.hash && <a href={`${ARC_NETWORKS[op.network].explorerUrl}/tx/${op.hash}`} target="_blank" rel="noreferrer">Transaction</a>}</p>
+        {op.message && <p>{op.message}</p>}
+        {unresolvedOperation(op) && op.hash && <button onClick={() => void reconcileOperation(op)}>Recheck saved receipt</button>}
+        {unresolvedOperation(op) && !op.hash && <><p className="warning">Check this sender’s wallet activity. Attach the submitted hash, or explicitly attest the wallet never submitted this action.</p>
+          <button onClick={() => { const hash = window.prompt('Submitted transaction hash from wallet activity'); if (hash && /^0x[0-9a-f]{64}$/i.test(hash)) { const next = { ...op, hash: hash as Hex, stage: 'submitted' as const }; recordOperation(next); void reconcileOperation(next); } }}>Attach transaction hash</button>
+          <button className="secondary" onClick={() => { if (window.confirm('I checked this account on this chain and the wallet did not submit this action.')) recordOperation({ ...op, stage: 'cancelled', message: 'User reconciled wallet activity: not submitted.' }); }}>Wallet did not submit</button>
+        </>}
+      </div>)}
+    </section>
+    <section className="panel evidence" id="records"><div className="section-heading"><h2><span className="section-index">04</span>Historical demo records</h2><StatusBadge label="HISTORICAL" /></div><p>The recorded P2 demo funded its own vault with 1 USDC, paid twice, froze both sessions and withdrew 0.9 USDC. The demo vault was emptied. These are historical demo receipts, separate from the selected vault.</p>
       <details><summary>Transaction and simulation log <span className="record-count">{manifest.steps.length} records</span></summary><div className="table-scroll" tabIndex={0} role="region" aria-label="Historical testnet records"><table><thead><tr><th>Step</th><th>Evidence</th><th>Result</th></tr></thead><tbody>{manifest.steps.map((step) => <tr key={step.label}><td>{step.label}</td><td>{step.txHash ? <a href={`${ARC_NETWORKS.testnet.explorerUrl}/tx/${step.txHash}`} target="_blank" rel="noreferrer">Mined receipt</a> : `Simulation at block ${step.block}`}</td><td><span className="log-result">{step.decodedError ?? step.receiptStatus}</span></td></tr>)}</tbody></table></div></details>
     </section>
     <footer><span>ArcMandate / Testnet prototype</span><p>No key recovery or rotation. PQ protects application authorization, not the wallet transaction or the whole network.</p></footer>

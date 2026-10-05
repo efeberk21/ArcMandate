@@ -1,6 +1,7 @@
 // Read-only collector for real receipts submitted from the local smoke page.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import { sourceProvenance } from './provenance.mjs';
 import { createPublicClient, decodeAbiParameters, decodeFunctionData, getAddress, http, keccak256, parseAbi } from 'viem';
 
 const log = JSON.parse(readFileSync('private/web-smoke-transactions.json', 'utf8'));
@@ -49,6 +50,7 @@ const publicKey = await read('pqPublicKey');
 const balance = await rpc.readContract({ address: '0x3600000000000000000000000000000000000000', abi: usdcAbi, functionName: 'balanceOf', args: [vault], blockNumber });
 if (active || balance !== 0n || sessionId !== 4n || controlNonce !== 5n || publicKey !== backup.publicKey) throw new Error('Unexpected final vault state');
 const manifest = { schemaVersion: 1, chainId: 5042002, vault, owner, pqPublicKey: publicKey,
+  provenance: sourceProvenance(),
   deploymentBlock: steps[0].blockNumber, deploymentTxHash: steps[0].txHash,
   sourceCommit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
   sourceTreeDirty: execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' }).trim().length > 0,
@@ -60,5 +62,5 @@ const manifest = { schemaVersion: 1, chainId: 5042002, vault, owner, pqPublicKey
   unitOnlyChecks: ['mined revert UI lifecycle', 'receipt timeout keeps hash and rechecks without resending'],
   finalState: { blockNumber: blockNumber.toString(), active, sessionId: sessionId.toString(), controlNonce: controlNonce.toString(), erc20UsdcBalance: balance.toString() },
   steps };
-writeFileSync('deployments/p4-browser-smoke.json', `${JSON.stringify(manifest, null, 2)}\n`);
+writeFileSync(process.env.ARC_SMOKE_EVIDENCE_PATH ?? 'deployments/browser-smoke-latest.json', `${JSON.stringify(manifest, null, 2)}\n`);
 console.log(`Recorded ${steps.length} successful receipts; ${vault} inactive with zero ERC20 USDC.`);

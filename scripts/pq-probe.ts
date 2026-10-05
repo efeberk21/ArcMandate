@@ -20,10 +20,15 @@ console.log(`Local SLH-DSA-SHA2-128s: valid; key=${publicKey.length} bytes; sign
 
 const badMessage = Uint8Array.from(message);
 badMessage[0] ^= 1;
+const badSignature = Uint8Array.from(signature); badSignature[0] ^= 1;
+const otherKey = slh_dsa_sha2_128s.keygen().publicKey;
 const calls = [
-  { label: 'valid', bytes: message, signature },
-  { label: 'mutated', bytes: badMessage, signature },
-  { label: 'short-signature', bytes: message, signature: signature.subarray(0, signature.length - 1) },
+  { label: 'valid', bytes: message, signature, publicKey },
+  { label: 'mutated', bytes: badMessage, signature, publicKey },
+  { label: 'mutated-signature', bytes: message, signature: badSignature, publicKey },
+  { label: 'other-key', bytes: message, signature, publicKey: otherKey },
+  { label: 'short-signature', bytes: message, signature: signature.subarray(0, signature.length - 1), publicKey },
+  { label: 'long-signature', bytes: message, signature: new Uint8Array([...signature, 0]), publicKey },
 ] as const;
 
 for (const [name, config] of Object.entries(ARC_NETWORKS)) {
@@ -32,8 +37,8 @@ for (const [name, config] of Object.entries(ARC_NETWORKS)) {
   try {
     const chainId = await client.getChainId();
     if (chainId !== config.chainId) throw new Error(`chain ID ${chainId}, expected ${config.chainId}`);
-    for (const { label, bytes, signature: callSignature } of calls) {
-      const data = encodeFunctionData({ abi: verifierAbi, functionName: 'verifySlhDsaSha2128s', args: [toHex(publicKey), toHex(bytes), toHex(callSignature)] });
+    for (const { label, bytes, signature: callSignature, publicKey: callKey } of calls) {
+      const data = encodeFunctionData({ abi: verifierAbi, functionName: 'verifySlhDsaSha2128s', args: [toHex(callKey), toHex(bytes), toHex(callSignature)] });
       try {
         const response = await client.call({ to: PQ_VERIFIER_ADDRESS, data });
         if (!response.data) throw new Error('empty return data');
@@ -42,7 +47,7 @@ for (const [name, config] of Object.entries(ARC_NETWORKS)) {
         if (accepted !== (label === 'valid')) process.exitCode = 1;
       } catch (error) {
         const message = error instanceof BaseError ? error.shortMessage : error instanceof Error ? error.message.split('\n')[0] : String(error);
-        if (label === 'short-signature' && message.includes('Invalid signature length')) {
+        if ((label === 'short-signature' || label === 'long-signature') && message.includes('Invalid signature length')) {
           console.log(`${name} ${label}: reverted (Invalid signature length)`);
         } else {
           console.error(`${name} ${label}: RPC call failed: ${message}`);

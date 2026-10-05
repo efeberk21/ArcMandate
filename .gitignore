@@ -18,3 +18,8 @@ contracts/lib/
 *.journal.json
 private/
 *.log
+
+# Local design, review and planning documents
+/docs/
+/ArcMandate-*.md
+/deployments/revision-*.json

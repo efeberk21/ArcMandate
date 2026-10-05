@@ -9,6 +9,7 @@ function sample(state: PreviewState): VaultSnapshot {
   const timestamp = BigInt(Math.floor(Date.now() / 1000));
   const cleared = state === 'locked' || state === 'unanchored';
   return {
+    trusted: true,
     address: '0x1111111111111111111111111111111111111111', owner: '0x2222222222222222222222222222222222222222',
     publicKey: `0x${'12'.repeat(32)}`, sessionId: state === 'unanchored' ? 0n : state === 'locked' ? 15n : 14n,
     nonce: state === 'locked' ? 7n : 6n, active: !cleared, balance: 1000000n,

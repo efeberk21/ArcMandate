@@ -1,0 +1,21 @@
+name: Check source and artifacts
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.5.1
+      - run: npm install --global npm@11.8.0
+      - run: npm ci
+      - run: npm run check:toolchain
+      - run: npm run check
+      - run: git diff --exit-code -- packages/core/src/generated/vault.ts

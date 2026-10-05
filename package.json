@@ -2,6 +2,7 @@
   "name": "arcmandate",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "npm@11.8.0",
   "type": "module",
   "workspaces": [
     "apps/web",
@@ -19,7 +20,9 @@
     "build:web": "npm run artifacts && npm run build -w @arcmandate/web",
     "dev": "npm run dev -w @arcmandate/web",
     "smoke:web": "node scripts/web-smoke-server.mjs",
-    "check": "npm run typecheck && npm run test:ts && npm run build:web && npm run build:contracts && npm run test:contracts",
+    "check": "npm run check:syntax && npm run typecheck && npm run test:ts && npm run build:web && npm run build:contracts && npm run test:contracts",
+    "check:syntax": "node scripts/check-syntax.mjs",
+    "check:toolchain": "node scripts/check-toolchain.mjs",
     "preflight": "tsx scripts/preflight.ts && tsx scripts/pq-probe.ts",
     "pq:probe": "tsx scripts/pq-probe.ts",
     "fixtures:generate": "tsx scripts/generate-digest-fixtures.ts",
