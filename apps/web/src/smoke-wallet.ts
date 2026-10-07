@@ -17,6 +17,7 @@ const provider: BrowserWallet = {
   async request({ method, params }) {
     if (method === 'eth_accounts' || method === 'eth_requestAccounts') return [config[role]];
     if (method === 'eth_chainId') return chainId;
+    if (method === 'eth_getTransactionCount') return (await bridge('nonce', { role })).nonce;
     if (method === 'wallet_switchEthereumChain') { chainId = (params?.[0] as { chainId: string }).chainId; emit('chainChanged', chainId); return null; }
     if (method === 'eth_sendTransaction') {
       if (rejectNext) { rejectNext = false; throw Object.assign(new Error('Synthetic user rejection'), { code: 4001 }); }
@@ -55,7 +56,7 @@ button('Restore captured file selection', async () => {
 });
 document.addEventListener('click', (event) => {
   const link = event.target;
-  if (!(link instanceof HTMLAnchorElement) || link.download !== 'arcmandate-keyfile.json') return;
+  if (!(link instanceof HTMLAnchorElement) || !/^arcmandate-key-[0-9a-f]{8}\.json$/i.test(link.download)) return;
   void fetch(link.href).then((response) => response.text()).then((keyfile) => bridge('backup', { keyfile })).then(() => message('Browser-exported encrypted file saved to the ignored smoke directory')).catch((error) => message(String(error)));
 });
 await import('./main');

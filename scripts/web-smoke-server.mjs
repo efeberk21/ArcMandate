@@ -32,6 +32,12 @@ const server = await createServer({ root: resolve('apps/web'), server: { host: '
         let body = '';
         for await (const chunk of request) { body += chunk; if (body.length > 50000) throw new Error('Request too large'); }
         const payload = JSON.parse(body);
+        if (request.url === '/__smoke/nonce' && request.method === 'POST') {
+          const account = accounts[payload.role];
+          if (!account) throw new Error('Wrong smoke account');
+          const nonce = await rpc.getTransactionCount({ address: account.address, blockTag: 'pending' });
+          return reply(200, { nonce: `0x${nonce.toString(16)}` });
+        }
         if (request.url === '/__smoke/backup' && request.method === 'POST') {
           if (typeof payload.keyfile !== 'string' || Buffer.byteLength(payload.keyfile) > 16384) throw new Error('Invalid encrypted backup');
           const file = JSON.parse(payload.keyfile);
@@ -45,7 +51,9 @@ const server = await createServer({ root: resolve('apps/web'), server: { host: '
           if (!account || getAddress(input.from) !== account.address || Number(BigInt(input.chainId)) !== 5042002) throw new Error('Wrong smoke account or network');
           if (BigInt(input.gas) > 3_000_000n) throw new Error('Smoke gas bound exceeded');
           const wallet = createWalletClient({ account, chain, transport: http(chain.rpcUrls.default.http[0]) });
-          const hash = await wallet.sendTransaction({ to: input.to, data: input.data, gas: BigInt(input.gas) });
+          const nonce = Number(BigInt(input.nonce));
+          if (!Number.isSafeInteger(nonce) || nonce < 0) throw new Error('Invalid smoke wallet nonce');
+          const hash = await wallet.sendTransaction({ to: input.to, data: input.data, gas: BigInt(input.gas), nonce });
           transactions.push({ hash, role: payload.role, to: input.to ?? null, createdAt: new Date().toISOString() });
           writeFileSync(logPath, `${JSON.stringify(transactions, null, 2)}\n`);
           return reply(200, { hash });

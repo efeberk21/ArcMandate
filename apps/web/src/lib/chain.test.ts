@@ -22,3 +22,25 @@ describe('read-only versus trusted vault and RPC identity (R01/R09)', () => {
     expect(rpc.readContract).not.toHaveBeenCalled();
   });
 });
+
+describe('concurrent vault reads', () => {
+  it('shares only identical in-flight reads, then fetches fresh state again', async () => {
+    const rpc = fake(expectedVaultRuntime(owner, publicKey));
+    const client = rpc as unknown as ArcClient;
+    const first = readVault(client, vault, 100n);
+    expect(readVault(client, vault, 100n)).toBe(first);
+    await first;
+    expect(rpc.readContract).toHaveBeenCalledTimes(10);
+    await readVault(client, vault, 100n);
+    expect(rpc.readContract).toHaveBeenCalledTimes(20);
+    await Promise.all([readVault(client, vault, 101n), readVault(client, vault, 102n)]);
+    expect(rpc.readContract).toHaveBeenCalledTimes(40);
+  });
+  it('does not retain a failed read', async () => {
+    const rpc = fake('0x6000');
+    rpc.readContract.mockRejectedValueOnce(new Error('rate limit exceeded'));
+    const client = rpc as unknown as ArcClient;
+    await expect(readVault(client, vault, 100n)).rejects.toThrow('rate limit');
+    await expect(readVault(client, vault, 100n)).resolves.toMatchObject({ trusted: false });
+  });
+});

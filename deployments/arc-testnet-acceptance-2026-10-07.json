@@ -1,0 +1,157 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-07T19:22:41.968Z",
+  "status": "test_round_closed_with_explicit_live_coverage_limits",
+  "chainId": 5042002,
+  "vault": "0x59b4a8D553cE8fBefB21B71E96fd9b1D7c153Ff2",
+  "owner": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+  "agent": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+  "publicKey": "0x980526a3aec5c75cbee83508587c12cf405e25e54f09398e5ed842cd1318e0b8",
+  "source": {
+    "baselineCommit": "a0382e6bf62b7363df20ee10e987f2df0b990b3b",
+    "checkedWorkingTreeSha256": "0196957be3c1dbaf4bd8f79f2068be31e0885e60787608d73ba7eedf4c8cac07",
+    "note": "The full check covers the final application code before commit. Earlier individual receipts retain their original source provenance; this manifest does not relabel all transactions as execution of one build. Two trailing spaces in NextStep.tsx were removed after the check; git diff --ignore-space-at-eol verified no code change.",
+    "commitSourceTreeSha256": "91c27d476cf35ebbeead7f4f4dd125a770ff036d13bf5ca57961db73e0d34e2f"
+  },
+  "automated": {
+    "vitestTests": 141,
+    "vitestFiles": 25,
+    "foundryTests": 24,
+    "invariantCalls": 8192,
+    "unexpectedInvariantReverts": 0,
+    "syntax": "passed",
+    "typecheck": "passed",
+    "productionBuild": "passed",
+    "focusedReplacementLifecycleTests": 25,
+    "focusedReplacementLifecycleFiles": 2
+  },
+  "successfulTransactions": [
+    {
+      "label": "deploy",
+      "hash": "0x90722aa2c5ec89a51e7d1bd422c22a68ab09ef199b04ee35991d5217757a19d3",
+      "block": "65966542",
+      "status": "success"
+    },
+    {
+      "label": "agent-gas",
+      "hash": "0x71eed0d4ebf084e5bcdd66c58f4cc1f367ab72c4d98cda1fadfdb5fe85b7efe2",
+      "block": "65968102",
+      "status": "success"
+    },
+    {
+      "label": "deposit",
+      "hash": "0x47192339dd2500292f4f69e5b37ba66bf099a21f6d87923d9cb9737547bfb3ed",
+      "block": "65968337",
+      "status": "success"
+    },
+    {
+      "label": "start-1",
+      "hash": "0x4721c498abe431b40dc98d9f761bbb16d923cc28cfb6f4f1dbf9232eaaa072a1",
+      "block": "65968872",
+      "status": "success"
+    },
+    {
+      "label": "agent-pay-1",
+      "hash": "0x6c5709b20648b33d7d8755f538cdf9a002bb4a7c4acdefea2ee474ab67b2ff63",
+      "block": "65971606",
+      "status": "success"
+    },
+    {
+      "label": "agent-pay-2",
+      "hash": "0xc59f1150759835e4647b25e5bd419c5910e2cc55ca7c654f397292cdd5297a64",
+      "block": "65973919",
+      "status": "success"
+    },
+    {
+      "label": "agent-pay-3",
+      "hash": "0x1c79df28c587b03dbece415b75e18f7eacc5eb152531521d91efb52e62aad2ad",
+      "block": "65974266",
+      "status": "success"
+    },
+    {
+      "label": "owner-freeze-1",
+      "hash": "0xb2748b622b6b73da94f314bb345f3e2f8bf43548c5b508c5b7bda56e4c8d4c7b",
+      "block": "65975188",
+      "status": "success"
+    },
+    {
+      "label": "start-2",
+      "hash": "0x4829cb0c57da1bf199c78a39b1a8fd26f75c0e533f6590ed1a01b1eed9476313",
+      "block": "65982780",
+      "status": "success"
+    },
+    {
+      "label": "active-topup",
+      "hash": "0x1c1a22535090402f0807c84e0c3d9130ab248bea22c6c9ff1fda8cbeda1e35c2",
+      "block": "65983101",
+      "status": "success"
+    },
+    {
+      "label": "replace-3",
+      "hash": "0xaa8eddd79ad16670362f03f1efd0c537a9174a322f2671a09c2c6848d8b19f39",
+      "block": "65983395",
+      "status": "success"
+    },
+    {
+      "label": "pq-freeze-4",
+      "hash": "0x4493e2f3899175427ccc40ba0555252c6944cf1cb2d16bf3c3359a43fe580b1b",
+      "block": "65991324",
+      "status": "success"
+    },
+    {
+      "label": "withdraw-5",
+      "hash": "0x0941667008c89c27633c7b9ab722c24e8582185f4b7473d2a1523f0433550fe9",
+      "block": "66008147",
+      "status": "success"
+    },
+    {
+      "label": "agent-gas-one-micro-normal-fee",
+      "hash": "0xdd40b04293546c18f19594e8eb202a562ec40d6c3543803888675fa8c33c7e01",
+      "block": "66013622",
+      "status": "success"
+    }
+  ],
+  "failedTransactions": [
+    {
+      "hash": "0xfdd1f96afdf42272c021ae0a3b591908f111addd86e6822b6cad6dceb2f0606b",
+      "block": "65979683",
+      "reason": "AuthorizationExpired",
+      "status": "reverted"
+    }
+  ],
+  "finalVaultState": {
+    "active": false,
+    "sessionId": "5",
+    "controlNonce": "6",
+    "spentUnits": "0",
+    "balanceUnits": "0",
+    "policyCleared": true
+  },
+  "localWalletJournal": {
+    "records": 18,
+    "confirmed": 14,
+    "reverted": 1,
+    "walletRejected": 3,
+    "unresolved": 0
+  },
+  "fixedAndVerified": [
+    "Vault list export button height and alignment",
+    "Visible imported filename for public vault list",
+    "Focusable workspace skip link and keyboard navigation",
+    "Changing selected encrypted backup locks prior signer and invalidates late Worker import",
+    "Wallet menu remains within the mobile viewport",
+    "Actual wrong site-network locks signer and blocks transaction reviews"
+  ],
+  "coverageLimits": [
+    "Actual MetaMask speed-up and cancellation were not observed. The last original transaction mined normally at 25 Gwei; it is not replacement evidence. Automated lifecycle/reconciliation coverage passed.",
+    "An emergency relay freeze while another sender genuinely had a pending/unknown transaction was not observed; capability coverage is automated. The actual distinct-agent PQ freeze receipt is recorded separately.",
+    "Responsive layouts and live keyboard/focus behavior passed; native browser zoom and screen-reader speech were not exercised.",
+    "This closes the test round after the user requested no further manual actions. It does not certify every possible user action or a mainnet release."
+  ],
+  "mainnet": {
+    "enabled": false,
+    "transactionsSubmitted": 0,
+    "releaseStatus": "on_hold"
+  },
+  "secretsIncluded": false
+}
