@@ -1,13 +1,13 @@
-import { BaseError, ExecutionRevertedError, createPublicClient, decodeErrorResult, defineChain, getAddress, http, parseAbi, type Address, type Hex } from 'viem';
+import { BaseError, ExecutionRevertedError, createPublicClient, decodeErrorResult, defineChain, getAddress, parseAbi, type Address, type Hex } from 'viem';
 import { ARC_NETWORKS, PQ_VERIFIER_ADDRESS, USDC_ADDRESS } from '@arcmandate/core';
 import { vaultAbi } from '@arcmandate/core/contracts';
 import type { Policy } from '@arcmandate/core/digest';
 import { matchesVaultRuntime } from '@arcmandate/core/runtime';
 import { SimulationRejected, type TransactionInput } from './transactions';
-import { publicRpcUrl } from './rpc-config';
+import { publicRpcUrls } from './rpc-config';
+import { publicRpcTransport } from './rpc-transport';
 
 export type Network = keyof typeof ARC_NETWORKS;
-export const DEMO_VAULT = '0x91e4467997d28ad3443f910261f4d65b4c867bbd' as const;
 export const usdcAbi = parseAbi([
   'function balanceOf(address) view returns (uint256)',
   'function transfer(address to, uint256 amount) returns (bool)',
@@ -18,14 +18,14 @@ export function arcChain(network: Network) {
   return defineChain({
     id: config.chainId, name: network === 'testnet' ? 'Arc Testnet' : 'Arc',
     nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 },
-    rpcUrls: { default: { http: [publicRpcUrl(network, import.meta.env)] } },
+    rpcUrls: { default: { http: publicRpcUrls(network, import.meta.env) } },
     blockExplorers: { default: { name: 'Arc Explorer', url: config.explorerUrl } },
   });
 }
 
 export function arcClient(network: Network) {
   const chain = arcChain(network);
-  return createPublicClient({ chain, transport: http(chain.rpcUrls.default.http[0], { timeout: 20_000, retryCount: 1 }) });
+  return createPublicClient({ chain, transport: publicRpcTransport(chain.rpcUrls.default.http, chain.id) });
 }
 
 export type ArcClient = ReturnType<typeof arcClient>;
@@ -36,7 +36,22 @@ export type VaultSnapshot = {
   trusted: boolean;
 };
 
-export async function readVault(client: ArcClient, address: Address, blockNumber?: bigint): Promise<VaultSnapshot> {
+const pendingVaultReads = new WeakMap<ArcClient, Map<string, Promise<VaultSnapshot>>>();
+
+export function readVault(client: ArcClient, address: Address, blockNumber?: bigint): Promise<VaultSnapshot> {
+  let pending = pendingVaultReads.get(client);
+  if (!pending) { pending = new Map(); pendingVaultReads.set(client, pending); }
+  const key = `${address.toLowerCase()}:${blockNumber ?? 'latest'}`;
+  const existing = pending.get(key);
+  if (existing) return existing;
+  const request = readVaultSnapshot(client, address, blockNumber);
+  pending.set(key, request);
+  const clear = () => { if (pending.get(key) === request) pending.delete(key); };
+  void request.then(clear, clear);
+  return request;
+}
+
+async function readVaultSnapshot(client: ArcClient, address: Address, blockNumber?: bigint): Promise<VaultSnapshot> {
   if (await client.getChainId() !== client.chain.id) throw new Error('RPC chain does not match the selected network');
   const block = await client.getBlock(blockNumber === undefined ? {} : { blockNumber });
   const at = { address, abi: vaultAbi, blockNumber: block.number } as const;
