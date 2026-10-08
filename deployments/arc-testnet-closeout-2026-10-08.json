@@ -1,0 +1,316 @@
+{
+  "schemaVersion": 1,
+  "chainId": 5042002,
+  "scope": "Historical 8 October 2026 testnet acceptance evidence. This is not a mainnet release or MetaMask replacement pass.",
+  "source": {
+    "gitCommit": "13ff30cbd91f92637eead67b491e6f9f645c833b",
+    "dirty": false,
+    "sourceTreeSha256": "91c27d476cf35ebbeead7f4f4dd125a770ff036d13bf5ca57961db73e0d34e2f",
+    "sourceScope": "Tracked and non-ignored public files, excluding deployment outputs and private documents; hashes include uncommitted source, never ignored credentials",
+    "trackedPatchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "lockfileSha256": "d88d131bf2739ee35c40788a24e38b308dc51c985713587e5538da0652112ae4",
+    "artifactSha256": "b2d8ec993802fb97d46418b6293cea38511d5f857dd4dcc7c744ed20aa70cae8",
+    "foundrySettingsSha256": "cfeeae89581c8a74f911f533820c5290795b6ec8a9b33d739ea20ec7f8ffac53",
+    "compiler": {
+      "version": "0.8.28+commit.7893614a"
+    },
+    "settings": {
+      "remappings": [
+        "@openzeppelin/contracts/=../node_modules/@openzeppelin/contracts/"
+      ],
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "metadata": {
+        "bytecodeHash": "ipfs"
+      },
+      "compilationTarget": {
+        "src/ArcMandateVault.sol": "ArcMandateVault"
+      },
+      "evmVersion": "paris",
+      "libraries": {}
+    }
+  },
+  "demo": {
+    "verifiedAt": "2026-10-08T16:42:35.194Z",
+    "vault": "0xa3c2b246837b964c074647e99bb38d7e829bf1e1",
+    "deploymentBlock": "66165410",
+    "deploymentTxHash": "0x31a15aecf8b3b0e0dd90a1eb503c52ca27868ad53b687130a9f18d494f4acc65",
+    "status": "complete",
+    "steps": [
+      {
+        "label": "deploy-vault",
+        "expectedOutcome": "success",
+        "evidenceType": "mined_success",
+        "txHash": "0x31a15aecf8b3b0e0dd90a1eb503c52ca27868ad53b687130a9f18d494f4acc65",
+        "blockNumber": "66165410",
+        "blockHash": "0x55dedc1ee2e844e4c79832ca26608d5252fa008bd0b126bc848897ee4327793d",
+        "receiptStatus": "success",
+        "gasUsed": "1784868",
+        "effectiveGasPrice": "25000000000"
+      },
+      {
+        "label": "fund-vault-1-usdc",
+        "expectedOutcome": "success",
+        "evidenceType": "mined_success",
+        "txHash": "0x60809e16b8079a6ef622008ec88508846181ad92222c9ffc4c948f65b7274c61",
+        "blockNumber": "66165449",
+        "blockHash": "0x9fd2f14f03a0f7f0aa97599d688c25a90ea3c36c4858520038386a09106bd0bb",
+        "receiptStatus": "success",
+        "gasUsed": "48950",
+        "effectiveGasPrice": "25000000000"
+      },
+      {
+        "label": "fund-agent-gas",
+        "expectedOutcome": "success",
+        "evidenceType": "mined_success",
+        "txHash": "0xcdd0fdd1b33a58c4cd3445e15bed3d8c09e64e2da44a6750c01c75ed838c5e0d",
+        "blockNumber": "66165497",
+        "blockHash": "0xb4b537071c1b41c09f151a7b387d106ab8682aacb76c16c268cc37d00b42de9a",
+        "receiptStatus": "success",
+        "gasUsed": "21000",
+        "effectiveGasPrice": "25000000000"
+      },
+      {
+        "label": "fund-relay-gas",
+        "expectedOutcome": "success",
+        "evidenceType": "mined_success",
+        "txHash": "0xd0a68fd7f718695aca91056a44c84d2e9dad68e66bbf6a0a13cf4d4a50458e77",
+        "blockNumber": "66165502",
+        "blockHash": "0x068009b64f36c106bdce871560a2536b88ba0522cd47bbbc8e3b084d0907ed5d",
+        "receiptStatus": "success",
+        "gasUsed": "21000",
+        "effectiveGasPrice": "25000000000"
+      },
+      {
+        "label": "start-session-s",
+        "expectedOutcome": "success",
+        "evidenceType": "mined_success",
+        "txHash": "0x4af2dcdf20bb2f9b4c20a85aaf178e497625ea3bdf2ea53fd2827f27fbf20f72",
+        "blockNumber": "66165509",
+        "blockHash": "0xf69c62a246d0c7a54f28a5ea51328da49008a464ceee5356102270ee419fa984",
+        "receiptStatus": "success",
+        "gasUsed": "620196",
+        "effectiveGasPrice": "25000000000"
+      },
+      {
+        "label": "agent-pay-s-0.05",
+        "expectedOutcome": "success",
+        "evidenceType": "mined_success",
+        "txHash": "0x6e8cc06f57470a7af7022cca0b99ed6b54e2e22250c8b8579e910b8817049dd7",
+        "blockNumber": "66165514",
+        "blockHash": "0x0c8122f88bd1466d1b03fb047323b5ca5a54ca13857c99b35ad455e3e4ad98df",
+        "receiptStatus": "success",
+        "gasUsed": "120113",
+        "effectiveGasPrice": "25000000000"
+      },
+      {
+        "label": "over-cap-0.20",
+        "expectedOutcome": "revert",
+        "evidenceType": "simulation_rejection",
+        "from": "0x2C5158C975d135FBB1f003580118aEE84F4827B3",
+        "to": "0xa3c2b246837b964c074647e99bb38d7e829bf1e1",
+        "calldata": "0x89f1e6170000000000000000000000000000000000000000000000000000000000000001bd8ef3210e76522382c654b52969c2ac2b6ab0cb3cbf5df8ac91d789848943b10000000000000000000000003b870569a0442c6857db96f88afbaa3e20aa52010000000000000000000000000000000000000000000000000000000000030d40",
+        "block": "66165514",
+        "decodedError": "PerPaymentLimitExceeded"
+      },
+      {
+        "label": "pq-freeze-s",
+        "expectedOutcome": "success",
+        "evidenceType": "mined_success",
+        "txHash": "0x9cff826474de048c33d55c8f4a25bc3e91a15d88d9d11d143f3d921016bba7af",
+        "blockNumber": "66165525",
+        "blockHash": "0x7948898f06147daeb51d167237481be822fd8e317ac056df7a51a1d7b6e2a69a",
+        "receiptStatus": "success",
+        "gasUsed": "420322",
+        "effectiveGasPrice": "25000000000"
+      },
+      {
+        "label": "old-session-after-freeze",
+        "expectedOutcome": "revert",
+        "evidenceType": "simulation_rejection",
+        "from": "0x2C5158C975d135FBB1f003580118aEE84F4827B3",
+        "to": "0xa3c2b246837b964c074647e99bb38d7e829bf1e1",
+        "calldata": "0x89f1e6170000000000000000000000000000000000000000000000000000000000000001f768b53b1070f4df367498d971b61f84c90759533a613494ac0081f357096d580000000000000000000000003b870569a0442c6857db96f88afbaa3e20aa5201000000000000000000000000000000000000000000000000000000000000c350",
+        "block": "66165525",
+        "decodedError": "SessionInactive"
+      },
+      {
+        "label": "start-session-s2-same-agent",
+        "expectedOutcome": "success",
+        "evidenceType": "mined_success",
+        "txHash": "0x9dff77a40cc6ec40fae10dddffdffc907ddcaf3d4d6e905b5624c9f9f88d38e3",
+        "blockNumber": "66165533",
+        "blockHash": "0xc05ca2ab0a8a6e6ef126f983b4f1157321fbd8182e8bd56f447a18e58bc2fc14",
+        "receiptStatus": "success",
+        "gasUsed": "585948",
+        "effectiveGasPrice": "25000000000"
+      },
+      {
+        "label": "old-session-after-restart",
+        "expectedOutcome": "revert",
+        "evidenceType": "simulation_rejection",
+        "from": "0x2C5158C975d135FBB1f003580118aEE84F4827B3",
+        "to": "0xa3c2b246837b964c074647e99bb38d7e829bf1e1",
+        "calldata": "0x89f1e6170000000000000000000000000000000000000000000000000000000000000001e6d46769d1f7427be76f506aed07c0f498a23d446382dac01383352473d239880000000000000000000000003b870569a0442c6857db96f88afbaa3e20aa5201000000000000000000000000000000000000000000000000000000000000c350",
+        "block": "66165533",
+        "decodedError": "SessionMismatch"
+      },
+      {
+        "label": "agent-pay-s2-0.05",
+        "expectedOutcome": "success",
+        "evidenceType": "mined_success",
+        "txHash": "0x46e693cc179628e49f70c0a61c2660ed1be8296beb910391224ae3f5b8075abe",
+        "blockNumber": "66165617",
+        "blockHash": "0x88f1440ec02accb660e0cba34d5441e106b7f38012517215e147f5927ddd1db9",
+        "receiptStatus": "success",
+        "gasUsed": "120125",
+        "effectiveGasPrice": "25000000000"
+      },
+      {
+        "label": "owner-freeze-s2",
+        "expectedOutcome": "success",
+        "evidenceType": "mined_success",
+        "txHash": "0x980792ca5fac20f14163d689bb70a4cef27d395f008717b8c9fb1b7dd7becc42",
+        "blockNumber": "66165620",
+        "blockHash": "0xa854c025470bab3fc20e8d0299115a6743f3c71bdab0dc19d2dc6c05ae7dc1ff",
+        "receiptStatus": "success",
+        "gasUsed": "60311",
+        "effectiveGasPrice": "25000000000"
+      },
+      {
+        "label": "hybrid-withdraw-remaining",
+        "expectedOutcome": "success",
+        "evidenceType": "mined_success",
+        "txHash": "0xd04f2c68c286c2fc7576308b15a30583babb9014bf6003a4c2dcbd6704b6bb66",
+        "blockNumber": "66165628",
+        "blockHash": "0x1090a2107e01134eacb5ce308068c923b87e9a34e0b0b90400cfae7e35f74e2f",
+        "receiptStatus": "success",
+        "gasUsed": "447027",
+        "effectiveGasPrice": "25000000000"
+      }
+    ],
+    "crashRecovery": [
+      {
+        "step": "deploy-vault",
+        "originalHash": "0x31a15aecf8b3b0e0dd90a1eb503c52ca27868ad53b687130a9f18d494f4acc65",
+        "recoveredHash": "0x31a15aecf8b3b0e0dd90a1eb503c52ca27868ad53b687130a9f18d494f4acc65",
+        "unchangedSignedHash": true,
+        "interruption": {
+          "observedAt": "2026-10-08T16:38:46.429Z",
+          "stage": "after_mined_receipt_before_manifest_rename",
+          "exitCode": 86
+        }
+      },
+      {
+        "step": "fund-vault-1-usdc",
+        "originalHash": "0x60809e16b8079a6ef622008ec88508846181ad92222c9ffc4c948f65b7274c61",
+        "recoveredHash": "0x60809e16b8079a6ef622008ec88508846181ad92222c9ffc4c948f65b7274c61",
+        "unchangedSignedHash": true,
+        "interruption": {
+          "observedAt": "2026-10-08T16:39:06.244Z",
+          "stage": "after_mined_receipt_before_manifest_rename",
+          "exitCode": 86
+        }
+      },
+      {
+        "step": "hybrid-withdraw-remaining",
+        "originalHash": "0xd04f2c68c286c2fc7576308b15a30583babb9014bf6003a4c2dcbd6704b6bb66",
+        "recoveredHash": "0xd04f2c68c286c2fc7576308b15a30583babb9014bf6003a4c2dcbd6704b6bb66",
+        "unchangedSignedHash": true,
+        "interruption": {
+          "observedAt": "2026-10-08T16:40:37.108Z",
+          "stage": "after_mined_receipt_before_manifest_rename",
+          "exitCode": 86
+        }
+      }
+    ],
+    "finalState": {
+      "block": "66165628",
+      "active": false,
+      "sessionId": "4",
+      "controlNonce": "5",
+      "balanceUnits": "0",
+      "policyCleared": true
+    },
+    "finalStateNote": "Pinned demo state before the later empty-vault pending-relay check."
+  },
+  "pendingRelay": {
+    "verifiedAt": "2026-10-08T17:04:50.373Z",
+    "scope": "Actual Arc testnet pending-owner/distinct-relay PQ freeze using disposable script accounts; this is not a MetaMask UI run.",
+    "vault": "0xA3c2b246837b964C074647E99Bb38D7E829bF1e1",
+    "owner": "0x5704BF0960c1701f2a73086623bAf6fD5707649A",
+    "relay": "0x3b870569a0442c6857db96F88AfbAA3e20aa5201",
+    "startHash": "0x138828e2a5eadb20e9d3122573685709832593ff1bfb53a846dfc305dec5cc9f",
+    "pendingBefore": {
+      "observedAt": "2026-10-08T17:04:47.088Z",
+      "hash": "0xe9d1ff4981860bb105a85fa0be1f04c830cdd2acd474c7a9f18fb5e820bf5d73",
+      "owner": "0x5704bf0960c1701f2a73086623baf6fd5707649a",
+      "nonce": 33,
+      "maxFeePerGas": "1000000000",
+      "noReceipt": true
+    },
+    "pendingAfter": {
+      "observedAt": "2026-10-08T17:04:50.117Z",
+      "hash": "0xe9d1ff4981860bb105a85fa0be1f04c830cdd2acd474c7a9f18fb5e820bf5d73",
+      "owner": "0x5704bf0960c1701f2a73086623baf6fd5707649a",
+      "nonce": 33,
+      "maxFeePerGas": "1000000000",
+      "noReceipt": true
+    },
+    "freeze": {
+      "hash": "0xcef45686d4336384fd96515604c58df02449140f78cb5f1b7b840cdd5d8d4460",
+      "block": "66168495",
+      "event": {
+        "oldSessionId": "5",
+        "newSessionId": "6",
+        "caller": "0x3b870569a0442c6857db96F88AfbAA3e20aa5201",
+        "reason": 1,
+        "controlNonce": "7"
+      }
+    },
+    "before": {
+      "active": true,
+      "sessionId": "5",
+      "nonce": "6",
+      "policy": {
+        "agent": "0x2C5158C975d135FBB1f003580118aEE84F4827B3",
+        "totalBudget": "1",
+        "perTxCap": "1",
+        "expiresAt": "1791479967",
+        "recipients": [
+          "0x3b870569a0442c6857db96F88AfbAA3e20aa5201"
+        ]
+      },
+      "balance": "0"
+    },
+    "after": {
+      "active": false,
+      "sessionId": "6",
+      "nonce": "7",
+      "policy": {
+        "agent": "0x0000000000000000000000000000000000000000",
+        "totalBudget": "0",
+        "perTxCap": "0",
+        "expiresAt": "0",
+        "recipients": []
+      },
+      "balance": "0"
+    },
+    "cleanup": {
+      "hash": "0x180057df7009add2a5e4ebaa99a0641b1206d451397a20759d55213580ebe4e8",
+      "block": "66168498",
+      "nonce": 33,
+      "receiptStatus": "success",
+      "noTokenTransfer": true,
+      "scope": "Script-only cleanup, not MetaMask cancellation acceptance"
+    }
+  },
+  "metaMaskReplacement": {
+    "status": "waived_by_user_not_passed",
+    "originalHash": "0xb859145e38f1bd8808470f7101d0a99881faa471098fb4838873a5c77b2f2841",
+    "lastObservedStatus": "unknown",
+    "limitation": "The original hash disappeared after the user attempted speed-up. No successful replacement receipt was observed. The unresolved browser operation was retained."
+  }
+}
