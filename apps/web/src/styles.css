@@ -493,7 +493,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .masthead { gap: 8px; min-height: 88px; flex-wrap: wrap; padding: 14px 0; }
   .masthead-meta { gap: 8px; margin-left: auto; }
   .wallet-popover { width: min(360px, calc(100vw - 48px)); }
-  .masthead-meta .badge { display: none; }
+  .masthead-meta .badge { font-size: 10px; padding: 7px 9px; }
   .wallet-menu > summary { font-size: 11px; padding: 9px 10px; }
   .page-heading { flex-wrap: wrap; gap: 12px; }
   .page-heading > button { font-size: 11px; }

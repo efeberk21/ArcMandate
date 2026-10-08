@@ -1,0 +1,17 @@
+node_modules
+.git
+.tools
+.npm-cache
+.env
+.env.*
+private
+contracts/out
+contracts/cache
+contracts/broadcast
+apps/web/dist
+*.log
+*.key
+*.key.json
+*.keystore
+*.keystore.json
+*.journal.json
