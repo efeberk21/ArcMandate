@@ -88,3 +88,7 @@ The P4 smoke sequence is deploy → fund 1 USDC → start → PQ freeze from rel
 
 
 The web build exposes only `VITE_ARC_TESTNET_RPC_URL` and `VITE_ARC_MAINNET_RPC_URL`; automatic injection of other `VITE_*` variables is disabled. These RPC URLs are public and must contain no credentials, query parameters, fragments or private tokens in the path. Use the default public endpoints for the Vercel release. A custom RPC host also requires an explicit update to the `connect-src` allowlist in `vercel.json`. Secret credentials belong outside the browser bundle and are never required by this static frontend. The build ships no source maps; private files and local reports are excluded from Vercel source uploads.
+
+### Hosted frontend
+
+The [live Arc Testnet application](https://arcmandate.vercel.app) is published on Vercel. [Release evidence](deployments/p7-testnet-release-2026-10-09.json) records its exact source commit and the wallet-free vault read, Worker and security-header checks. This is a testnet release; no mainnet contract has been deployed. Localhost bookmarks, pending journals and encrypted key backups do not move automatically to the hosted origin. Switching origins never cancels an unresolved transaction.

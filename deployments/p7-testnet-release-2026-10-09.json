@@ -1,0 +1,33 @@
+{
+  "network": "Arc Testnet",
+  "chainId": 5042002,
+  "productionUrl": "https://arcmandate.vercel.app",
+  "deploymentUrl": "https://arcmandate-lxllene9p-efeberk.vercel.app",
+  "deploymentId": "dpl_3Nj76F9WitQ3HbNLdf3hsaN29Yno",
+  "sourceCommit": "a6ec617c44c9b480c34e3284d511ae5b33a5533b",
+  "date": "2026-10-09",
+  "lockfileSha256": "d88d131bf2739ee35c40788a24e38b308dc51c985713587e5538da0652112ae4",
+  "verifiedRead": {
+    "vault": "0x59b4a8D553cE8fBefB21B71E96fd9b1D7c153Ff2",
+    "block": 66273919,
+    "balanceUSDC": "0",
+    "active": false,
+    "runtimeMatched": true,
+    "walletConnected": false
+  },
+  "checks": [
+    "public unauthenticated HTTP 200",
+    "security headers present",
+    "env/git/private/prompt paths 404",
+    "public bundle private-value scan clean",
+    "PQ Worker generated then locked without export",
+    "mobile 320px no horizontal overflow",
+    "testnet explorer address link"
+  ],
+  "limitations": [
+    "Not a mainnet deployment",
+    "No new funded wallet transaction performed",
+    "Localhost journals and keys do not migrate automatically",
+    "Scoped security checks; no independent audit"
+  ]
+}
