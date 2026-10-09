@@ -1,6 +1,6 @@
 # ArcMandate mainnet release
 
-Status on 9 October 2026: **Public testnet frontend deployed; controlled mainnet build prepared. No mainnet contract deployment or spending.** Funding can wait until 9 October. The user selected Vercel for an initial public testnet site, with mainnet release to follow. This runbook is a release plan, not evidence that its pending steps passed.
+Status on 9 October 2026: **Mainnet frontend published to production at the user’s request; no mainnet vault contract deployment or spending.** Funding can wait until 9 October. The user selected Vercel for an initial public testnet site, with mainnet release to follow. This runbook is a release plan, not evidence that its pending steps passed.
 
 ## Prepared inputs
 
@@ -45,3 +45,9 @@ Public testnet frontend: https://arcmandate.vercel.app. Source and observed chec
 Read-only planning at mainnet block 25039780: gas price 20,000,001,001 native units, owner balance 0 USDC and ERC-20 decimals 6. Constructor estimate with a placeholder public key: 1,800,201 gas, approximately 0.043205 USDC with a 20% gas buffer. Previous testnet sequence gas quantities at that current mainnet price give approximately 0.101997 USDC with the same buffer. These are planning estimates, not a spending limit or a fixed quote. The user deferred funding, account selection and onchain transactions until frontend deployments are complete. No transaction was sent; estimates must be refreshed with the actual production accounts/key before spending.
 
 Verified preparation preview: https://arcmandate-6etxvgtxy-efeberk.vercel.app, Vercel authentication retained. Source `87c48cbda22751f3fd704fe7cc671a85f1685f41`; hosted label and Worker checked. No mainnet contract exists yet.
+
+## 9 October user-directed frontend promotion
+
+The user requested the prepared mainnet frontend on the permanent production URL before funding or contract deployment. https://arcmandate.vercel.app now opens Arc Mainnet. Production deployment `dpl_6JUfiuqbNxHYZwiQyLw8u7g5RUAQ` was promoted from the checked mainnet preview (application source `87c48cbda22751f3fd704fe7cc671a85f1685f41`). All 13 public files match the checked isolated mainnet build byte-for-byte. Public HTTP 200, CSP and secret-path 404 checks passed. The source branch was fast-forwarded into main. The earlier testnet-production statements are historical and superseded by this entry.
+
+No mainnet vault was deployed, no wallet transaction was sent and no funding was performed. Continue with production accounts, concrete fee budget, funding and encrypted key backup/restore before actual contract deployment. Mainnet receipt evidence, explorer verification and submission remain unfinished.

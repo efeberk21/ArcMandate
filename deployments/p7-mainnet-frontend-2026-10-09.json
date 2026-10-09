@@ -1,0 +1,27 @@
+{
+  "status": "mainnet frontend published; contract deployment pending",
+  "productionUrl": "https://arcmandate.vercel.app",
+  "network": "Arc Mainnet",
+  "chainId": 5042,
+  "deploymentId": "dpl_6JUfiuqbNxHYZwiQyLw8u7g5RUAQ",
+  "deploymentUrl": "https://arcmandate-dudmyvou4-efeberk.vercel.app",
+  "promotedFrom": "dpl_8hKhkAGbg2hpLCkKmqvTNAu2L1cp",
+  "applicationSourceCommit": "87c48cbda22751f3fd704fe7cc671a85f1685f41",
+  "date": "2026-10-09",
+  "validation": {
+    "publicHTTP": 200,
+    "liveBrowser": "Arc Mainnet label and network=mainnet; no automatic testnet vault selection",
+    "publicFilesMatchedToCheckedBuild": 13,
+    "securityHeaders": "CSP, frame denial and permissions restrictions retained",
+    "envGitPrivatePromptPaths": 404,
+    "knownPrivateValueBuildScan": "clean; four values checked in isolated mainnet build",
+    "priorSourceValidation": "134 web/core tests, TypeScript, both build modes and read-only mainnet PQ probe passed; application unchanged by promotion"
+  },
+  "limitations": [
+    "No mainnet vault contract deployed",
+    "No mainnet funding or wallet transaction sent",
+    "No actual mainnet receipt evidence or submission",
+    "Scoped checks, not an independent security audit"
+  ],
+  "authorization": "User explicitly requested mainnet frontend production before funding; overrides the earlier frontend promotion order, without authorizing spending."
+}
