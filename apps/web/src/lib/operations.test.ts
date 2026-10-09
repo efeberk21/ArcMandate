@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { encodeAbiParameters, encodeEventTopics, encodeFunctionData, keccak256, type Hex } from 'viem';
+import { afterEach, describe, it, expect, vi } from 'vitest';
+import { TransactionNotFoundError, encodeAbiParameters, encodeEventTopics, encodeFunctionData, keccak256, type Hex } from 'viem';
 import { vaultAbi } from '@arcmandate/core/contracts';
 import { canSubmitOperation, loadOperations, operationReceipt, saveOperation, pendingOperationsFor, validateOperationHash, type Operation } from './operations';
 import { trackReceipt, type TransactionState } from './transactions';
@@ -10,6 +10,57 @@ const vault = '0x3333333333333333333333333333333333333333';
 const op: Operation = { id: 'fund-1', account: owner, network: 'testnet', action: 'fund', vault,
   dataHash: keccak256('0x1234'), stage: 'unknown', createdAt: '2026-10-05', hash: `0x${'ab'.repeat(32)}` };
 describe('durable operations and emergency freeze (R03/R04)', () => {
+  afterEach(() => vi.useRealTimers());
+  it('waits for a new wallet hash to become visible, then verifies the same receipt and effect', async () => {
+    vi.useFakeTimers();
+    const input = encodeFunctionData({ abi: vaultAbi, functionName: 'freezeByOwner', args: [1n] });
+    const freeze: Operation = { ...op, action: 'owner-freeze', to: vault, sessionId: '1', nonce: '1', walletNonce: 7, dataHash: keccak256(input) };
+    const tx = { from: owner, to: vault, value: 0n, input, nonce: 7, chainId: 5042002 };
+    const rpc = {
+      getChainId: async () => 5042002,
+      getTransaction: vi.fn().mockRejectedValueOnce(new TransactionNotFoundError({ hash: op.hash! }))
+        .mockRejectedValueOnce(new TransactionNotFoundError({ hash: op.hash! })).mockResolvedValue(tx),
+      waitForTransactionReceipt: vi.fn().mockResolvedValue({ status: 'success', transactionHash: op.hash!, blockNumber: 101n,
+        logs: [{ address: vault,
+          topics: encodeEventTopics({ abi: vaultAbi, eventName: 'SessionRevoked', args: { oldSessionId: 1n, newSessionId: 2n, caller: owner } }),
+          data: encodeAbiParameters([{ type: 'uint8' }, { type: 'uint256' }], [0, 2n]) }] }),
+    };
+    const result = operationReceipt(rpc as unknown as ArcClient, freeze, op.hash!);
+    await vi.runAllTimersAsync();
+    expect(await result).toMatchObject({ intentMatches: true, effectVerified: true, transactionHash: op.hash });
+    expect(rpc.getTransaction).toHaveBeenCalledTimes(4);
+    expect(rpc.getTransaction.mock.calls.every(([request]) => request.hash === op.hash)).toBe(true);
+    expect(rpc.waitForTransactionReceipt).toHaveBeenCalledTimes(1);
+  });
+  it('bounds transaction visibility polling and retains unresolved protection when it never appears', async () => {
+    vi.useFakeTimers();
+    const rpc = { getChainId: async () => 5042002,
+      getTransaction: vi.fn().mockRejectedValue(new TransactionNotFoundError({ hash: op.hash! })),
+      waitForTransactionReceipt: vi.fn() };
+    let last: TransactionState | undefined;
+    const result = trackReceipt({ receipt: hash => operationReceipt(rpc as unknown as ArcClient, op, hash) }, op.hash!, state => { last = state; });
+    await vi.runAllTimersAsync();
+    await result;
+    expect(rpc.getTransaction).toHaveBeenCalledTimes(20);
+    expect(rpc.waitForTransactionReceipt).not.toHaveBeenCalled();
+    expect(last).toMatchObject({ stage: 'unknown', hash: op.hash });
+    expect(canSubmitOperation('fund', 'testnet', owner, vault, [{ ...op, stage: last!.stage }])).toBe(false);
+  });
+  it('still rejects wrong intent after visibility and does not poll unrelated RPC failures', async () => {
+    vi.useFakeTimers();
+    const pending: Operation = { ...op, to: vault, walletNonce: 8 };
+    const rpc = { getChainId: async () => 5042002,
+      getTransaction: vi.fn().mockRejectedValueOnce(new TransactionNotFoundError({ hash: op.hash! }))
+        .mockResolvedValue({ from: owner, to: vault, value: 0n, input: '0x1234', nonce: 9, chainId: 5042002 }),
+      waitForTransactionReceipt: vi.fn() };
+    const rejected = expect(operationReceipt(rpc as unknown as ArcClient, pending, op.hash!)).rejects.toThrow('does not match');
+    await vi.runAllTimersAsync();
+    await rejected;
+    expect(rpc.waitForTransactionReceipt).not.toHaveBeenCalled();
+    rpc.getTransaction.mockReset().mockRejectedValue(new Error('RPC unavailable'));
+    await expect(validateOperationHash(rpc as unknown as ArcClient, pending, op.hash!)).rejects.toThrow('RPC unavailable');
+    expect(rpc.getTransaction).toHaveBeenCalledTimes(1);
+  });
   it('preserves valid signing deadlines on reload and binds them to the recovered calldata',async()=>{
     const auth={nonce:2n,sessionId:2n,deadline:1700000060n};
     const input=encodeFunctionData({abi:vaultAbi,functionName:'freezeByPQ',args:[auth,'0x']});

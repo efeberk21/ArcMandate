@@ -1,4 +1,4 @@
-import { decodeEventLog, decodeFunctionData, getAddress, keccak256, parseAbi, type Address, type Hex } from 'viem';
+import { TransactionNotFoundError, decodeEventLog, decodeFunctionData, getAddress, keccak256, parseAbi, type Address, type Hex } from 'viem';
 import { vaultAbi } from '@arcmandate/core/contracts';
 import { matchesVaultRuntime } from '@arcmandate/core/runtime';
 import { ARC_NETWORKS, USDC_ADDRESS } from '@arcmandate/core';
@@ -70,6 +70,17 @@ export function canSubmitOperation(action: Action, network: Network, account: Ad
   return operationBlockers(action, network, account, vault, ops).length === 0;
 }
 type ChainTransaction = Awaited<ReturnType<ArcClient['getTransaction']>>;
+async function visibleTransaction(rpc: ArcClient, hash: Hex): Promise<ChainTransaction> {
+  // A wallet can return a hash before the public RPC indexes the transaction.
+  // Retry reads only; all intent checks still run once the transaction is visible.
+  for (let attempt = 0; ; attempt++) {
+    try { return await rpc.getTransaction({ hash }); }
+    catch (error) {
+      if (!(error instanceof TransactionNotFoundError) || attempt >= 19) throw error;
+      await new Promise<void>(resolve => setTimeout(resolve, 1500));
+    }
+  }
+}
 function transactionMatches(op: Operation, tx: ChainTransaction): boolean {
   if (!(sameAddress(tx.from, op.account) && tx.to?.toLowerCase() === op.to?.toLowerCase() &&
     keccak256(tx.input) === op.dataHash && tx.value === 0n)) return false;
@@ -86,7 +97,7 @@ export async function validateOperationHash(rpc: ArcClient, op: Operation, hash:
   if (!/^0x[0-9a-f]{64}$/i.test(hash)) throw new Error('Enter a complete transaction hash (0x followed by 64 hex characters).');
   const chainId = ARC_NETWORKS[op.network].chainId;
   if (await rpc.getChainId() !== chainId) throw new Error('RPC network does not match this operation.');
-  const tx = await rpc.getTransaction({ hash });
+  const tx = await visibleTransaction(rpc, hash);
   if (!transactionMatches(op, tx) || tx.chainId !== chainId || (op.walletNonce !== undefined && tx.nonce !== op.walletNonce)) {
     throw new Error('This transaction does not match this action. Check the sender, network and wallet activity.');
   }
