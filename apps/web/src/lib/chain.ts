@@ -18,7 +18,10 @@ export function arcChain(network: Network) {
   return defineChain({
     id: config.chainId, name: network === 'testnet' ? 'Arc Testnet' : 'Arc',
     nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 },
-    rpcUrls: { default: { http: publicRpcUrls(network, import.meta.env) } },
+    rpcUrls: { default: { http: publicRpcUrls(network, {
+      VITE_ARC_TESTNET_RPC_URL: import.meta.env.VITE_ARC_TESTNET_RPC_URL,
+      VITE_ARC_MAINNET_RPC_URL: import.meta.env.VITE_ARC_MAINNET_RPC_URL,
+    }) } },
     blockExplorers: { default: { name: 'Arc Explorer', url: config.explorerUrl } },
   });
 }

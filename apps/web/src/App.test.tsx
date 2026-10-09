@@ -34,6 +34,7 @@ vi.mock('./lib/chain', async importOriginal => {
 vi.mock('./lib/use-pq-key', () => ({ usePqKey: () => ({ phase: 'restored', publicKey: `0x${'aa'.repeat(32)}`, busy: false, message: 'Restored', lockVersion: mock.keyVersion,
   lock: mock.lock, sign: mock.sign, file: null, setFile: vi.fn(), generate: vi.fn(), exportKey: vi.fn(), importKey: vi.fn() }) }));
 import App from './App';
+import { SimulationRejected } from './lib/transactions';
 
 let root: Root; let host: HTMLDivElement;
 function button(text: string) {
@@ -80,6 +81,27 @@ beforeEach(async () => {
 afterEach(async () => { if (root) await act(async () => root.unmount()); host?.remove(); delete window.ethereum; });
 
 describe('vault and review integration', () => {
+  it('opens the welcome page at the root and resumes the remembered vault only on request',async()=>{
+    localStorage.setItem('arcmandate.vault-selection.v1',JSON.stringify({network:'testnet',address:vault,setup:false}));
+    window.history.replaceState(null,'','/');await act(async()=>{root.unmount();root=createRoot(host);root.render(<App/>);});
+    expect(host.querySelector('.welcome')).not.toBeNull();expect((host.querySelector('.workspace') as HTMLElement).hidden).toBe(true);
+    expect(new URL(window.location.href).searchParams.has('vault')).toBe(false);
+    await act(async()=>{(host.querySelector('.welcome-continue') as HTMLButtonElement).click();});
+    expect(host.querySelector('.welcome')).toBeNull();expect((host.querySelector('.workspace') as HTMLElement).hidden).toBe(false);
+    expect(new URL(window.location.href).searchParams.get('vault')).toBe(vault);
+  });
+  it('keeps unresolved operations visible on home without changing their journal',async()=>{
+    const saved=JSON.stringify([{id:'pending-home',network:'testnet',action:'agent-gas',account:owner,vault,dataHash:`0x${'ab'.repeat(32)}`,stage:'unknown',createdAt:new Date().toISOString(),walletNonce:7}]);
+    localStorage.setItem('arcmandate.operations.v1',saved);
+    await act(async()=>{root.unmount();root=createRoot(host);root.render(<App/>);});
+    await act(async()=>{(host.querySelector('.brand') as HTMLAnchorElement).click();});
+    expect(host.querySelector('.welcome')?.textContent).toContain('A saved transaction still needs checking');
+    expect(localStorage.getItem('arcmandate.operations.v1')).toBe(saved);
+    await click('View transaction recovery');expect(host.querySelector('#tab-activity')?.getAttribute('aria-selected')).toBe('true');
+    expect(localStorage.getItem('arcmandate.operations.v1')).toBe(saved);
+    expect(mock.request.mock.calls.some(call=>call[0].method==='eth_sendTransaction')).toBe(false);
+  });
+
   it('selects an authorized second account, locks the key and resumes that explicit choice after reload', async () => {
     mock.request.mockImplementation(async ({ method }) => method === 'eth_accounts' ? [owner, agent] : method === 'eth_chainId' ? '0x4cef52' : '0x0');
     await click('Disconnect'); await click('Connect wallet'); mock.lock.mockClear();
@@ -133,18 +155,27 @@ describe('vault and review integration', () => {
   }
   it('explains payment limits before review and permits correction without losing the recipient',async()=>{
     await connectAgent();await act(async()=>{const select=field('Payment recipient');select.value=owner;select.dispatchEvent(new Event('change',{bubbles:true}));});
-    await fill('Payment amount','0.11');expect(button('Review testnet payment').disabled).toBe(true);
+    await fill('Payment amount','0.11');expect(button('Review payment').disabled).toBe(true);
     expect(host.querySelector('#agent-console')?.textContent).toContain('Amount exceeds the per-payment limit.');
-    await fill('Payment amount','0.01');expect(field('Payment recipient').value).toBe(owner);expect(button('Review testnet payment').disabled).toBe(false);
+    await fill('Payment amount','0.01');expect(field('Payment recipient').value).toBe(owner);expect(button('Review payment').disabled).toBe(false);
     expect(mock.request.mock.calls.some(call=>call[0].method==='eth_sendTransaction')).toBe(false);
   });
-  it('simulates an agent payment without wallet submission and restores its original request after remount',async()=>{
+  it('prepares an agent payment automatically without wallet submission and restores its original request after remount',async()=>{
     await connectAgent();await act(async()=>{const select=field('Payment recipient');select.value=owner;select.dispatchEvent(new Event('change',{bubbles:true}));});await fill('Payment amount','0.01');
-    await click('Simulate payment only');expect(host.textContent).toContain('Simulation passed. No wallet transaction was requested');
+    await click('Review payment');expect(host.textContent).toContain('Ready for wallet');expect(host.textContent).not.toContain('Simulate payment only');expect(mock.simulate).toHaveBeenCalled();
     expect(mock.sign).not.toHaveBeenCalled();expect(mock.request.mock.calls.some(call=>call[0].method==='eth_sendTransaction')).toBe(false);
     const before=localStorage.getItem('arcmandate.payment-drafts.v1');expect(before).toContain('"sessionId":"1"');
     await act(async()=>{root.unmount();root=createRoot(host);root.render(<App/>);});
     expect(host.textContent).toContain('Saved payment request');expect(localStorage.getItem('arcmandate.payment-drafts.v1')).toBe(before);
+  });
+  it('keeps wallet submission unavailable when automatic preparation rejects the payment',async()=>{
+    await connectAgent();await act(async()=>{const select=field('Payment recipient');select.value=owner;select.dispatchEvent(new Event('change',{bubbles:true}));});await fill('Payment amount','0.01');
+    mock.simulate.mockRejectedValueOnce(new SimulationRejected('SessionInactive'));
+    await click('Review payment');
+    expect(host.textContent).toContain('Cannot proceed');expect(host.textContent).toContain('SessionInactive');
+    expect([...host.querySelectorAll('button')].some(item=>item.textContent==='Send payment in wallet')).toBe(false);
+    expect(mock.request.mock.calls.some(call=>call[0].method==='eth_sendTransaction')).toBe(false);
+    expect(localStorage.getItem('arcmandate.operations.v1')).toBeNull();
   });
   it('rejects a second tab draft after another tab has saved the original payment request',async()=>{
     await connectAgent();const other=document.createElement('div');document.body.append(other);const otherRoot=createRoot(other);
@@ -152,8 +183,8 @@ describe('vault and review integration', () => {
       await act(async()=>otherRoot.render(<App/>));
       const fillOther=async(label:string,value:string)=>act(async()=>{const input=[...other.querySelectorAll('label')].find(el=>el.textContent?.startsWith(label))!.querySelector('input,select')! as HTMLInputElement;const proto=input.tagName==='SELECT'?HTMLSelectElement.prototype:HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(proto,'value')!.set!.call(input,value);input.dispatchEvent(new Event(input.tagName==='SELECT'?'change':'input',{bubbles:true}));});
       await fillOther('Payment recipient',owner);await fillOther('Payment amount','0.01');
-      await act(async()=>{const select=field('Payment recipient');select.value=owner;select.dispatchEvent(new Event('change',{bubbles:true}));});await fill('Payment amount','0.01');await click('Simulate payment only');
-      await act(async()=>{[...other.querySelectorAll('button')].find(el=>el.textContent==='Simulate payment only')!.click();});expect(other.textContent).toContain('changed in another tab');expect(JSON.parse(localStorage.getItem('arcmandate.payment-drafts.v1')!)).toHaveLength(1);expect(mock.request.mock.calls.some(call=>call[0].method==='eth_sendTransaction')).toBe(false);
+      await act(async()=>{const select=field('Payment recipient');select.value=owner;select.dispatchEvent(new Event('change',{bubbles:true}));});await fill('Payment amount','0.01');await click('Review payment');
+      await act(async()=>{[...other.querySelectorAll('button')].find(el=>el.textContent==='Review payment')!.click();});expect(other.textContent).toContain('changed in another tab');expect(JSON.parse(localStorage.getItem('arcmandate.payment-drafts.v1')!)).toHaveLength(1);expect(mock.request.mock.calls.some(call=>call[0].method==='eth_sendTransaction')).toBe(false);
     }finally{await act(async()=>otherRoot.unmount());other.remove();}
   });
   it('records payment intent/nonce before approval and preserves unknown hash without a second send',async()=>{
@@ -166,9 +197,9 @@ describe('vault and review integration', () => {
       }throw new Error('Unexpected method');
     });
     mock.tx.mockImplementation(async()=>({from:agent,to:vault,value:0n,input:submitted.data,nonce:7,chainId:5042002}));mock.receipt.mockRejectedValue(new Error('RPC receipt timeout'));
-    await click('Review testnet payment');await click('Approve and simulate');await click('Send testnet payment in wallet');
+    await click('Review payment');await click('Send payment in wallet');
     expect(submitted.nonce).toBe('0x7');expect(JSON.parse(localStorage.getItem('arcmandate.operations.v1')!)[0]).toMatchObject({stage:'unknown',hash});
-    await click('Close review panel');expect(button('Review testnet payment').disabled).toBe(true);
+    await click('Close review panel');expect(button('Review payment').disabled).toBe(true);
     expect(mock.request.mock.calls.filter(call=>call[0].method==='eth_sendTransaction')).toHaveLength(1);
   });
   it('removes the previous vault view even when the newly selected address fails to load', async () => {
@@ -185,15 +216,15 @@ describe('vault and review integration', () => {
     await chooseDuration('60');
     expect(host.querySelector('[aria-label="Transaction review"]')?.textContent).not.toContain('New session');
     expect(host.textContent).toContain('The form or context changed');
-    await click('Review open session'); await click('Approve intent and sign with PQ key');
+    await click('Review open session'); await click('Authorize with Vault Key');
     expect(mock.sign.mock.calls.at(-1)?.[0].policy.expiresAt).toBe(snapshot.timestamp + 3600n);
   });
   it('discards a ready transaction when switching to custom duration without a wallet request', async () => {
-    await prepareSession(); await click('Approve intent and sign with PQ key');
+    await prepareSession(); await click('Authorize with Vault Key');
     expect(button('Open session in wallet').disabled).toBe(false);
     await chooseDuration('custom');
     expect(host.querySelector('[aria-label="Transaction review"]')?.textContent).not.toContain('Open session in wallet');
-    await fill('Custom duration (minutes)', '15'); await click('Review open session'); await click('Approve intent and sign with PQ key');
+    await fill('Custom duration (minutes)', '15'); await click('Review open session'); await click('Authorize with Vault Key');
     expect(mock.sign.mock.calls.at(-1)?.[0].policy.expiresAt).toBe(snapshot.timestamp + 900n);
     expect(mock.request.mock.calls.some(call => call[0].method === 'eth_sendTransaction')).toBe(false);
   });
@@ -212,12 +243,12 @@ describe('vault and review integration', () => {
   });
   it('discards a delayed signature when the duration changes during signing',async()=>{
     await prepareSession();let finish!:(value:any)=>void;let intent!:SigningIntent;
-    mock.sign.mockImplementation((value:SigningIntent)=>{intent=value;return new Promise(resolve=>{finish=resolve;});});await click('Approve intent and sign with PQ key');expect(host.textContent).toContain('Signing the reviewed intent');
+    mock.sign.mockImplementation((value:SigningIntent)=>{intent=value;return new Promise(resolve=>{finish=resolve;});});await click('Authorize with Vault Key');expect(host.textContent).toContain('Authorizing this action with your Vault Key');
     await chooseDuration('60');await act(async()=>finish({type:'signed',signature:'0x1234',signingMs:1,digest:intent.action==='START_SESSION'?startSessionDigest(intent.context,intent.policy,intent.auth):'0x'}));
     expect([...host.querySelectorAll('button')].some(item=>item.textContent==='Open session in wallet')).toBe(false);expect(mock.request.mock.calls.some(call=>call[0].method==='eth_sendTransaction')).toBe(false);
   });
   it('invalidates a ready wallet action when the Worker locks independently of UI input',async()=>{
-    await prepareSession();await click('Approve intent and sign with PQ key');expect(button('Open session in wallet').disabled).toBe(false);mock.keyVersion++;
+    await prepareSession();await click('Authorize with Vault Key');expect(button('Open session in wallet').disabled).toBe(false);mock.keyVersion++;
     await act(async()=>root.render(<App/>));expect([...host.querySelectorAll('button')].some(item=>item.textContent==='Open session in wallet')).toBe(false);expect(mock.request.mock.calls.some(call=>call[0].method==='eth_sendTransaction')).toBe(false);
   });
   it.each(['chainChanged','disconnect'])('locks and invalidates immediately on %s even if the wallet cannot answer',async event=>{
@@ -231,7 +262,7 @@ describe('vault and review integration', () => {
     await click('Create another vault');mock.lock.mockClear();let submitted:any;const hash=`0x${'cd'.repeat(32)}`;
     mock.request.mockImplementation(async({method,params})=>{if(method==='eth_accounts')return[owner];if(method==='eth_chainId')return'0x4cef52';if(method==='eth_getTransactionCount')return'0x8';if(method==='eth_sendTransaction'){submitted=params[0];return hash;}throw new Error('Unexpected method');});
     mock.tx.mockImplementation(async()=>({from:owner,to:null,value:0n,input:submitted.data,nonce:8,chainId:5042002}));mock.receipt.mockResolvedValue({status:'success',transactionHash:hash,contractAddress:vault,blockNumber:101n,logs:[]});mock.read.mockResolvedValue({...snapshot,blockNumber:101n});
-    const writes=vi.spyOn(localStorage,'setItem');await click('Review vault creation');await click('Approve and simulate');await click('Create vault in wallet');
+    const writes=vi.spyOn(localStorage,'setItem');await click('Review vault creation');await click('Create vault in wallet');
     expect(host.querySelector('#vault')?.textContent).toContain(vault);expect(mock.lock).not.toHaveBeenCalledWith('you switched vault');
     const confirmedWrites=writes.mock.calls.filter(call=>call[0]==='arcmandate.operations.v1').map(call=>JSON.parse(call[1])).filter(rows=>rows.some((op:any)=>op.stage==='confirmed'));
     expect(confirmedWrites.length).toBeGreaterThan(0);for(const rows of confirmedWrites)expect(rows.find((op:any)=>op.stage==='confirmed')).toMatchObject({deployedVault:vault,blockNumber:'101'});

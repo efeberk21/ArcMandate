@@ -24,3 +24,6 @@ private/
 /docs/
 /ArcMandate-*.md
 /deployments/revision-*.json
+
+.vercel
+.env*
