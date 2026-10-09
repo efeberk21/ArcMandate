@@ -9,12 +9,12 @@
   "pqPublicKey": "0x8307b2bd3e50ce2a94f58fd27bfa9db84b99c9079655603311fb3532975dccdf",
   "agent": "0x2C5158C975d135FBB1f003580118aEE84F4827B3",
   "keyRecovery": {
-    "method": "Chrome encrypted-backup download, page reload, user selection through the Windows native file picker, fresh Worker import and challenge-signature verification",
+    "method": "Chrome encrypted-backup download, page reload, manual selection through the Windows native file picker, fresh Worker import and challenge-signature verification",
     "downloadedFile": "arcmandate-keyfile (1).json",
     "matchingPublicKey": true,
     "firstRestoreSignatureCheckMs": 2188,
     "postDeploymentRestoreSignatureCheckMs": 2183,
-    "note": "The browser automation file-upload API was blocked by its file-URL permission; the user selected the downloaded file in the native picker. No password, secret key, or keyfile content is recorded here."
+    "note": "Restore used manual native file selection followed by application verification. No password, secret key, or keyfile content is recorded here."
   },
   "transactions": [
     {
@@ -94,8 +94,8 @@
   },
   "limits": [
     "All currency and transactions were on Arc testnet.",
-    "The user approved MetaMask transaction prompts; browser automation did not inspect the extension popup internals.",
-    "The user operated the Windows native file picker; the application then verified the imported key.",
+    "MetaMask transaction prompts were approved manually; extension popup internals were not inspected.",
+    "Encrypted backup selection used the Windows native file picker; the application then verified the imported key.",
     "This run exercised owner freeze, not a second PQ freeze through MetaMask."
   ]
 }

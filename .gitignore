@@ -20,9 +20,18 @@ contracts/lib/
 private/
 *.log
 
+# Markdown publication allowlist: other notes stay local by default.
+*.md
+*.markdown
+!/README.md
+!/DEVELOPMENT.md
+!/THREAT-MODEL.md
+
 # Local design, review and planning documents
 /docs/
 /ArcMandate-*.md
+/MAINNET-RELEASE.md
+/apps/web/brand/README.md
 /deployments/revision-*.json
 
 .vercel

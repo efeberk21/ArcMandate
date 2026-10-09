@@ -308,9 +308,9 @@
     }
   },
   "metaMaskReplacement": {
-    "status": "waived_by_user_not_passed",
+    "status": "incomplete_not_passed",
     "originalHash": "0xb859145e38f1bd8808470f7101d0a99881faa471098fb4838873a5c77b2f2841",
     "lastObservedStatus": "unknown",
-    "limitation": "The original hash disappeared after the user attempted speed-up. No successful replacement receipt was observed. The unresolved browser operation was retained."
+    "limitation": "The original hash disappeared after an attempted speed-up. No successful replacement receipt was observed. The unresolved browser operation was retained."
   }
 }

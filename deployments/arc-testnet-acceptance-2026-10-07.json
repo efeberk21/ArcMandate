@@ -146,7 +146,7 @@
     "Actual MetaMask speed-up and cancellation were not observed. The last original transaction mined normally at 25 Gwei; it is not replacement evidence. Automated lifecycle/reconciliation coverage passed.",
     "An emergency relay freeze while another sender genuinely had a pending/unknown transaction was not observed; capability coverage is automated. The actual distinct-agent PQ freeze receipt is recorded separately.",
     "Responsive layouts and live keyboard/focus behavior passed; native browser zoom and screen-reader speech were not exercised.",
-    "This closes the test round after the user requested no further manual actions. It does not certify every possible user action or a mainnet release."
+    "This is a scoped testnet acceptance record. It does not certify every possible user action or a mainnet release."
   ],
   "mainnet": {
     "enabled": false,

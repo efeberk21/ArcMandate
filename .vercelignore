@@ -8,6 +8,8 @@ private
 docs
 ArcMandate-*.md
 MAINNET-RELEASE.md
+*.md
+*.markdown
 contracts/out
 contracts/cache
 contracts/broadcast

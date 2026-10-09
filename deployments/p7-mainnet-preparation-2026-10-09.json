@@ -30,15 +30,5 @@
       "testnet link excluded in local mainnet preview"
     ],
     "security": "13-file isolated mainnet build; no maps/env/known private values found; automatic VITE injection disabled"
-  },
-  "pending": [
-    "production owner/agent/distinct relay selection",
-    "spending budget and funding",
-    "encrypted production Vault Key backup/restore",
-    "mainnet contract deployment and explorer verification",
-    "short mainnet receipt evidence",
-    "mainnet production promotion",
-    "submission"
-  ],
-  "userDecision": "Funding and onchain operations deferred until after frontend deployments; no transaction sent."
+  }
 }

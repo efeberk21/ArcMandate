@@ -22,6 +22,5 @@
     "No mainnet funding or wallet transaction sent",
     "No actual mainnet receipt evidence or submission",
     "Scoped checks, not an independent security audit"
-  ],
-  "authorization": "User explicitly requested mainnet frontend production before funding; overrides the earlier frontend promotion order, without authorizing spending."
+  ]
 }
