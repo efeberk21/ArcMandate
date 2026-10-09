@@ -9,7 +9,7 @@ vi.mock('./chain', () => ({ readVault: read }));
 import { useVaultState } from './use-vault-state';
 const a = '0x1111111111111111111111111111111111111111' as Address;
 const b = '0x2222222222222222222222222222222222222222' as Address;
-const snapshot = (address: Address, blockNumber = 100n): VaultSnapshot => ({ address, owner: a, publicKey: `0x${'ab'.repeat(32)}`, sessionId: 1n, nonce: 1n, active: true,
+const snapshot = (address: Address, blockNumber = 100n): VaultSnapshot => ({ chainId:5042002, address, owner: a, publicKey: `0x${'ab'.repeat(32)}`, sessionId: 1n, nonce: 1n, active: true,
   balance: 10n, spent: 0n, blockNumber, timestamp: 100n, trusted: true,
   policy: { agent: b, totalBudget: 10n, perTxCap: 1n, recipients: [a], expiresAt: 1000n } });
 let root: Root; let host: HTMLDivElement; let view: ReturnType<typeof useVaultState>;

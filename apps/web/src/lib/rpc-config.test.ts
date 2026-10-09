@@ -9,9 +9,9 @@ describe('public web RPC overrides (R09)', () => {
   it('rejects unsafe or empty endpoint configurations', () => {
     for (const endpoint of ['http://remote.example', 'https://user:secret@host.example', 'https://host.example/?apiKey=secret', 'https://host.example/#secret', '', 'file:///tmp/rpc']) expect(() => publicRpcUrl('testnet', { VITE_ARC_TESTNET_RPC_URL: endpoint })).toThrow();
   });
-  it('uses public testnet failover only when no explicit endpoint is configured', () => {
+  it('uses public Arc failover only when no explicit endpoint is configured', () => {
     expect(publicRpcUrls('testnet', {})).toHaveLength(3);
     expect(publicRpcUrls('testnet', { VITE_ARC_TESTNET_RPC_URL: 'https://one.example/rpc' })).toEqual(['https://one.example/rpc']);
-    expect(publicRpcUrls('mainnet', {})).toHaveLength(1);
+    expect(publicRpcUrls('mainnet', {})).toHaveLength(3);
   });
 });

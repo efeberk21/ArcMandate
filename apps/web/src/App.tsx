@@ -1,3 +1,4 @@
+import { releaseNetwork, networkLabel } from './lib/release';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { encodeDeployData, encodeFunctionData, formatUnits, getAddress, isAddress, type Address, type Hex } from 'viem';
 import { ARC_NETWORKS, USDC_ADDRESS } from '@arcmandate/core';
@@ -67,8 +68,9 @@ function PolicySummary({ policy }: { policy: Policy }) {
 }
 
 export default function App() {
-  const network: Network = 'testnet';
-  const [initialSelection] = useState(() => initialVaultSelection(new URL(window.location.href)));
+  const network: Network = releaseNetwork;
+  const networkName = networkLabel(network);
+  const [initialSelection] = useState(() => initialVaultSelection(new URL(window.location.href), localStorage, network));
   const [showWelcome,setShowWelcome] = useState(() => {const url=new URL(window.location.href);return !url.searchParams.has('vault')&&url.searchParams.get('setup')!=='1';});
   const [vault, setVault] = useState<Address | null>(initialSelection.address);
   const [vaultInput, setVaultInput] = useState(vault ?? '');
@@ -100,7 +102,7 @@ export default function App() {
   const [review, setReview] = useState<Review | null>(null);
   const [ready, setReady] = useState<Ready | null>(null);
   const [transaction, setTransaction] = useState<TransactionState>({ stage: 'idle', message: 'Review an action to begin.' });
-  const [transactionNetwork, setTransactionNetwork] = useState<Network>('testnet');
+  const [transactionNetwork, setTransactionNetwork] = useState<Network>(network);
   const [sessionForm, setSessionForm] = useState({ agent: '', budget: '', cap: '', minutes: '1440', recipients: '' });
   const [durationPreset, setDurationPreset] = useState('1440');
   const [fundAmount, setFundAmount] = useState('');
@@ -129,9 +131,9 @@ export default function App() {
 
   useEffect(() => {
     const url = new URL(window.location.href);
-    if (url.searchParams.get('network') === 'mainnet') url.searchParams.delete('vault');
-    url.searchParams.set('network', 'testnet');
-    if (initialSelection.address) { if(!showWelcome)url.searchParams.set('vault', initialSelection.address); rememberVaultSelection(initialSelection.address); }
+    if (url.searchParams.has('network') && url.searchParams.get('network') !== network) url.searchParams.delete('vault');
+    url.searchParams.set('network', network);
+    if (initialSelection.address) { if(!showWelcome)url.searchParams.set('vault', initialSelection.address); rememberVaultSelection(initialSelection.address,localStorage,network); }
     window.history.replaceState(null, '', url);
   }, []);
 
@@ -150,13 +152,13 @@ export default function App() {
   },[operations]);
   useEffect(()=>{
     if(!snapshot||readError)return;
-    const deployment=operations.find(op=>op.action==='deploy'&&op.stage==='confirmed'&&op.deployedVault?.toLowerCase()===snapshot.address.toLowerCase());
+    const deployment=operations.find(op=>op.network===network&&op.action==='deploy'&&op.stage==='confirmed'&&op.deployedVault?.toLowerCase()===snapshot.address.toLowerCase());
     void updateRegistry(storage=>mergeRegistry([snapshotBookmark(snapshot,deployment)],storage)).then(setRegistry).catch(cause=>setRegistryError(errorMessage(cause)));
   },[snapshot,readError]);
   useEffect(()=>{
     setPaymentDraft(null);setVerifiedCreation(null);
     newRequest.current=null;
-    try{const saved=loadPaymentDrafts().filter(d=>d.vault.toLowerCase()===vault?.toLowerCase()&&d.account.toLowerCase()===account?.toLowerCase());setPaymentDraft(saved.at(-1)??null);draftBaseline.current=saved.at(-1)?.requestId;setDraftError('');}catch(cause){setDraftError(errorMessage(cause));}
+    try{const saved=loadPaymentDrafts().filter(d=>d.chainId===ARC_NETWORKS[network].chainId&&d.vault.toLowerCase()===vault?.toLowerCase()&&d.account.toLowerCase()===account?.toLowerCase());setPaymentDraft(saved.at(-1)??null);draftBaseline.current=saved.at(-1)?.requestId;setDraftError('');}catch(cause){setDraftError(errorMessage(cause));}
   },[vault,account]);
   async function changeRegistry(items:VaultBookmark[],remove?:string,editLabel=false){
     const next=await updateRegistry(storage=>{
@@ -171,11 +173,11 @@ export default function App() {
   }
   useEffect(()=>{
     if(!snapshot||!snapshot.trusted)return;
-    const card=registry.find(item=>item.address.toLowerCase()===snapshot.address.toLowerCase()&&item.deploymentHash);
+    const card=registry.find(item=>item.chainId===ARC_NETWORKS[network].chainId&&item.address.toLowerCase()===snapshot.address.toLowerCase()&&item.deploymentHash);
     if(!card?.deploymentHash)return;
     let current=true;void findDeployment(client,card.deploymentHash).then(found=>{if(current&&found.snapshot.address.toLowerCase()===snapshot.address.toLowerCase())setVerifiedCreation({address:snapshot.address,block:found.block.toString()});}).catch(()=>{});
     return()=>{current=false;};
-  },[snapshot?.address,registry.find(item=>item.address.toLowerCase()===vault?.toLowerCase())?.deploymentHash]);
+  },[snapshot?.address,registry.find(item=>item.chainId===ARC_NETWORKS[network].chainId&&item.address.toLowerCase()===vault?.toLowerCase())?.deploymentHash]);
 
   useEffect(() => {
     // Keep the error propagating to transaction handling; never reload or retry a wallet action automatically.
@@ -367,7 +369,7 @@ export default function App() {
   }
 
   function selectVault(next: Address) {
-    recoverSelection.current = false; rememberVaultSelection(next);
+    recoverSelection.current = false; rememberVaultSelection(next,localStorage,network);
     invalidate(); setVault(next); setVaultInput(next); setVaultError('');
     const url = new URL(window.location.href); url.searchParams.set('network', network); url.searchParams.delete('setup'); if(!showWelcome)url.searchParams.set('vault', next);
     window.history.replaceState(null, '', url);
@@ -376,17 +378,17 @@ export default function App() {
 
   function newVault() {
     setShowWelcome(false);
-    recoverSelection.current = false; rememberVaultSelection(null);
+    recoverSelection.current = false; rememberVaultSelection(null,localStorage,network);
     invalidate();
     setVault(null); setVaultInput(''); setVaultError(''); go('key');
     const url = new URL(window.location.href);
-    url.searchParams.set('network', 'testnet'); url.searchParams.set('setup','1'); url.searchParams.delete('vault'); url.hash = '';
+    url.searchParams.set('network', network); url.searchParams.set('setup','1'); url.searchParams.delete('vault'); url.hash = '';
     window.history.replaceState(null, '', url);
   }
 
   useEffect(() => {
     if (!account || vault || !recoverSelection.current) return;
-    const saved = latestAccountVault(operations, account);
+    const saved = latestAccountVault(operations, account, network);
     if (saved) selectVault(saved);
   }, [account, vault, operations]);
 
@@ -402,7 +404,7 @@ export default function App() {
     finally { running.current = false; setBusy(false); }
   }
 
-  const canManage = !walletChecking && network === 'testnet' && !!account && walletChain === ARC_NETWORKS[network].chainId;
+  const canManage = !walletChecking && !!account && walletChain === ARC_NETWORKS[network].chainId;
   const capabilities:CapabilityState={network,account,walletChain,provider:!!provider,vault,snapshot,readError,checking:walletChecking,phase:pq.phase,publicKey:pq.publicKey,
     operations,historyError:historyError||draftError,busy,keyBusy:pq.busy,assetsUnavailable:assetLoadError,locksAvailable:!!navigator.locks};
   useEffect(()=>{setSessionForm({agent:'',budget:'',cap:'',minutes:'1440',recipients:''});setDurationPreset('1440');setFundAmount('');setWithdrawAmount('');setWithdrawTo('');setGasAmount('');setAgentView('setup');setFundsView('deposit');setFreezeOpen(false);setCopyMessage('');},[vault]);
@@ -424,7 +426,7 @@ export default function App() {
     void exclusive(async () => {
       const gate=capability(action,{...capabilities,operations:loadOperations()});
       if(!gate.allowed)throw new Error(gate.reasons.join(' '));
-      if (!canManage || !account || !provider) throw new Error('Connect your wallet on Arc Testnet to continue.');
+      if (!canManage || !account || !provider) throw new Error(`Connect your wallet on ${networkName} to continue.`);
       setTransaction({ stage: 'preparing', message: 'Reading current chain authorization…' });
       await assertWallet(provider, account, ARC_NETWORKS[network].chainId);
       if (await client.getChainId() !== ARC_NETWORKS[network].chainId) throw new Error('RPC network mismatch');
@@ -453,7 +455,7 @@ export default function App() {
           if(!draft){
             if(!navigator.locks)throw new Error('Web Locks are required to save a payment request.');
             await navigator.locks.request('arcmandate-payment-drafts',()=>{
-              const existing=loadPaymentDrafts().filter(d=>d.vault.toLowerCase()===next.address.toLowerCase()&&d.account.toLowerCase()===account.toLowerCase());
+              const existing=loadPaymentDrafts().filter(d=>d.chainId===ARC_NETWORKS[network].chainId&&d.vault.toLowerCase()===next.address.toLowerCase()&&d.account.toLowerCase()===account.toLowerCase());
               if(existing.at(-1)?.requestId!==draftBaseline.current)throw new Error('A saved payment request changed in another tab. Reload it before paying.');
               draft=newPaymentDraft(next,account,recipient,amount); if(newRequest.current)draft.requestId=newRequest.current;
               validatePayment(next,draft,loadOperations());
@@ -586,7 +588,7 @@ export default function App() {
           verifiedDeployment.current = { address: getAddress(receipt.contractAddress), account: item.account, publicKey: item.publicKey };
         }
         minBlock.current.set(vaultIdentity(item.network, getAddress(receipt.contractAddress)), receipt.blockNumber);
-        recoverSelection.current = false; rememberVaultSelection(getAddress(receipt.contractAddress));
+        recoverSelection.current = false; rememberVaultSelection(getAddress(receipt.contractAddress),localStorage,network);
         setVault(getAddress(receipt.contractAddress)); setVaultInput(getAddress(receipt.contractAddress));
         const url = new URL(window.location.href);
         url.searchParams.set('network', item.network); url.searchParams.set('vault', receipt.contractAddress);
@@ -693,20 +695,20 @@ export default function App() {
   const pageTitles:Record<WorkspacePanel,{title:string;description:string}>={overview:{title:vault?(selectedCard?.label||'Your vault'):'Create your first vault',description:vault?'Your money, spending limits and next step in one place.':'Keep USDC in your own vault. Give a separate agent a spending budget.'},agent:{title:'Agent & spending',description:'Prepare an agent, choose its limits, then make a payment.'},funds:{title:'Move your funds',description:'Choose where the money goes. Every transfer is reviewed before your wallet opens.'},key:{title:'Secure your Vault Key',description:'Your second management key. Keep its encrypted backup and password.'},activity:{title:'Activity & recovery',description:'Track what happened and resolve transactions with an uncertain outcome.'}};
   return <><Starfield/><main>
     <a className="skip-link" href={showWelcome?'#welcome-heading':'#workspace-tabs'}>{showWelcome?'Skip to getting started':'Skip to workspace'}</a>
-    <header className="masthead"><a className="brand" href="/?network=testnet" onClick={event=>{event.preventDefault();openWelcome();}}><span className="brand-mark"><BrandMark/></span><span>ArcMandate<small>Agent spending control</small></span></a><div className="masthead-meta"><StatusBadge label="Arc Testnet"/><details className="wallet-menu" id="wallet-menu" onKeyDown={event=>{if(event.key==='Escape'){event.currentTarget.open=false;event.currentTarget.querySelector('summary')?.focus();}}} onBlur={event=>{if(!event.currentTarget.contains(event.relatedTarget))event.currentTarget.open=false;}}><summary><span className={`wallet-dot ${account?'connected':''}`} aria-hidden="true"/>{account?`${walletRole(capabilities)} · ${account.slice(0,6)}…${account.slice(-4)}`:'Wallet not connected'}<span aria-hidden="true">⌄</span></summary><section className="wallet-popover" aria-label="Network and wallet"><h2>Your wallet</h2>
+    <header className="masthead"><a className="brand" href={`/?network=${network}`} onClick={event=>{event.preventDefault();openWelcome();}}><span className="brand-mark"><BrandMark/></span><span>ArcMandate<small>Agent spending control</small></span></a><div className="masthead-meta"><StatusBadge label={networkName}/><details className="wallet-menu" id="wallet-menu" onKeyDown={event=>{if(event.key==='Escape'){event.currentTarget.open=false;event.currentTarget.querySelector('summary')?.focus();}}} onBlur={event=>{if(!event.currentTarget.contains(event.relatedTarget))event.currentTarget.open=false;}}><summary><span className={`wallet-dot ${account?'connected':''}`} aria-hidden="true"/>{account?`${walletRole(capabilities)} · ${account.slice(0,6)}…${account.slice(-4)}`:'Wallet not connected'}<span aria-hidden="true">⌄</span></summary><section className="wallet-popover" aria-label="Network and wallet"><h2>Your wallet</h2>
       {authorizedAccounts.length>0&&<><label>Account for this app<select value={account??''} disabled={busy||walletRequestOpen||walletChecking} onChange={event=>void chooseWalletAccount(event.target.value)}>{!account&&<option value="" disabled>Choose an authorized account</option>}{authorizedAccounts.map(address=><option key={address} value={address}>{address}</option>)}</select></label><p className="field-hint">Only accounts your wallet exposes to this site are listed.</p></>}
-      {account?<><p className="mono">{account}</p><p>{walletChecking?'Checking wallet context…':walletChain===ARC_NETWORKS[network].chainId?'Connected to Arc Testnet':'Wrong wallet network'}</p><p>Wallet balance: {walletBalance===null?'unknown':`${formatUnits(walletBalance,18)} USDC`}</p><div className="actions"><button className="secondary" onClick={()=>{invalidate();pq.lock('you disconnected');walletEpoch.current++;rememberWalletDisconnect(true);connected.current=false;setAuthorizedAccounts([]);setAccount(null);setWalletChain(null);setWalletChecking(false);}}>Disconnect</button>{walletChain!==ARC_NETWORKS[network].chainId&&<button onClick={()=>nextAction('switch')}>Switch to Arc Testnet</button>}</div></>:<><p>You can view and recover a vault without connecting. Use the owner account to manage it or the agent account to pay.</p><button disabled={!provider} onClick={()=>void connect()}>Connect wallet</button>{!provider&&<p className="muted">Open this app in a browser with an EVM wallet extension.</p>}</>}</section></details></div></header>
+      {account?<><p className="mono">{account}</p><p>{walletChecking?'Checking wallet context…':walletChain===ARC_NETWORKS[network].chainId?`Connected to ${networkName}`:'Wrong wallet network'}</p><p>Wallet balance: {walletBalance===null?'unknown':`${formatUnits(walletBalance,18)} USDC`}</p><div className="actions"><button className="secondary" onClick={()=>{invalidate();pq.lock('you disconnected');walletEpoch.current++;rememberWalletDisconnect(true);connected.current=false;setAuthorizedAccounts([]);setAccount(null);setWalletChain(null);setWalletChecking(false);}}>Disconnect</button>{walletChain!==ARC_NETWORKS[network].chainId&&<button onClick={()=>nextAction('switch')}>Switch to {networkName}</button>}</div></>:<><p>You can view and recover a vault without connecting. Use the owner account to manage it or the agent account to pay.</p><button disabled={!provider} onClick={()=>void connect()}>Connect wallet</button>{!provider&&<p className="muted">Open this app in a browser with an EVM wallet extension.</p>}</>}</section></details></div></header>
     {showWelcome&&<><Welcome onCreate={newVault} onOpen={()=>{setVaultToolsOpen(true);go('overview','saved-vault-tools');}} onContinue={continueWorkspace} vaultLabel={vault?(selectedCard?.label||'your saved vault'):undefined} pending={unresolved}/>{historyError&&<div className="notice" role="alert"><p>Your saved transaction history needs recovery.</p><button className="text-button" onClick={()=>go('activity')}>Open recovery</button></div>}</>}
     <div className="workspace" hidden={showWelcome}><aside className="sidebar" aria-label="Workspace navigation"><WorkspaceNav panel={panel} onChange={go}/><div className="sidebar-key"><TechnicalIcon kind="lock"/><span>Vault Key<small>{pq.phase==='restored'?'Unlocked':pq.phase==='generated'?'Backup needed':'Locked locally'}</small></span></div><p className="sidebar-note">Your funds stay in the vault. You stay in control.</p></aside>
     <div className="workspace-content" id="workspace-content"><div className="page-heading" key={panel}><div><span className="eyebrow">{vault?'Vault workspace':'Get started'}</span><h1>{pageTitles[panel].title}</h1><p>{pageTitles[panel].description}</p></div>{snapshot?.active&&<button className="danger" onClick={()=>nextAction('freeze')}>Freeze session</button>}</div>
-    {walletError&&<p className="error" role="alert">{walletError}</p>}{account&&walletChain!==ARC_NETWORKS[network].chainId&&<div className="inline-notice" role="alert"><p>Your wallet is on another network.</p><button className="secondary" onClick={()=>nextAction('switch')}>Switch to Arc Testnet</button></div>}
+    {walletError&&<p className="error" role="alert">{walletError}</p>}{account&&walletChain!==ARC_NETWORKS[network].chainId&&<div className="inline-notice" role="alert"><p>Your wallet is on another network.</p><button className="secondary" onClick={()=>nextAction('switch')}>Switch to {networkName}</button></div>}
     {assetLoadError&&<section className="notice" role="alert"><h2>Reload application files</h2><p>Check wallet activity first if submission is uncertain. Reload never cancels an onchain session or transaction.</p><button onClick={()=>window.location.reload()}>Reload app</button></section>}
     {unresolved&&panel!=='activity'&&<div className="inline-notice pending-summary" role="alert"><p>{pendingOperations.length===1?'A saved transaction needs checking.':`${pendingOperations.length} saved transactions need checking.`} Sending remains restricted until resolved.</p><button className="secondary" onClick={()=>go('activity','pending-operations')}>View transaction recovery</button></div>}
     {unresolved&&panel==='activity'&&<section className="panel notice" id="pending-operations" role="alert"><h2>Pending operations</h2><p>Unknown or submitted is not confirmed. Closing a review panel or removing a bookmark does not cancel these transactions.</p>{pendingOperations.map(op=><article key={op.id} className="activity-entry"><h3>{actionLabels[op.action]} · {transactionStageLabels[op.stage]}</h3><OperationSummary operation={op}/><OperationRecovery op={op} walletOpen={walletRequestOpen&&activeOperation.current===op.id} onAttach={attachOperationHash} onAcknowledge={acknowledgeNotSubmitted} onReconcile={reconcileOperation}/></article>)}</section>}
     {historyError&&<><p className="error" role="alert">Operation history unavailable: {historyError}</p><HistoryRecovery onRestored={saved=>{setOperations(saved);setHistoryError('');for(const op of saved.filter(unresolvedOperation))void reconcileOperation(op);}}/></>}
-    {draftError&&<PaymentDraftRecovery error={draftError} onRestored={()=>{const saved=loadPaymentDrafts().filter(d=>d.vault.toLowerCase()===vault?.toLowerCase()&&d.account.toLowerCase()===account?.toLowerCase());setPaymentDraft(saved.at(-1)??null);draftBaseline.current=saved.at(-1)?.requestId;newRequest.current=null;setDraftError('');invalidate();}}/>}
+    {draftError&&<PaymentDraftRecovery error={draftError} onRestored={()=>{const saved=loadPaymentDrafts().filter(d=>d.chainId===ARC_NETWORKS[network].chainId&&d.vault.toLowerCase()===vault?.toLowerCase()&&d.account.toLowerCase()===account?.toLowerCase());setPaymentDraft(saved.at(-1)??null);draftBaseline.current=saved.at(-1)?.requestId;newRequest.current=null;setDraftError('');invalidate();}}/>}
     <div id="panel-overview" role="tabpanel" aria-labelledby="tab-overview" hidden={panel!=='overview'}>
-      <section className="panel vault-panel" id="vault" aria-labelledby="vault-heading"><div className="vault-context"><div><h2 id="vault-heading">{vault?'Selected vault':'Choose a starting point'}</h2>{vault&&<span className="muted">{vault.slice(0,8)}…{vault.slice(-6)} · {readError?'State unavailable':reading?'Refreshing':snapshot?.trusted?'Verified onchain':'Verification pending'}</span>}</div><div className="vault-switcher">{!!registry.length&&<label>Saved vault<select value={vault??''} onChange={e=>{if(e.target.value)selectVault(getAddress(e.target.value));}}><option value="" disabled>Choose a saved vault</option>{vault&&!registry.some(item=>item.address.toLowerCase()===vault.toLowerCase())&&<option value={vault}>Current vault · {vault.slice(0,8)}…</option>}{registry.filter(item=>item.chainId===5042002).map(item=><option key={item.address} value={item.address}>{item.label||'USDC vault'} · {item.address.slice(0,8)}…{item.address.slice(-4)}</option>)}</select></label>}{vault&&<button className="text-button" disabled={reading} onClick={()=>void refresh()}>Refresh state</button>}</div></div>
+      <section className="panel vault-panel" id="vault" aria-labelledby="vault-heading"><div className="vault-context"><div><h2 id="vault-heading">{vault?'Selected vault':'Choose a starting point'}</h2>{vault&&<span className="muted">{vault.slice(0,8)}…{vault.slice(-6)} · {readError?'State unavailable':reading?'Refreshing':snapshot?.trusted?'Verified onchain':'Verification pending'}</span>}</div><div className="vault-switcher">{!!registry.length&&<label>Saved vault<select value={vault??''} onChange={e=>{if(e.target.value)selectVault(getAddress(e.target.value));}}><option value="" disabled>Choose a saved vault</option>{vault&&!registry.some(item=>item.chainId===ARC_NETWORKS[network].chainId&&item.address.toLowerCase()===vault.toLowerCase())&&<option value={vault}>Current vault · {vault.slice(0,8)}…</option>}{registry.filter(item=>item.chainId===ARC_NETWORKS[network].chainId).map(item=><option key={item.address} value={item.address}>{item.label||'USDC vault'} · {item.address.slice(0,8)}…{item.address.slice(-4)}</option>)}</select></label>}{vault&&<button className="text-button" disabled={reading} onClick={()=>void refresh()}>Refresh state</button>}</div></div>
       {snapshot&&<SessionPlate snapshot={snapshot}/>}
       <NextStepCard state={{...capabilities,agentAddress:sessionForm.agent}} onAction={nextAction}/>
       {(!snapshot||snapshot.sessionId===0n)&&<SetupJourney snapshot={snapshot} onAction={nextAction}/>}
@@ -716,7 +718,7 @@ export default function App() {
       <button className="text-button" onClick={()=>{setVaultToolsOpen(true);setFindOpen(true);requestAnimationFrame(()=>document.getElementById('creation-lookup')?.scrollIntoView({block:'start',behavior:'smooth'}));}}>Find a vault using its creation transaction</button>
       {vault&&<div className="vault-serial"><span>Vault contract address</span><a className="mono" href={`${ARC_NETWORKS[network].explorerUrl}/address/${vault}`} target="_blank" rel="noreferrer">{vault}</a><button className="text-button" onClick={()=>void navigator.clipboard.writeText(vault).then(()=>setCopyMessage('Vault address copied.')).catch(()=>setCopyMessage('Copy failed. Select the address above to copy it.'))}>Copy vault address</button>{selectedCard&&<button className="text-button" onClick={()=>downloadText(`arcmandate-vault-${vault.slice(2,10)}.json`,registryJson([selectedCard]))}>Download vault card</button>}{copyMessage&&<p role="status">{copyMessage}</p>}</div>}
       </details>
-      {readError&&<div className="notice" role="alert"><h3>Vault state could not be read</h3><p>{/returned no data|not a vault/i.test(readError)?'This address did not return vault data. Check that it is a contract on Arc Testnet, or find its creation transaction.':explainError(new Error(readError)).advice}</p><p>{snapshot?'The last verified state belongs to this same vault and may be stale. Transactions are disabled until refresh succeeds.':'No session or balance from another vault is shown.'}</p><details><summary>Technical error</summary><p>{readError}</p></details><button className="secondary" onClick={()=>void refresh()}>Retry vault read</button></div>}
+      {readError&&<div className="notice" role="alert"><h3>Vault state could not be read</h3><p>{/returned no data|not a vault/i.test(readError)?`This address did not return vault data. Check that it is a contract on ${networkName}, or find its creation transaction.`:explainError(new Error(readError)).advice}</p><p>{snapshot?'The last verified state belongs to this same vault and may be stale. Transactions are disabled until refresh succeeds.':'No session or balance from another vault is shown.'}</p><details><summary>Technical error</summary><p>{readError}</p></details><button className="secondary" onClick={()=>void refresh()}>Retry vault read</button></div>}
       {reading&&!snapshot&&<p role="status">Reading the selected vault…</p>}
       {snapshot&&<><p className="state-footnote">{readError?`Stale view at block ${snapshot.blockNumber}`:snapshot.trusted?'Contract verified against the supported build.':'Unknown contract build. Viewing only; deposits and transactions disabled.'}</p>
         <details className="session-help"><summary>What happens when I reload or lock my key?</summary><p>Reloading does not delete this onchain session. Locking the Vault Key closes only your local signer. To revoke spending, freeze the session and wait for its confirmed receipt.</p></details>
@@ -724,13 +726,13 @@ export default function App() {
       </>}
       {!vault&&<details className="creation-details"><summary>What creating a vault involves</summary><ol><li>Connect the wallet that will own your vault.</li><li>Create, download and restore your Vault Key to prove the backup works.</li><li>Review creation. Your vault starts empty, with no session.</li></ol><button className="secondary" onClick={()=>go('key')}>Set up Vault Key</button>{actionButton('deploy','Review vault creation')}</details>}
       </section>
-      <details className="panel vault-tools" id="saved-vault-tools" open={vaultToolsOpen||!!registryError} onToggle={event=>setVaultToolsOpen(event.currentTarget.open)}><summary><span>My saved vaults & recovery</span><span className="muted">{registry.filter(item=>item.chainId===5042002).length} saved</span></summary><VaultLibrary items={registry} account={account} selected={vault} error={registryError} onOpen={selectVault} onChange={changeRegistry} onFind={locateCreation} findOpen={findOpen} onFindToggle={setFindOpen} onRecovered={items=>{setRegistry(items);setRegistryError('');}}/></details>
+      <details className="panel vault-tools" id="saved-vault-tools" open={vaultToolsOpen||!!registryError} onToggle={event=>setVaultToolsOpen(event.currentTarget.open)}><summary><span>My saved vaults & recovery</span><span className="muted">{registry.filter(item=>item.chainId===ARC_NETWORKS[network].chainId).length} saved</span></summary><VaultLibrary network={network} items={registry} account={account} selected={vault} error={registryError} onOpen={selectVault} onChange={changeRegistry} onFind={locateCreation} findOpen={findOpen} onFindToggle={setFindOpen} onRecovered={items=>{setRegistry(items);setRegistryError('');}}/></details>
       <section className="panel role-guide"><div><h2>Your wallet manages. Your agent pays.</h2><p>USDC stays in the vault. You decide who the agent can pay, how much it can spend and for how long.</p></div><details><summary>Understand the wallets and Vault Key</summary><dl className="summary"><dt>Owner wallet</dt><dd>Your management wallet; keep its private key out of the bot.</dd><dt>Vault</dt><dd>The contract holds USDC. A session budget grants permission; it does not transfer the budget to the agent.</dd><dt>Vault Key</dt><dd>Second management signature, stored as an encrypted file. No gas balance. Locking it does not freeze the session.</dd><dt>Agent wallet</dt><dd>A separate account for bounded payments. It needs its own USDC for network fees. Funds in the agent wallet are outside vault limits.</dd><dt>Recipient</dt><dd>An address allowed to receive payment directly from the vault.</dd></dl><p>Example: 10 USDC in the vault, 2 USDC session budget, 0.50 USDC per-payment cap. A 0.25 payment moves vault funds directly to a recipient. The agent pays only its network fee.</p></details></section>
     </div>
     <div id="panel-key" role="tabpanel" aria-labelledby="tab-key" hidden={panel!=='key'}><KeyPanel key={vault??'new-vault'} pq={pq} expectedKey={snapshot?.publicKey} disabled={busy||walletChecking||!!vault&&!snapshot} onChange={invalidate}/>{vault&&pq.phase==='restored'&&<div className="task-footer"><p>Key unlocked. Return to your vault to choose the next action.</p><button onClick={()=>go('overview')}>Continue to your vault</button></div>}{!vault&&<section className="panel"><h2>Create your empty vault</h2>{actionButton('deploy','Review vault creation')}</section>}</div>
     <div id="panel-agent" role="tabpanel" aria-labelledby="tab-agent" hidden={panel!=='agent'}>{snapshot?<>
       <div className="task-switcher" aria-label="Agent tasks">{(['setup','limits','payment'] as const).map(item=><button key={item} className="secondary" aria-pressed={agentView===item} onClick={()=>setAgentView(item)}>{({setup:'1 · Prepare agent',limits:'2 · Set limits',payment:'3 · Make a payment'})[item]}</button>)}</div>
-      <div hidden={agentView!=='setup'}><AgentSetup key={snapshot.address} snapshot={snapshot} agent={sessionForm.agent|| (snapshot.active?snapshot.policy.agent:'')} onAgent={value=>{invalidate();setSessionForm(previous=>({...previous,agent:value}));}} onGas={()=>{setFundsView('gas');go('funds');}} operations={operations} verifiedBlock={verifiedCreation?.address.toLowerCase()===snapshot.address.toLowerCase()?verifiedCreation.block:undefined}/><div className="task-footer"><p>{snapshot.balance===0n?'Add USDC to the vault, then choose spending limits. Open the session last.':'Next, choose where this agent can pay and how much it can spend.'}</p><div>{snapshot.balance===0n&&<button onClick={()=>nextAction('fund')}>Continue to vault deposit</button>}<button className={snapshot.balance===0n?'secondary':undefined} onClick={()=>setAgentView('limits')}>Continue to spending limits</button></div></div></div>
+      <div hidden={agentView!=='setup'}><AgentSetup network={network} key={snapshot.address} snapshot={snapshot} agent={sessionForm.agent|| (snapshot.active?snapshot.policy.agent:'')} onAgent={value=>{invalidate();setSessionForm(previous=>({...previous,agent:value}));}} onGas={()=>{setFundsView('gas');go('funds');}} operations={operations} verifiedBlock={verifiedCreation?.address.toLowerCase()===snapshot.address.toLowerCase()?verifiedCreation.block:undefined}/><div className="task-footer"><p>{snapshot.balance===0n?'Add USDC to the vault, then choose spending limits. Open the session last.':'Next, choose where this agent can pay and how much it can spend.'}</p><div>{snapshot.balance===0n&&<button onClick={()=>nextAction('fund')}>Continue to vault deposit</button>}<button className={snapshot.balance===0n?'secondary':undefined} onClick={()=>setAgentView('limits')}>Continue to spending limits</button></div></div></div>
       <div hidden={agentView!=='limits'}>
       <section className="panel session-form" id="session-form"><span className="eyebrow">Spending permission</span><h2>{snapshot.active?'Replace session':'Open session'}</h2><p>Choose the agent’s budget, approved recipients and expiry. Your owner wallet and Vault Key approve these limits.</p><p>Agent: <span className="mono">{sessionForm.agent||'Choose the account in Agent setup'}</span> <button className="text-button" onClick={()=>setAgentView('setup')}>Change agent</button></p>
       <div className="fields">{(['budget','cap'] as const).map(field=><label key={field}>{field==='budget'?'Session budget (USDC)':'Per payment cap (USDC)'}<input inputMode="decimal" value={sessionForm[field]} onChange={e=>{invalidate();setSessionForm(previous=>({...previous,[field]:e.target.value}));}}/><small className="field-hint">{field==='budget'?'Total the agent may spend during this session.':'Maximum allowed in one payment.'}</small></label>)}</div>
@@ -759,7 +761,7 @@ export default function App() {
     <TransactionDrawer open={drawerOpen} onClose={()=>setDrawerOpen(false)}><TransactionProgress transaction={transaction}/><section className="panel transaction">
       <div className="section-heading"><h2>{review?.title??(displayedOperation?actionLabels[displayedOperation.action]:'Transaction status')}</h2><StatusBadge label={transactionStageLabels[transaction.stage]} tone={transactionTone}/></div>
       {!review&&displayedOperation&&<OperationSummary operation={displayedOperation}/>}
-      {review&&<><dl className="summary"><dt>Network</dt><dd>Arc {review.network}</dd><dt>Sender / fee payer</dt><dd className="mono">{review.account}</dd>{review.snapshot&&<><dt>Vault contract</dt><dd className="mono">{review.snapshot.address}</dd></>}{review.amount!==undefined&&<><dt>Amount</dt><dd>{usd(review.amount)}</dd></>}{review.to&&<><dt>Recipient</dt><dd className="mono">{review.to}</dd></>}{review.action==='fund'&&<><dt>Recipient vault</dt><dd className="mono">{review.snapshot?.address}</dd></>}{review.action==='deploy'&&<><dt>Deposited / session</dt><dd>0 USDC / no session</dd><dt>Vault Key ID</dt><dd>{review.publicKey?.slice(2,10)}</dd></>}{review.payment&&<><dt>Request ID</dt><dd className="mono">{review.payment.requestId}</dd><dt>Original session</dt><dd>{review.payment.sessionId}</dd></>}{review.intent&&<><dt>Authorization deadline</dt><dd>{date(review.intent.auth.deadline)}</dd></>}</dl>
+      {review&&<><dl className="summary"><dt>Network</dt><dd>{networkLabel(review.network)}</dd><dt>Sender / fee payer</dt><dd className="mono">{review.account}</dd>{review.snapshot&&<><dt>Vault contract</dt><dd className="mono">{review.snapshot.address}</dd></>}{review.amount!==undefined&&<><dt>Amount</dt><dd>{usd(review.amount)}</dd></>}{review.to&&<><dt>Recipient</dt><dd className="mono">{review.to}</dd></>}{review.action==='fund'&&<><dt>Recipient vault</dt><dd className="mono">{review.snapshot?.address}</dd></>}{review.action==='deploy'&&<><dt>Deposited / session</dt><dd>0 USDC / no session</dd><dt>Vault Key ID</dt><dd>{review.publicKey?.slice(2,10)}</dd></>}{review.payment&&<><dt>Request ID</dt><dd className="mono">{review.payment.requestId}</dd><dt>Original session</dt><dd>{review.payment.sessionId}</dd></>}{review.intent&&<><dt>Authorization deadline</dt><dd>{date(review.intent.auth.deadline)}</dd></>}</dl>
         {review.action==='agent-gas'&&<p className="warning">Transfers your wallet's USDC directly to the agent. Not a vault deposit; outside session protection.</p>}
         {review.action==='agent-pay'&&<p>Vault funds go directly to the recipient. The connected agent pays the network fee. Retry keeps the original request/payment ID; unknown transactions must be reconciled first.</p>}
         {review.policy&&<>{review.snapshot?.active&&<details><summary>Previous session being replaced</summary><PolicySummary policy={review.snapshot.policy}/></details>}<h3>New session</h3><PolicySummary policy={review.policy}/>{review.snapshot&&review.policy.totalBudget>review.snapshot.balance&&<p className="warning">Budget exceeds today's balance. Future deposits can make the remaining authority spendable.</p>}{review.policy.recipients.includes(getAddress(review.policy.agent))&&<p className="warning">The agent is an allowed recipient and can pay its own wallet.</p>}</>}
@@ -770,6 +772,6 @@ export default function App() {
       {transaction.hash&&<p className="mono"><a target="_blank" rel="noreferrer" href={`${ARC_NETWORKS[transactionNetwork].explorerUrl}/tx/${transaction.hash}`}>View transaction {transaction.hash}</a></p>}
       {transaction.stage==='confirmed'&&<><p className="notice">Confirmed onchain. {displayedOperation?.action==='deploy'?'Your empty vault is saved. Prepare an agent, then deposit and open a session.':displayedOperation?.action==='start'?'Session rules are active. This does not start a bot; switch to the configured agent to make a payment.':displayedOperation?.action==='owner-freeze'||displayedOperation?.action==='pq-freeze'?'Session frozen. The owner can now review a withdrawal.':'The verified action effect is recorded in Activity.'}</p><button onClick={()=>{setDrawerOpen(false);if(displayedOperation?.action==='owner-freeze'||displayedOperation?.action==='pq-freeze'){setFundsView('withdraw');go('funds');}else {setAgentView(displayedOperation?.action==='start'?'payment':'setup');go('agent');}}}>Continue to next step</button></>}
     </section></TransactionDrawer>
-    <footer><span>ArcMandate · Arc Testnet</span><p>Keep your encrypted Vault Key backup and password. Vault cards and agent configuration contain public metadata only.</p></footer></div></div>
+    <footer><span>ArcMandate · {networkName}</span><p>Keep your encrypted Vault Key backup and password. Vault cards and agent configuration contain public metadata only.</p></footer></div></div>
   </main></>;
 }

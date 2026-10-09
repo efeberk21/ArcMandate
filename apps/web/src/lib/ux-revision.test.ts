@@ -10,7 +10,7 @@ import { operationReceipt,saveOperation,type Operation } from './operations';
 import type { VaultSnapshot,ArcClient } from './chain';
 const owner='0x1111111111111111111111111111111111111111';const vault='0x2222222222222222222222222222222222222222';const agent='0x3333333333333333333333333333333333333333';const recipient='0x4444444444444444444444444444444444444444';
 const publicKey=`0x${'aa'.repeat(32)}` as Hex;const hash=`0x${'ab'.repeat(32)}` as Hex;
-const snapshot:VaultSnapshot={address:vault,owner,publicKey,trusted:true,active:true,sessionId:1n,nonce:1n,spent:0n,balance:1_000_000n,blockNumber:100n,timestamp:1000n,policy:{agent,totalBudget:1_000_000n,perTxCap:100_000n,expiresAt:2000n,recipients:[recipient]}};
+const snapshot:VaultSnapshot={chainId:5042002,address:vault,owner,publicKey,trusted:true,active:true,sessionId:1n,nonce:1n,spent:0n,balance:1_000_000n,blockNumber:100n,timestamp:1000n,policy:{agent,totalBudget:1_000_000n,perTxCap:100_000n,expiresAt:2000n,recipients:[recipient]}};
 const state:CapabilityState={network:'testnet',account:owner,walletChain:5042002,provider:true,vault,snapshot,phase:'locked',publicKey:null,operations:[],locksAvailable:true};
 function storage(){const values=new Map<string,string>();return{getItem:(key:string)=>values.get(key)??null,setItem:(key:string,value:string)=>{values.set(key,value);},values};}
 const op:Operation={id:'payment-1',action:'agent-pay',network:'testnet',account:agent,vault,to:vault,dataHash:keccak256('0x1234'),stage:'unknown',createdAt:'2026-10-06T00:00:00.000Z',requestId:'invoice-1',paymentId:publicKey,sessionId:'1',amount:'10000',recipient};
@@ -76,7 +76,7 @@ describe('persistent independent vault library',()=>{
     expect(()=>mergeRegistry([{...item,address:agent}],{getItem:store.getItem,setItem:()=>{throw new Error('Quota');}})).toThrow('Quota');expect(loadRegistry(store)).toEqual(before);
   });
   it('rejects a successful payment hash as a creation lookup',async()=>{
-    const rpc={getChainId:async()=>5042002,getTransactionReceipt:async()=>({status:'success',contractAddress:null})};
+    const rpc={chain:{id:5042002},getChainId:async()=>5042002,getTransactionReceipt:async()=>({status:'success',contractAddress:null})};
     await expect(findDeployment(rpc as unknown as ArcClient,hash)).rejects.toThrow('not a direct contract-creation');
   });
 });

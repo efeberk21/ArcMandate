@@ -6,11 +6,14 @@ import { BaseError, createPublicClient, decodeFunctionResult, encodeFunctionData
 import { ARC_NETWORKS, PQ_VERIFIER_ADDRESS } from '../packages/core/src/config.js';
 
 if (existsSync('.env')) loadEnvFile('.env');
+const options = process.argv.slice(2);
+const selectedNetwork = options.length === 0 ? null : options.length === 2 && options[0] === '--network' && ['mainnet','testnet'].includes(options[1]) ? options[1] : (() => { throw new Error('Usage: pq-probe.ts [--network mainnet|testnet]'); })();
 const verifierAbi = parseAbi(['function verifySlhDsaSha2128s(bytes vk, bytes message, bytes sig) returns (bool)']);
 const message = randomBytes(32);
 const { publicKey, secretKey } = slh_dsa_sha2_128s.keygen();
 const started = performance.now();
 const signature = slh_dsa_sha2_128s.sign(message, secretKey);
+secretKey.fill(0);
 const signingMs = Math.round(performance.now() - started);
 const localValid = slh_dsa_sha2_128s.verify(signature, message, publicKey);
 if (!localValid || publicKey.length !== 32 || signature.length !== 7856) {
@@ -32,6 +35,7 @@ const calls = [
 ] as const;
 
 for (const [name, config] of Object.entries(ARC_NETWORKS)) {
+  if (selectedNetwork && name !== selectedNetwork) continue;
   const rpcUrl = process.env[name === 'testnet' ? 'ARC_TESTNET_RPC_URL' : 'ARC_MAINNET_RPC_URL'] ?? config.rpcUrl;
   const client = createPublicClient({ transport: http(rpcUrl, { timeout: 30_000 }) });
   try {

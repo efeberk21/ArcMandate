@@ -54,8 +54,9 @@ export async function updateRegistry(change: (storage: Store) => VaultBookmark[]
   return navigator.locks.request('arcmandate-vault-registry', () => change(localStorage));
 }
 export function snapshotBookmark(snapshot: VaultSnapshot, deployment?: Operation): VaultBookmark {
+  if (deployment && ARC_NETWORKS[deployment.network].chainId !== snapshot.chainId) throw new Error('Deployment record belongs to another network.');
   const now = new Date().toISOString();
-  return { chainId: ARC_NETWORKS.testnet.chainId, address: snapshot.address, label: '', firstSeenAt: now, lastOpenedAt: now, source: deployment ? 'deployment' : 'address',
+  return { chainId: snapshot.chainId, address: snapshot.address, label: '', firstSeenAt: now, lastOpenedAt: now, source: deployment ? 'deployment' : 'address',
     owner: snapshot.owner, publicKey: snapshot.publicKey, checkedAt: now,
     ...(deployment?.hash && deployment.blockNumber ? { deploymentHash: deployment.originalHash ?? deployment.hash, deploymentBlock: deployment.blockNumber } : {}) };
 }
@@ -67,12 +68,13 @@ export function migrateOperations(operations: Operation[], storage: Store = loca
 }
 export async function findDeployment(rpc: ArcClient, hash: Hex): Promise<{ snapshot: VaultSnapshot; hash: Hex; block: bigint }> {
   if (!/^0x[0-9a-f]{64}$/i.test(hash)) throw new Error('Enter the creation transaction hash: 0x followed by 64 hex characters. A public key is not a transaction.');
-  if (await rpc.getChainId() !== ARC_NETWORKS.testnet.chainId) throw new Error('Switch the RPC to Arc Testnet.');
+  const chainId = rpc.chain.id;
+  if (![5042,5042002].includes(chainId) || await rpc.getChainId() !== chainId) throw new Error('RPC does not match the selected Arc network.');
   const receipt = await rpc.getTransactionReceipt({ hash });
   if (receipt.status !== 'success') throw new Error('This creation transaction reverted. No vault was created.');
   if (!receipt.contractAddress) throw new Error('This is not a direct contract-creation transaction. Use the vault address for a transfer or payment.');
   const tx = await rpc.getTransaction({ hash });
-  if (tx.to !== null || tx.chainId !== ARC_NETWORKS.testnet.chainId) throw new Error('This is not a testnet contract creation.');
+  if (tx.to !== null || tx.chainId !== chainId) throw new Error('This is not a contract creation on the selected Arc network.');
   const snapshot = await readVault(rpc, receipt.contractAddress, receipt.blockNumber);
   if (!snapshot.trusted || snapshot.owner.toLowerCase() !== tx.from.toLowerCase()) throw new Error('The created contract is not a supported ArcMandate vault.');
   return { snapshot, hash, block: receipt.blockNumber };
