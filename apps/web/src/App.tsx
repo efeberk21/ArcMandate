@@ -685,7 +685,7 @@ export default function App() {
   }
   function actionButton(action:Action,label:string) {
     const gate=capability(action,capabilities);const invalid=formError(action);const reasons=[...gate.reasons,...(invalid?[invalid]:[])];
-    const fixes={connect:'Connect the required wallet',switch:'Switch network',refresh:'Refresh vault state',key:'Unlock Vault Key',pending:'Check pending operations',session:'Review session options'};
+    const fixes={connect:'Connect the required wallet',switch:`Switch to ${networkName}`,refresh:'Refresh vault state',key:'Unlock Vault Key',pending:'Check pending operations',session:'Review session options'};
     return <div className="action-control"><button className={action.includes('freeze')?'danger':undefined} disabled={reasons.length>0} onClick={()=>prepare(action)}>{label}</button>
       {!!reasons.length&&<div className="action-reasons"><p>{reasons[0]}</p>{gate.fix&&<button className="text-button" onClick={()=>{if(gate.fix)nextAction(gate.fix);}}>{fixes[gate.fix]}</button>}{reasons.length>1&&<details><summary>All requirements ({reasons.length})</summary><ul>{reasons.map(reason=><li key={reason}>{reason}</li>)}</ul></details>}</div>}</div>;
   }
