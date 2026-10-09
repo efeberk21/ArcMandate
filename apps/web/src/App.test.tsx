@@ -102,6 +102,20 @@ describe('vault and review integration', () => {
     expect(mock.request.mock.calls.some(call=>call[0].method==='eth_sendTransaction')).toBe(false);
   });
 
+  it('keeps recovery reachable from Agent without expanding it above the selected task',async()=>{
+    const saved=JSON.stringify([{id:'pending-nav',network:'testnet',action:'agent-gas',account:owner,vault,dataHash:`0x${'ab'.repeat(32)}`,stage:'unknown',createdAt:new Date().toISOString(),walletNonce:7}]);
+    localStorage.setItem('arcmandate.operations.v1',saved);
+    await act(async()=>{root.unmount();root=createRoot(host);root.render(<App/>);});
+    await click('Agent & session');
+    expect(host.querySelector('.pending-summary')?.textContent).toContain('A saved transaction needs checking');
+    expect(host.querySelector('#pending-operations')).toBeNull();
+    await click('View transaction recovery');
+    expect(host.querySelector('#tab-activity')?.getAttribute('aria-selected')).toBe('true');
+    expect(host.querySelector('#pending-operations')?.textContent).toContain('Outcome unknown');
+    expect(localStorage.getItem('arcmandate.operations.v1')).toBe(saved);
+    expect(mock.request.mock.calls.some(call=>call[0].method==='eth_sendTransaction')).toBe(false);
+  });
+
   it('selects an authorized second account, locks the key and resumes that explicit choice after reload', async () => {
     mock.request.mockImplementation(async ({ method }) => method === 'eth_accounts' ? [owner, agent] : method === 'eth_chainId' ? '0x4cef52' : '0x0');
     await click('Disconnect'); await click('Connect wallet'); mock.lock.mockClear();
