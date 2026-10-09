@@ -1,0 +1,759 @@
+{
+  "schemaVersion": 1,
+  "recordedForDate": "2026-10-10",
+  "timezone": "Europe/Istanbul",
+  "recordedAt": "2026-10-09T23:16:37.910Z",
+  "network": "Arc Mainnet",
+  "chainId": 5042,
+  "vault": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+  "owner": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+  "agent": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+  "status": "funded manual wallet acceptance completed; vault empty and inactive; remaining agent gas returned with a small wallet reserve",
+  "scope": "Manual MetaMask acceptance of deposit, agent gas funding, hybrid session authorization, two owner-directed agent payments, budget exhaustion, owner freeze, restart, replacement, PQ freeze and hybrid withdrawal. No autonomous mainnet bot or AI decision-maker was used.",
+  "acceptanceApplicationSourceCommit": "b503437fadb6d1af30ae0fc1132060d924652401",
+  "contractDeploymentEvidence": "arc-mainnet-2026-10-10.json",
+  "executor": "Browser console with human MetaMask signatures; owner and agent use distinct accounts",
+  "configuration": {
+    "depositedUSDC": "0.10",
+    "agentGasFundingUSDC": "0.10",
+    "paymentRecipient": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+    "firstSession": {
+      "budgetUSDC": "0.02",
+      "capUSDC": "0.01",
+      "durationMinutes": 60
+    },
+    "restart": {
+      "budgetUSDC": "0.01",
+      "capUSDC": "0.01",
+      "durationMinutes": 60
+    },
+    "replacement": {
+      "budgetUSDC": "0.01",
+      "capUSDC": "0.005",
+      "durationMinutes": 60
+    }
+  },
+  "receipts": [
+    {
+      "label": "deposit",
+      "hash": "0xf7221482ee368671df5a13275d7cffd70d6b485f596efedfb825e933add5ef89",
+      "sender": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+      "nonce": 1,
+      "action": "USDC transfer 0.1 to 0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+      "status": "success",
+      "block": "25144408",
+      "blockHash": "0x63f4d16e6775ba57c2d1a18b488361afd0b9f24648cdf41cc645d8f575fe6348",
+      "gasUsed": "48950",
+      "effectiveGasPrice": "21500000000",
+      "feeWei": "1052425000000000",
+      "feeUSDC": "0.001052425",
+      "calldataKeccak256": "0xd37a90c321e2339781edfb85743db23f5387e80154d726a66c316f591e3e3a93"
+    },
+    {
+      "label": "agent-gas",
+      "hash": "0x49ac00caf44355d6c59e4f75bf89ad7e6303250a5371b570eb9167559d2d6633",
+      "sender": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+      "nonce": 2,
+      "action": "USDC transfer 0.1 to 0xb4675a18b593cacb71702284059835E29A0a06f9",
+      "status": "success",
+      "block": "25144558",
+      "blockHash": "0xee4b90e9a98de17905ef5949561c45d788b8704ee10bd753e8431ad7504d3431",
+      "gasUsed": "73950",
+      "effectiveGasPrice": "21500000000",
+      "feeWei": "1589925000000000",
+      "feeUSDC": "0.001589925",
+      "calldataKeccak256": "0x081333964eef91504e87f253434d0d44cb20382a532ec3509e52fde0c7ce50a5"
+    },
+    {
+      "label": "start-session",
+      "hash": "0xe06aa07189b86f96bbef6e042f2a15db4d20c3db174bf1d3513bd396bea899d3",
+      "sender": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+      "nonce": 3,
+      "action": "startSession",
+      "status": "success",
+      "block": "25144838",
+      "blockHash": "0x5d6f22f5f88c536f3af9c8c8d0c986bf099fbad071653e5f9e359afaf23db219",
+      "gasUsed": "620268",
+      "effectiveGasPrice": "21500000000",
+      "feeWei": "13335762000000000",
+      "feeUSDC": "0.013335762",
+      "calldataKeccak256": "0x1f0148dbee004b93d8fb6c5437ca6d4dbfc40509c68936bc9032c97f138a3503"
+    },
+    {
+      "label": "payment-1",
+      "hash": "0xc487372ed542d1559010361fa79a4be3d4acb77f29e9b50fb0dab0c00352fe15",
+      "sender": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+      "nonce": 0,
+      "action": "agentPay",
+      "status": "success",
+      "block": "25145375",
+      "blockHash": "0x7aeb9c7f05d9f99bc28499482366c50b235b8d34f5f75fc50ff6c9cae75bfbd6",
+      "gasUsed": "120125",
+      "effectiveGasPrice": "21500000000",
+      "feeWei": "2582687500000000",
+      "feeUSDC": "0.0025826875",
+      "calldataKeccak256": "0x14204e4800a012b8a3d07ed63d02349c25468b1f7f9cc0ecf45b6d5b696be8b5"
+    },
+    {
+      "label": "payment-2",
+      "hash": "0x489121eb0e5130acce514d09bc302c6d9f68ad2d7e81616745eb31176797d3c9",
+      "sender": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+      "nonce": 1,
+      "action": "agentPay",
+      "status": "success",
+      "block": "25145782",
+      "blockHash": "0xdf865ad48d471d9ae0e35b143305f56f8c590d615515df093bd9f0b5dc1766fa",
+      "gasUsed": "103025",
+      "effectiveGasPrice": "21500000000",
+      "feeWei": "2215037500000000",
+      "feeUSDC": "0.0022150375",
+      "calldataKeccak256": "0x4afae93c52948afb9403dd09f56c4b540ceb1238eed2809098b5c50eed3f0e88"
+    },
+    {
+      "label": "owner-freeze",
+      "hash": "0x29be9e24647b6e3ceefb8a0cd2fb387e844ae0dd492eadaae29373b8b29e8a74",
+      "sender": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+      "nonce": 4,
+      "action": "freezeByOwner",
+      "status": "success",
+      "block": "25146140",
+      "blockHash": "0xef391ccf0987eef3f7bf36ed826dcfef36379d09176bf9e8dd627e4a44fe1edc",
+      "gasUsed": "60311",
+      "effectiveGasPrice": "21500000000",
+      "feeWei": "1296686500000000",
+      "feeUSDC": "0.0012966865",
+      "calldataKeccak256": "0x3197fed3a365d1e19672045bba1f99185703e097da3fdd81f4693f0cbc23e9cc"
+    },
+    {
+      "label": "restart-session",
+      "hash": "0xdf3fd3d4baccf1e92024e253e841dd7aa0d3b48574ab78e781e369bbcb8d0a5c",
+      "sender": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+      "nonce": 5,
+      "action": "startSession",
+      "status": "success",
+      "block": "25146736",
+      "blockHash": "0x46583f4e6380580025cca6b44eec0f898e2c8eb3adfdb77a0d973be93e5521e6",
+      "gasUsed": "586032",
+      "effectiveGasPrice": "21500000000",
+      "feeWei": "12599688000000000",
+      "feeUSDC": "0.012599688",
+      "calldataKeccak256": "0x52178d150eb1926a59a5a9e830ddefb279082903f9a976b717eb29d633141797"
+    },
+    {
+      "label": "replace-session",
+      "hash": "0x40b8ddb3524d7f34adde7f5ce40cf15343a6f8b3092a622aa746f58c1b0e6272",
+      "sender": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+      "nonce": 6,
+      "action": "startSession",
+      "status": "success",
+      "block": "25146944",
+      "blockHash": "0x13e453883844ed7d1a4d239aa312d1ebf87388692b87b095331bc1fa0625d70d",
+      "gasUsed": "475261",
+      "effectiveGasPrice": "21500000000",
+      "feeWei": "10218111500000000",
+      "feeUSDC": "0.0102181115",
+      "calldataKeccak256": "0x8978b952c53b43997c564f3e0908f1dc8abe495b173efd14a1d293bb994bec38"
+    },
+    {
+      "label": "pq-freeze",
+      "hash": "0xeafb51c76ce0f8fc642b226cd74097f972bb5fabae35afe1bfc078c4675b20aa",
+      "sender": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+      "nonce": 7,
+      "action": "freezeByPQ",
+      "status": "success",
+      "block": "25147107",
+      "blockHash": "0x2cae0ea090dd12b38aa9622f79abacd79e02c173bc9c20166dd696f1cce8d53d",
+      "gasUsed": "422382",
+      "effectiveGasPrice": "21500000000",
+      "feeWei": "9081213000000000",
+      "feeUSDC": "0.009081213",
+      "calldataKeccak256": "0xc92fae926ba59c19155d0293e763613af373a444788ae864415f9f90d50c89cc"
+    },
+    {
+      "label": "withdraw",
+      "hash": "0x5fe6a7981178d9d3c581a1e604559fdc175ec21927d5ee84250ce6a8255fec04",
+      "sender": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+      "nonce": 8,
+      "action": "withdraw",
+      "status": "success",
+      "block": "25147301",
+      "blockHash": "0x00734e23cde4b53de074e7181e117c85b406ea62eab8fa549cab0c9a1128e43b",
+      "gasUsed": "447111",
+      "effectiveGasPrice": "21500000000",
+      "feeWei": "9612886500000000",
+      "feeUSDC": "0.0096128865",
+      "calldataKeccak256": "0x7d1e62a10a36d4cf1bb5870a39aee03ff8a61d2e8d54d7f2d5ecae69753cffe0"
+    },
+    {
+      "label": "agent-return",
+      "hash": "0x1f9156ea440b3264deb9e67eb7e19f155bc7c14873b6ea9faac2846ad00f471f",
+      "sender": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+      "nonce": 2,
+      "action": "Native USDC transfer 0.094304525 to 0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+      "status": "success",
+      "block": "25147548",
+      "blockHash": "0xbcf620b5fb870faac5d05ed36a226961b4d9742e33ff99461a182f79a18108de",
+      "gasUsed": "21000",
+      "effectiveGasPrice": "21500000000",
+      "feeWei": "451500000000000",
+      "feeUSDC": "0.0004515",
+      "calldataKeccak256": "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+    }
+  ],
+  "simulations": [
+    {
+      "recordedAt": "2026-10-09T23:04:47.049Z",
+      "block": "25146186",
+      "blockHash": "0x3ad5f136d428dbf813098daa939c0c533b59fc0156bf4c63c1a50a4bac217dd6",
+      "sessionId": "2",
+      "controlNonce": "2",
+      "checks": [
+        {
+          "label": "payment-after-freeze",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "SessionInactive",
+          "transactionSent": false,
+          "calldataKeccak256": "0x37e580d94db97798502e40562878f7bfbaab2259611fe9955a109ad2f28a5fdf"
+        },
+        {
+          "label": "old-start-authorization-cannot-replay",
+          "from": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "InvalidNonce",
+          "transactionSent": false,
+          "calldataKeccak256": "0x1f0148dbee004b93d8fb6c5437ca6d4dbfc40509c68936bc9032c97f138a3503"
+        },
+        {
+          "label": "start-PQ-signature-cannot-authorize-withdrawal",
+          "from": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "InvalidPQSignature",
+          "transactionSent": false,
+          "calldataKeccak256": "0xea16e2c0ebbf0dba958748e275d06c8331b3fab39cef1759819e120928c11c5b"
+        },
+        {
+          "label": "withdrawal-over-balance",
+          "from": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "InsufficientBalance",
+          "transactionSent": false,
+          "calldataKeccak256": "0x1e159b284e3215aeda68712e5811b0bb8f02ac5666168d62093329b3201837ee"
+        },
+        {
+          "label": "agent-cannot-withdraw-after-freeze",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "Unauthorized",
+          "transactionSent": false,
+          "calldataKeccak256": "0xea16e2c0ebbf0dba958748e275d06c8331b3fab39cef1759819e120928c11c5b"
+        }
+      ]
+    },
+    {
+      "recordedAt": "2026-10-09T23:12:48.308Z",
+      "chainId": 5042,
+      "hash": "0xeafb51c76ce0f8fc642b226cd74097f972bb5fabae35afe1bfc078c4675b20aa",
+      "actualSender": "0x48abfba33961bcf0a0c6904ba34167432a3a0e38",
+      "calldataKeccak256": "0xc92fae926ba59c19155d0293e763613af373a444788ae864415f9f90d50c89cc",
+      "signatureBytes": 7856,
+      "preFreezeBlock": "25147106",
+      "preFreezeBlockHash": "0x8cf825353484bf11386bf3378bd9324e1b77aca920d2546699df06e758d37fac",
+      "checks": [
+        {
+          "label": "valid-PQ-freeze-from-distinct-agent-relay",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "block": "25147106",
+          "observed": "success",
+          "transactionSent": false
+        },
+        {
+          "label": "mined-PQ-freeze-cannot-replay-while-inactive",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "block": "25147107",
+          "observed": "SessionInactive",
+          "transactionSent": false
+        }
+      ]
+    },
+    {
+      "recordedAt": "2026-10-09T22:53:56.298Z",
+      "chainId": 5042,
+      "block": "25144901",
+      "blockHash": "0x14d37b23d73d5cd59f16646b16d6ecf25fe6af65440441ccf8f553f0ee8cf7b0",
+      "sessionId": "1",
+      "spentUnits": "0",
+      "checks": [
+        {
+          "label": "current-agent-owner-payment",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "success",
+          "transactionSent": false,
+          "calldataKeccak256": "0x66f92cbb4df20b786f83ad7e2c55b013141da1504bfefee3bdd19b457be1ac2d"
+        },
+        {
+          "label": "owner-cannot-act-as-agent",
+          "from": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "Unauthorized",
+          "transactionSent": false,
+          "calldataKeccak256": "0x11f7b4ef1fb193a43a2fa0bc9765c19e6a3bb071ae7152f6d15981640d15eff7"
+        },
+        {
+          "label": "unapproved-recipient",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "RecipientNotAllowed",
+          "transactionSent": false,
+          "calldataKeccak256": "0x3082890d122aa23eb71c351cc67218953adac8e58d187f998bbd120be9b3e426"
+        },
+        {
+          "label": "over-per-payment-cap",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "PerPaymentLimitExceeded",
+          "transactionSent": false,
+          "calldataKeccak256": "0x0bc879faa6cabcaa1c98fb323751376f8e52bc11a712c60d5b2d88465e7b4e5b"
+        },
+        {
+          "label": "previous-session-invalid",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "SessionMismatch",
+          "transactionSent": false,
+          "calldataKeccak256": "0xc17e3743c7e3c43afb5133ac11924507840a44b5c6322f00139c22973f517865"
+        },
+        {
+          "label": "zero-payment",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "InvalidAmount",
+          "transactionSent": false,
+          "calldataKeccak256": "0xfd4c8c9d8f9df56a8a9ccf185d53ea1dedab2ea22c92fbb78ffe621c5ab23c9f"
+        },
+        {
+          "label": "withdrawal-during-active-session",
+          "from": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "SessionActive",
+          "transactionSent": false,
+          "calldataKeccak256": "0x7a760bffb46a0ca926d5d700b12c40413963df2202fd9d9e96b229f7a5e4ee06"
+        },
+        {
+          "label": "owner-can-freeze-current-session",
+          "from": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "success",
+          "transactionSent": false,
+          "calldataKeccak256": "0x3197fed3a365d1e19672045bba1f99185703e097da3fdd81f4693f0cbc23e9cc"
+        },
+        {
+          "label": "zero-payment-id",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "InvalidPaymentId",
+          "transactionSent": false,
+          "calldataKeccak256": "0xbd9a8f9acd66eeb8339c62b9dc1f3d3e8dcc19c19f2dbbd541d3a47b41e19e5e"
+        }
+      ]
+    },
+    {
+      "recordedAt": "2026-10-09T22:58:13.507Z",
+      "chainId": 5042,
+      "block": "25145408",
+      "blockHash": "0x51213c941dea5c8f4806da10c95e3504c50a63b9c2adb8364e0c3b8a5ec29edd",
+      "sessionId": "1",
+      "spentUnits": "10000",
+      "checks": [
+        {
+          "label": "current-agent-owner-payment",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "success",
+          "transactionSent": false,
+          "calldataKeccak256": "0x06296b492256a4df7077ae157581cf830853c8f59b9a8f383f4ec5d5bda1b31c"
+        },
+        {
+          "label": "owner-cannot-act-as-agent",
+          "from": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "Unauthorized",
+          "transactionSent": false,
+          "calldataKeccak256": "0xbaa6cd6874bbd30c2d6e39a10d7fc4c27fe8f5011f4536065777e6e227ce09b2"
+        },
+        {
+          "label": "unapproved-recipient",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "RecipientNotAllowed",
+          "transactionSent": false,
+          "calldataKeccak256": "0xc04b0b8ff75296caacc10e7a667fa84bdf5b96de88c9a747829fde62bde797cd"
+        },
+        {
+          "label": "over-per-payment-cap",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "PerPaymentLimitExceeded",
+          "transactionSent": false,
+          "calldataKeccak256": "0xd4365b7633d1e4fa90340591c03036da03e27ac96a7cce461d5154c5fc844186"
+        },
+        {
+          "label": "previous-session-invalid",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "SessionMismatch",
+          "transactionSent": false,
+          "calldataKeccak256": "0xb5081cf1e9fde3a7cb60f996c6ed565deba9392ae2774138a31e0f48f49540c9"
+        },
+        {
+          "label": "zero-payment",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "InvalidAmount",
+          "transactionSent": false,
+          "calldataKeccak256": "0x19f2d5fe3719fd5e966cc43e0af4e5297199253ce5db3bdea6ab1dce6929640d"
+        },
+        {
+          "label": "withdrawal-during-active-session",
+          "from": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "SessionActive",
+          "transactionSent": false,
+          "calldataKeccak256": "0x54bf661c92148be3839247d3ae327d8b2cf9b979585736cc1a5863e072d28a0c"
+        },
+        {
+          "label": "owner-can-freeze-current-session",
+          "from": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "success",
+          "transactionSent": false,
+          "calldataKeccak256": "0x3197fed3a365d1e19672045bba1f99185703e097da3fdd81f4693f0cbc23e9cc"
+        },
+        {
+          "label": "zero-payment-id",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "InvalidPaymentId",
+          "transactionSent": false,
+          "calldataKeccak256": "0xbd9a8f9acd66eeb8339c62b9dc1f3d3e8dcc19c19f2dbbd541d3a47b41e19e5e"
+        },
+        {
+          "label": "confirmed-payment-id-cannot-replay",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "PaymentAlreadyUsed",
+          "transactionSent": false,
+          "calldataKeccak256": "0x14204e4800a012b8a3d07ed63d02349c25468b1f7f9cc0ecf45b6d5b696be8b5"
+        }
+      ]
+    },
+    {
+      "recordedAt": "2026-10-09T23:01:54.488Z",
+      "chainId": 5042,
+      "block": "25145846",
+      "blockHash": "0x7961aa4d229a28363cb3e86ccdc1e8b470cdd842e4db1b017aaa0ad6f56a954c",
+      "sessionId": "1",
+      "spentUnits": "20000",
+      "checks": [
+        {
+          "label": "current-agent-owner-payment",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "BudgetExceeded",
+          "transactionSent": false,
+          "calldataKeccak256": "0x50fb05402a4e71462fe529968f82a876626c15b1108cf3d501141dfe61d7443b"
+        },
+        {
+          "label": "owner-cannot-act-as-agent",
+          "from": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "Unauthorized",
+          "transactionSent": false,
+          "calldataKeccak256": "0x475a91e21008443b9d859d987d1db0f0ae9f764c31c3c7dae55968b8643a4754"
+        },
+        {
+          "label": "unapproved-recipient",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "RecipientNotAllowed",
+          "transactionSent": false,
+          "calldataKeccak256": "0xd6ae5baf8f4bd7091ebb460a1173f877e7c104b12081646b330aff24c06e962b"
+        },
+        {
+          "label": "over-per-payment-cap",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "PerPaymentLimitExceeded",
+          "transactionSent": false,
+          "calldataKeccak256": "0x068001d6f4cf982508d33445e324c5e6d27490ef77d0fb31e3fa69af6ad9c9e0"
+        },
+        {
+          "label": "previous-session-invalid",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "SessionMismatch",
+          "transactionSent": false,
+          "calldataKeccak256": "0x3ca424b4f2018f670ed1caa0a5c0932fceacd45020b6ae261436ed9ba3a5f601"
+        },
+        {
+          "label": "zero-payment",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "InvalidAmount",
+          "transactionSent": false,
+          "calldataKeccak256": "0x69d9408dbfcc209bda6dba82fcd040cdeb4d7adb5b7fba49d68b74a30ac20611"
+        },
+        {
+          "label": "withdrawal-during-active-session",
+          "from": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "SessionActive",
+          "transactionSent": false,
+          "calldataKeccak256": "0xb963df01a1c0c10c74b25ae3766e0539122cec73a1cc0bfa51a8c61c8c1c70c8"
+        },
+        {
+          "label": "owner-can-freeze-current-session",
+          "from": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "success",
+          "transactionSent": false,
+          "calldataKeccak256": "0x3197fed3a365d1e19672045bba1f99185703e097da3fdd81f4693f0cbc23e9cc"
+        }
+      ]
+    },
+    {
+      "recordedAt": "2026-10-09T23:09:50.786Z",
+      "chainId": 5042,
+      "block": "25146785",
+      "blockHash": "0xb0428bac3779bdd632dbb86030fcdb6131c0ec57327fb8b49c0c16d9b5b1fc35",
+      "sessionId": "3",
+      "spentUnits": "0",
+      "checks": [
+        {
+          "label": "current-agent-owner-payment",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "success",
+          "transactionSent": false,
+          "calldataKeccak256": "0x1863adae64327cc3979a1d72d6e19680ad4b5c6afcef6f8387378d6016d3a0c3"
+        },
+        {
+          "label": "owner-cannot-act-as-agent",
+          "from": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "Unauthorized",
+          "transactionSent": false,
+          "calldataKeccak256": "0xcae37aa269acb433047cf7bdba695f31c5fd24c3447bf25a973c69f7e74c2e5e"
+        },
+        {
+          "label": "unapproved-recipient",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "RecipientNotAllowed",
+          "transactionSent": false,
+          "calldataKeccak256": "0x0af37ccc5a1cf2ef3fcee1022ede6865fd4cf36fe5cf441e88febc0ed58b71fb"
+        },
+        {
+          "label": "over-per-payment-cap",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "PerPaymentLimitExceeded",
+          "transactionSent": false,
+          "calldataKeccak256": "0x9166e156757f8fc3aed76602387565565fca9b2cbeba401038d79cc9d67ac498"
+        },
+        {
+          "label": "previous-session-invalid",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "SessionMismatch",
+          "transactionSent": false,
+          "calldataKeccak256": "0x15e2400c30a1c3e50a6a096ca42f28837ba1c29208dff2c15f2cb02adf7d2ce0"
+        },
+        {
+          "label": "zero-payment",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "InvalidAmount",
+          "transactionSent": false,
+          "calldataKeccak256": "0x8df8c25e1b96166ac5d4fde9cb9195315cba515aabe6415c181c8ac0a7e4fc9b"
+        },
+        {
+          "label": "withdrawal-during-active-session",
+          "from": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "SessionActive",
+          "transactionSent": false,
+          "calldataKeccak256": "0xc41884733027a3976dd2ea632241c7fa44d5cd5ae2d11733db13da862fdef7fa"
+        },
+        {
+          "label": "owner-can-freeze-current-session",
+          "from": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "success",
+          "transactionSent": false,
+          "calldataKeccak256": "0xc751ef2bf1b365fc4e64b1a136f286b44f55bbf03708d6b251e72a51c8367655"
+        },
+        {
+          "label": "zero-payment-id",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "InvalidPaymentId",
+          "transactionSent": false,
+          "calldataKeccak256": "0x7010c15b32f7e4cc4f70171637bf6a748de7dc76ac9eaccff68b29a911ed2528"
+        }
+      ]
+    },
+    {
+      "recordedAt": "2026-10-09T23:11:22.554Z",
+      "chainId": 5042,
+      "block": "25146966",
+      "blockHash": "0x14d0eb20d46583f880be7cb41ba2a1b4987c91d1bc35e25ce5d3e31f7e3211e2",
+      "sessionId": "4",
+      "spentUnits": "0",
+      "checks": [
+        {
+          "label": "current-agent-owner-payment",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "success",
+          "transactionSent": false,
+          "calldataKeccak256": "0xb322e2a74b0fb3006430d78c6b047945846634358639c1836f04100f20b2af9f"
+        },
+        {
+          "label": "owner-cannot-act-as-agent",
+          "from": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "Unauthorized",
+          "transactionSent": false,
+          "calldataKeccak256": "0xaf17735706e5767e617ebb9900335d9443c69f073a961378f50c2daa4ae38dbc"
+        },
+        {
+          "label": "unapproved-recipient",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "RecipientNotAllowed",
+          "transactionSent": false,
+          "calldataKeccak256": "0x14379a7c48d6ff65776376c6742c908bf9080a5d938c2f20199e603a0eaf9b07"
+        },
+        {
+          "label": "over-per-payment-cap",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "PerPaymentLimitExceeded",
+          "transactionSent": false,
+          "calldataKeccak256": "0x5c767ad9c766b97c47f1d01f90fa176cc0fd1e29a5bf364c669ff14145aa3e18"
+        },
+        {
+          "label": "previous-session-invalid",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "SessionMismatch",
+          "transactionSent": false,
+          "calldataKeccak256": "0xc455253782317d758dfd384654ccda68c06bdc4f1e46a128ffb42a40ca43c10c"
+        },
+        {
+          "label": "zero-payment",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "InvalidAmount",
+          "transactionSent": false,
+          "calldataKeccak256": "0x604fd17b6d48a603df7b9b67b8e29a8327d39ea29735c3738a52315c9c3631b3"
+        },
+        {
+          "label": "withdrawal-during-active-session",
+          "from": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "SessionActive",
+          "transactionSent": false,
+          "calldataKeccak256": "0x40f3cfe23baa65e1f33756a709ebd4a017f3feca1252632e386d620e62ab5522"
+        },
+        {
+          "label": "owner-can-freeze-current-session",
+          "from": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "success",
+          "transactionSent": false,
+          "calldataKeccak256": "0xd9acdcc73b0a9385f18fb394450e753d4ac0a137debc3f8fc4fa66d275c883ed"
+        },
+        {
+          "label": "zero-payment-id",
+          "from": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+          "to": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+          "observed": "InvalidPaymentId",
+          "transactionSent": false,
+          "calldataKeccak256": "0xf1b81c75caf28b21c3c1bee2db8b63d839216bb69c706f07485294bb708cc005"
+        }
+      ]
+    }
+  ],
+  "browserChecks": {
+    "encryptedBackupRestore": "Verified recovered key with fresh signing proof; wrong-password attempt rejected and successful retry verified",
+    "accountSwitch": "Locks Vault Key; agent payments require no Vault Key",
+    "publicAgentConfig": "Downloaded and validated mainnet chain, vault, agent, session, owner-only recipient and deployment block; contains no private key",
+    "paymentCap": "UI rejected 0.02 USDC above 0.01 cap before wallet request",
+    "budgetExhaustion": "UI blocked third payment after two 0.01 USDC payments; pinned RPC call returned BudgetExceeded",
+    "receiptRecovery": "Two initial transaction-not-found responses resolved via Recheck saved receipt using original hashes; no duplicate sends",
+    "pqFreeze": "Owner submitted PQ path; distinct agent relay proved through pre-freeze block simulation, without another transaction"
+  },
+  "finalState": {
+    "block": "25147588",
+    "blockHash": "0x2dc640fe227cad4bc467fd997c829859d0fa6c9a3940f5e90dd9eb5ef0fbd79d",
+    "active": false,
+    "sessionId": "5",
+    "controlNonce": "6",
+    "spentUSDC": "0",
+    "policy": {
+      "agent": "0x0000000000000000000000000000000000000000",
+      "totalBudget": "0",
+      "perTxCap": "0",
+      "expiresAt": "0",
+      "recipients": []
+    },
+    "vaultUSDC": "0"
+  },
+  "accounting": {
+    "nativeAndErc20ViewsRepresentSameFunds": true,
+    "acceptanceBaselineUSDC": "13.961625338",
+    "deploymentFeeUSDC": "0.038374662",
+    "acceptanceFeesUSDC": "0.0640359225",
+    "totalDeploymentAndAcceptanceFeesUSDC": "0.1024105845",
+    "originalCombinedUSDC": "14",
+    "finalCombinedUSDC": "13.8975894155",
+    "principalDifferenceWei": "0",
+    "balances": [
+      {
+        "address": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+        "nativeWei": "13897143165500000000",
+        "USDC": "13.8971431655",
+        "tokenUnits": "13897143",
+        "minedNonce": 9,
+        "pendingNonce": 9
+      },
+      {
+        "address": "0xb4675a18b593cacb71702284059835E29A0a06f9",
+        "nativeWei": "446250000000000",
+        "USDC": "0.00044625",
+        "tokenUnits": "446",
+        "minedNonce": 3,
+        "pendingNonce": 3
+      },
+      {
+        "address": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+        "nativeWei": "0",
+        "USDC": "0",
+        "tokenUnits": "0",
+        "minedNonce": 1,
+        "pendingNonce": 1
+      }
+    ],
+    "agentResidualNote": "MetaMask MAX reserved 0.00044625 native USDC after the successful return. This remains in the user-controlled agent account and is included once in the combined balance."
+  },
+  "limitations": [
+    "Manual wallet acceptance does not establish autonomous execution. Existing CLI remains testnet-only.",
+    "No independent contract or frontend security audit.",
+    "Real MetaMask speed-up/cancel coverage remains incomplete.",
+    "Earlier hosted-site MetaMask warning remains unclassified; no warning bypass claimed."
+  ],
+  "applicationSubmitted": false
+}

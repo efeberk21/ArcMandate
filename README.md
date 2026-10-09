@@ -10,7 +10,7 @@ Funds stay in the vault until a permitted payment sends them directly to a recip
 
 [Open the application](https://arcmandate.vercel.app) · [View the mainnet vault](https://arcmandate.vercel.app/?network=mainnet&vault=0x99cAae907095bBB95D8714ee2a23369dB2377d7A) · [Contract source](contracts/src/ArcMandateVault.sol) · [Developer guide](DEVELOPMENT.md) · [Threat model](THREAT-MODEL.md)
 
-> **Status — 10 October 2026:** The public application runs in **Arc Mainnet mode**. Our [mainnet vault](https://explorer.arc.io/address/0x99cAae907095bBB95D8714ee2a23369dB2377d7A?tab=contract) is deployed, its source is verified with an exact match, and its browser and initial-state checks passed. It remains empty with no active spending session. The funded workflow has been demonstrated on testnet; no funded mainnet payment or withdrawal has been performed. See [release evidence](#release-evidence) for the precise scope.
+> **Status — 10 October 2026:** The public application runs in **Arc Mainnet mode**. Our [mainnet vault](https://explorer.arc.io/address/0x99cAae907095bBB95D8714ee2a23369dB2377d7A?tab=contract) is deployed and its source is verified with an exact match. Funded MetaMask acceptance passed: two agent payments, session replacement, owner/PQ freezes and withdrawal. The vault was emptied and spending revoked after testing. This demonstrates the manual wallet workflow; an autonomous mainnet worker remains a separate integration. See [release evidence](#release-evidence) for the precise scope.
 
 ## Why ArcMandate exists
 
@@ -160,11 +160,13 @@ If a transaction's outcome is unknown, check its saved hash and wallet activity 
 | Funded testnet workflow | [8 October closeout](deployments/arc-testnet-closeout-2026-10-08.json): 11 successful transactions, three block-pinned rejection simulations and three actual process-interruption recoveries. |
 | Browser wallet acceptance | [Testnet MetaMask evidence](deployments/p6-metamask-browser.json). |
 | Mainnet vault and source verification | [10 October evidence](deployments/arc-mainnet-2026-10-10.json): successful empty-vault deployment, exact constructor/runtime matching, explorer source verification, three block-pinned rejection simulations and browser checks. |
-| Funded mainnet workflow | Not performed. No mainnet vault deposit, agent payment or withdrawal; the deployed vault remains empty and inactive. |
+| Funded mainnet workflow | [10 October acceptance](deployments/arc-mainnet-acceptance-2026-10-10.json): 11 successful transactions, owner-directed agent payments, budget/replay rejection, restart/replacement, owner/PQ freezes, full withdrawal and agent gas return. Manual MetaMask execution; final vault empty and inactive. |
 
-The application source recorded in the frontend publication is `b503437fadb6d1af30ae0fc1132060d924652401`. All 13 hosted files matched an isolated mainnet build during the 10 October checks. Each historical evidence file identifies its own source and scope. The mainnet deployment receipt is published; funded payment and withdrawal evidence remains testnet-only.
+The funded mainnet acceptance used application source `b503437fadb6d1af30ae0fc1132060d924652401`. All 13 hosted files matched its isolated mainnet build during the deployment checks. Each historical evidence file identifies its own source and scope. The acceptance record distinguishes mined transactions, free block-pinned simulations and manual browser checks.
 
-The reference mainnet vault is `0x99cAae907095bBB95D8714ee2a23369dB2377d7A`, created in block `25142201` by [this transaction](https://explorer.arc.io/tx/0xa696ab775a6eacdbc59f567b0159e96831d7ec2b129ccb7b0952e161064e24d6). Creation transferred **0 USDC** and cost **0.038374662 USDC** in network fees. The public vault link opens without connecting a wallet. A session signed with the recovered Vault Key passed mainnet simulation and was cancelled before wallet submission; this is simulation evidence, not an active onchain session.
+The reference mainnet vault is `0x99cAae907095bBB95D8714ee2a23369dB2377d7A`, created in block `25142201` by [this transaction](https://explorer.arc.io/tx/0xa696ab775a6eacdbc59f567b0159e96831d7ec2b129ccb7b0952e161064e24d6). Creation transferred **0 USDC** and cost **0.038374662 USDC** in network fees. Funded acceptance cost **0.0640359225 USDC**. Owner, agent and vault balances reconcile exactly to the original total minus those fees, counting native/ERC-20 USDC once. After withdrawing the remaining 0.08 USDC, the agent returned its available gas funds; MetaMask left 0.00044625 USDC in the user-controlled agent account. The public vault link opens without connecting a wallet.
+
+Two accepted hashes briefly returned transaction-not-found before RPC indexing caught up. Rechecking the saved receipts resolved both without duplicate sends. The receipt flow now waits through a bounded sequence of transaction-visibility reads before reporting an unknown outcome; sender, network, nonce, calldata and event verification still apply.
 
 ## Prototype boundaries
 
