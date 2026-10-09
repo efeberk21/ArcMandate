@@ -1,0 +1,32 @@
+{
+  "publishedAt": "2026-10-09T08:43:02.311735+00:00",
+  "sourceCommit": "b503437fadb6d1af30ae0fc1132060d924652401",
+  "network": "Arc Mainnet",
+  "chainId": 5042,
+  "productionUrl": "https://arcmandate.vercel.app",
+  "deploymentId": "dpl_L8stVtqN1SREkcKonNB4c2Ebv6KZ",
+  "deploymentUrl": "https://arcmandate-e29hl8upi-efeberk.vercel.app",
+  "changes": [
+    "Text buttons keep a dark background and readable ivory text on hover and keyboard focus.",
+    "Network-switch labels identify the selected release network.",
+    "Explicit wallet connection requests Arc Mainnet when needed and re-reads the wallet chain. A rejected or ineffective switch keeps mainnet transactions blocked.",
+    "Page-load wallet recovery remains read-only and does not open a network-switch prompt."
+  ],
+  "validation": {
+    "targetedTestsPassed": 62,
+    "targetedTestFiles": 3,
+    "typescript": "passed",
+    "mainnetBuild": "passed",
+    "publicFilesMatchedToIsolatedBuild": 13,
+    "liveHover": "Unlock Vault Key: rgb(238, 234, 227) text on rgb(16, 20, 28) background"
+  },
+  "walletWarning": {
+    "reported": "MetaMask website phishing/wallet-draining warning at connection",
+    "cause": "not established",
+    "resolved": false,
+    "manualReviewRequired": true,
+    "reportSubmitted": false
+  },
+  "mainnetTransactionSent": false,
+  "mainnetVaultDeployed": false
+}
