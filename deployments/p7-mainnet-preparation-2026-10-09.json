@@ -1,0 +1,44 @@
+{
+  "status": "prepared; no mainnet contract deployed",
+  "network": "Arc Mainnet",
+  "chainId": 5042,
+  "previewUrl": "https://arcmandate-6etxvgtxy-efeberk.vercel.app",
+  "deploymentId": "dpl_8hKhkAGbg2hpLCkKmqvTNAu2L1cp",
+  "deploymentProtection": "Vercel authentication; anonymous visitors redirect to login",
+  "productionRemains": "https://arcmandate.vercel.app (Arc Testnet)",
+  "sourceCommit": "87c48cbda22751f3fd704fe7cc671a85f1685f41",
+  "sourceBranch": "p7-mainnet-preparation",
+  "buildCommand": "npm run build -w @arcmandate/web -- --mode mainnet",
+  "lockfileSha256": "d88d131bf2739ee35c40788a24e38b308dc51c985713587e5538da0652112ae4",
+  "generatedVaultSha256": "2e90158b4aeae6ac2af9d8c22c59601687ae9aa7e97237bfda7fb16b18e86079",
+  "foundrySettingsSha256": "cfeeae89581c8a74f911f533820c5290795b6ec8a9b33d739ea20ec7f8ffac53",
+  "validation": {
+    "webCoreTests": 134,
+    "typecheck": "passed",
+    "syntax": "passed",
+    "bothBuilds": "passed",
+    "mainnetPqReadOnlyProbe": [
+      "valid accepted",
+      "changed message rejected",
+      "changed signature rejected",
+      "other public key rejected",
+      "short/long signatures rejected"
+    ],
+    "livePreview": [
+      "Arc Mainnet label and URL",
+      "temporary PQ key generated and explicitly locked; no export",
+      "testnet link excluded in local mainnet preview"
+    ],
+    "security": "13-file isolated mainnet build; no maps/env/known private values found; automatic VITE injection disabled"
+  },
+  "pending": [
+    "production owner/agent/distinct relay selection",
+    "spending budget and funding",
+    "encrypted production Vault Key backup/restore",
+    "mainnet contract deployment and explorer verification",
+    "short mainnet receipt evidence",
+    "mainnet production promotion",
+    "submission"
+  ],
+  "userDecision": "Funding and onchain operations deferred until after frontend deployments; no transaction sent."
+}

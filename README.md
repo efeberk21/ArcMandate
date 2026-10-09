@@ -96,3 +96,5 @@ The [live Arc Testnet application](https://arcmandate.vercel.app) is published o
 ### Mainnet release preparation
 
 The default build remains Arc Testnet. A controlled mainnet build uses `npm run build -w @arcmandate/web -- --mode mainnet`; its network is chosen at build time, not by a URL. Mainnet selections, payment requests and bookmarks retain chain ID 5042, independent of testnet records. The browser payment console is the chosen mainnet executor; the existing local payment/demo CLI remains testnet-only. Mainnet runtime, owner, PQ, nonce, wallet-chain and unresolved-operation checks remain required. This prepared build is not evidence of a deployed mainnet vault. Production promotion awaits actual mainnet deployment and receipts.
+
+The [mainnet preparation preview](https://arcmandate-6etxvgtxy-efeberk.vercel.app) requires Vercel access. [Preparation evidence](deployments/p7-mainnet-preparation-2026-10-09.json) records its source and scoped checks. This branch’s `vercel.json` explicitly builds mainnet; the public production site stays on the previously verified testnet deployment until mainnet receipts are complete.
