@@ -2,7 +2,7 @@
 
 Start with the [README](README.md) for the project's purpose, permission model and application walkthrough. This guide retains the detailed development, testnet execution and recovery notes.
 
-**Network scope:** default local builds and the payment/demo CLI use Arc Testnet. The public production frontend uses Arc Mainnet. The network is chosen at build time; a URL cannot switch a testnet build into mainnet. Our funded mainnet walkthrough is pending.
+**Network scope:** default local builds and the payment/demo CLI use Arc Testnet. The public production frontend uses Arc Mainnet. The network is chosen at build time; a URL cannot switch a testnet build into mainnet. The reference mainnet vault is deployed and source-verified; its [10 October evidence](deployments/arc-mainnet-2026-10-10.json) covers deployment, zero-balance initial state, read-only simulations and browser checks. A funded mainnet walkthrough has not been performed.
 
 ## Development
 

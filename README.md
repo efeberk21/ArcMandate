@@ -8,9 +8,9 @@
 
 Funds stay in the vault until a permitted payment sends them directly to a recipient. The owner manages spending authority with an EVM wallet and a separate Vault Key, and can freeze the session when access needs to stop.
 
-[Open the application](https://arcmandate.vercel.app) · [Contract source](contracts/src/ArcMandateVault.sol) · [Developer guide](DEVELOPMENT.md) · [Threat model](THREAT-MODEL.md)
+[Open the application](https://arcmandate.vercel.app) · [View the mainnet vault](https://arcmandate.vercel.app/?network=mainnet&vault=0x99cAae907095bBB95D8714ee2a23369dB2377d7A) · [Contract source](contracts/src/ArcMandateVault.sol) · [Developer guide](DEVELOPMENT.md) · [Threat model](THREAT-MODEL.md)
 
-> **Status — 9 October 2026:** The public application runs in **Arc Mainnet mode** and supports creating and managing a user's own vault. The funded workflow has been demonstrated on testnet. Our mainnet vault deployment and complete workflow with real USDC are still awaiting funding and validation. Publishing the frontend and confirming transactions onchain are separate milestones. See [release evidence](#release-evidence) for the completed checks and remaining work.
+> **Status — 10 October 2026:** The public application runs in **Arc Mainnet mode**. Our [mainnet vault](https://explorer.arc.io/address/0x99cAae907095bBB95D8714ee2a23369dB2377d7A?tab=contract) is deployed, its source is verified with an exact match, and its browser and initial-state checks passed. It remains empty with no active spending session. The funded workflow has been demonstrated on testnet; no funded mainnet payment or withdrawal has been performed. See [release evidence](#release-evidence) for the precise scope.
 
 ## Why ArcMandate exists
 
@@ -159,9 +159,12 @@ If a transaction's outcome is unknown, check its saved hash and wallet activity 
 | Mainnet preparation | [Build, network isolation and read-only verifier checks](deployments/p7-mainnet-preparation-2026-10-09.json). |
 | Funded testnet workflow | [8 October closeout](deployments/arc-testnet-closeout-2026-10-08.json): 11 successful transactions, three block-pinned rejection simulations and three actual process-interruption recoveries. |
 | Browser wallet acceptance | [Testnet MetaMask evidence](deployments/p6-metamask-browser.json). |
-| Funded mainnet workflow | Pending: our vault deployment, source verification, transaction receipts and final walkthrough. |
+| Mainnet vault and source verification | [10 October evidence](deployments/arc-mainnet-2026-10-10.json): successful empty-vault deployment, exact constructor/runtime matching, explorer source verification, three block-pinned rejection simulations and browser checks. |
+| Funded mainnet workflow | Not performed. No mainnet vault deposit, agent payment or withdrawal; the deployed vault remains empty and inactive. |
 
-The application source recorded in the latest frontend publication is `b503437fadb6d1af30ae0fc1132060d924652401`. Each historical evidence file identifies its own source and scope. Testnet evidence establishes those testnet results; mainnet receipts will be published after the funded run.
+The application source recorded in the frontend publication is `b503437fadb6d1af30ae0fc1132060d924652401`. All 13 hosted files matched an isolated mainnet build during the 10 October checks. Each historical evidence file identifies its own source and scope. The mainnet deployment receipt is published; funded payment and withdrawal evidence remains testnet-only.
+
+The reference mainnet vault is `0x99cAae907095bBB95D8714ee2a23369dB2377d7A`, created in block `25142201` by [this transaction](https://explorer.arc.io/tx/0xa696ab775a6eacdbc59f567b0159e96831d7ec2b129ccb7b0952e161064e24d6). Creation transferred **0 USDC** and cost **0.038374662 USDC** in network fees. The public vault link opens without connecting a wallet. A session signed with the recovered Vault Key passed mainnet simulation and was cancelled before wallet submission; this is simulation evidence, not an active onchain session.
 
 ## Prototype boundaries
 

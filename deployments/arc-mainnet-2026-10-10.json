@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 1,
+  "recordedForDate": "2026-10-10",
+  "recordedAt": "2026-10-09T22:32:17.668Z",
+  "finalizedAt": "2026-10-09T22:41:58Z",
+  "chainId": 5042,
+  "network": "Arc Mainnet",
+  "status": "empty mainnet vault deployed, source exact-match verified, browser checks passed",
+  "scope": "Deployment and initial-state validation only. No mainnet deposit, payment or withdrawal performed.",
+  "provenance": {
+    "gitCommit": "ee23e7caab32fa0b5d3e9a6de2c8564aa3c9baae",
+    "dirty": false,
+    "sourceTreeSha256": "fa832af356970d10101dc10a109a9414786b17322a1453de788ed40098f36607",
+    "sourceScope": "Tracked and non-ignored public files, excluding deployment outputs and private documents; hashes include uncommitted source, never ignored credentials",
+    "trackedPatchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "lockfileSha256": "d88d131bf2739ee35c40788a24e38b308dc51c985713587e5538da0652112ae4",
+    "artifactSha256": "b2d8ec993802fb97d46418b6293cea38511d5f857dd4dcc7c744ed20aa70cae8",
+    "foundrySettingsSha256": "cfeeae89581c8a74f911f533820c5290795b6ec8a9b33d739ea20ec7f8ffac53",
+    "compiler": {
+      "version": "0.8.28+commit.7893614a"
+    },
+    "settings": {
+      "remappings": [
+        "@openzeppelin/contracts/=../node_modules/@openzeppelin/contracts/"
+      ],
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "metadata": {
+        "bytecodeHash": "ipfs"
+      },
+      "compilationTarget": {
+        "src/ArcMandateVault.sol": "ArcMandateVault"
+      },
+      "evmVersion": "paris",
+      "libraries": {}
+    }
+  },
+  "applicationSourceCommit": "b503437fadb6d1af30ae0fc1132060d924652401",
+  "vault": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+  "owner": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+  "pqPublicKey": "0x460be44551fb9538ad5464a090cdbce1dd580e0a29b89f25d029a266408f67fd",
+  "deploymentTxHash": "0xa696ab775a6eacdbc59f567b0159e96831d7ec2b129ccb7b0952e161064e24d6",
+  "deploymentBlock": "25142201",
+  "deployment": {
+    "receiptStatus": "success",
+    "blockHash": "0xbf50474ccd7821bbe71bfadbabeb550d4dedab4dd922d3f96cb77228573fb30d",
+    "gasUsed": "1784868",
+    "effectiveGasPrice": "21500000000",
+    "feeUSDC": "0.038374662",
+    "valueUSDC": "0",
+    "constructorArgs": "0x00000000000000000000000048abfba33961bcf0a0c6904ba34167432a3a0e38460be44551fb9538ad5464a090cdbce1dd580e0a29b89f25d029a266408f67fd",
+    "creationInputMatchesArtifact": true,
+    "instantiatedRuntimeMatches": true,
+    "runtimeKeccak256": "0xa0a2d2c00d05ca729c552eddb466cb940c0f12f8d8169ba9b08a8ec6b52d9ffa"
+  },
+  "initialState": {
+    "blockNumber": "25142344",
+    "blockHash": "0x666fac009491768a874c3cae85090bfa5adaebb8d0d531f032a9b441f02605f4",
+    "active": false,
+    "sessionId": "0",
+    "controlNonce": "0",
+    "spentUSDC": "0",
+    "vaultUSDC": "0"
+  },
+  "simulations": [
+    {
+      "label": "owner-freeze-on-empty-inactive-vault",
+      "evidenceType": "simulation_rejection",
+      "block": "25142344",
+      "blockHash": "0x666fac009491768a874c3cae85090bfa5adaebb8d0d531f032a9b441f02605f4",
+      "from": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+      "to": "0x99caae907095bbb95d8714ee2a23369db2377d7a",
+      "calldata": "0x08f573d50000000000000000000000000000000000000000000000000000000000000000",
+      "decodedError": "SessionInactive",
+      "transactionSent": false
+    },
+    {
+      "label": "payment-on-inactive-vault",
+      "evidenceType": "simulation_rejection",
+      "block": "25142344",
+      "blockHash": "0x666fac009491768a874c3cae85090bfa5adaebb8d0d531f032a9b441f02605f4",
+      "from": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+      "to": "0x99caae907095bbb95d8714ee2a23369db2377d7a",
+      "calldata": "0x89f1e6170000000000000000000000000000000000000000000000000000000000000000222222222222222222222222222222222222222222222222222222222222222200000000000000000000000048abfba33961bcf0a0c6904ba34167432a3a0e380000000000000000000000000000000000000000000000000000000000000001",
+      "decodedError": "SessionInactive",
+      "transactionSent": false
+    },
+    {
+      "label": "zero-withdrawal",
+      "evidenceType": "simulation_rejection",
+      "block": "25142344",
+      "blockHash": "0x666fac009491768a874c3cae85090bfa5adaebb8d0d531f032a9b441f02605f4",
+      "from": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+      "to": "0x99caae907095bbb95d8714ee2a23369db2377d7a",
+      "calldata": "0x1ee7d8c100000000000000000000000048abfba33961bcf0a0c6904ba34167432a3a0e38000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006ac96c9f00000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000000",
+      "decodedError": "InvalidAmount",
+      "transactionSent": false
+    }
+  ],
+  "productionUrl": "https://arcmandate.vercel.app",
+  "publicVaultUrl": "https://arcmandate.vercel.app/?network=mainnet&vault=0x99caae907095bbb95d8714ee2a23369db2377d7a",
+  "explorerUrl": "https://explorer.arc.io/address/0x99caae907095bbb95d8714ee2a23369db2377d7a",
+  "sourceVerification": {
+    "status": "verified_exact_match",
+    "method": "Blockscout Solidity Standard JSON input via built-in browser",
+    "url": "https://explorer.arc.io/address/0x99cAae907095bBB95D8714ee2a23369dB2377d7A?tab=contract",
+    "observedLabel": "Contract source code verified (exact match)",
+    "verifiedAtLocal": "2026-10-10 01:38:24 Europe/Istanbul",
+    "compiler": "v0.8.28+commit.7893614a",
+    "evmVersion": "paris",
+    "optimizerEnabled": true,
+    "optimizerRuns": 200,
+    "standardInputSha256": "af081b706a515dcffc0a6c7f7b4cf2528c8adc0d1af88d17403ff772c92e2b0a"
+  },
+  "principalTransferPerformed": false,
+  "submissionSent": false,
+  "browserValidation": {
+    "connectedOwnerView": "vault identity verified, no session, zero vault USDC; wallet balance shown once",
+    "encryptedBackup": "downloaded and restored by user; Worker recovery proof passed; key matches contract",
+    "withdrawalBeyondBalance": "cancelled before wallet request with Withdrawal amount exceeds the vault balance",
+    "positiveSessionSimulation": "recovered Vault Key signed policy; mainnet eth_call and fee estimate passed; unsigned wallet review cancelled; no session transaction submitted",
+    "simulationFormCleanup": "agent, budget, cap, recipient and withdrawal fields cleared",
+    "publicWalletlessView": "mainnet vault opened and full runtime verified without wallet connection",
+    "localKeyAtEnd": "explicitly locked before reload",
+    "reload": "saved vault and owner recovered; confirmed deployment journal retained; key remains locked"
+  },
+  "validation": {
+    "applicationTests": 154,
+    "solidityTests": 24,
+    "invariantRuns": 64,
+    "invariantCalls": 8192,
+    "mainnetBuild": "passed",
+    "liveFilesMatchedToIsolatedBuild": 13
+  },
+  "finalState": {
+    "blockNumber": "25143436",
+    "blockHash": "0xe275a7404fdb3be1e6377f93c8eeadc2bbb7fef9e594a55f0296d078a41142e0",
+    "active": false,
+    "sessionId": "0",
+    "controlNonce": "0",
+    "vaultUSDC": "0",
+    "ownerTransactionCount": 1,
+    "pendingTransactionCount": 1,
+    "walletBalanceReductionExactlyDeploymentFee": true
+  },
+  "limitations": [
+    "No funded mainnet deposit, agent payment, freeze or withdrawal has been performed. Funded workflow evidence remains testnet-only.",
+    "No independent security audit.",
+    "Previously reported MetaMask site warning remains unclassified; no security warning was bypassed.",
+    "Submission deferred at user request."
+  ]
+}
