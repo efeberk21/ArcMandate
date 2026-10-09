@@ -20,3 +20,6 @@ contracts/lib/
 private/
 *.log
 
+
+.vercel
+.env*

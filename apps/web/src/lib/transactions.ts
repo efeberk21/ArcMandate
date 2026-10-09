@@ -12,6 +12,12 @@ export type TransactionState = {
     | 'confirmed' | 'simulation-rejected' | 'wallet-rejected' | 'reverted' | 'unknown' | 'cancelled';
   message: string; hash?: Hex; walletRequested?: boolean;
 };
+export const transactionStageLabels: Record<TransactionState['stage'], string> = {
+  idle: 'Not started', preparing: 'Preparing transaction', review: 'Review details', signing: 'Authorizing with Vault Key',
+  simulating: 'Preparing transaction', ready: 'Ready for wallet', wallet: 'Awaiting wallet approval', submitted: 'Awaiting confirmation',
+  confirmed: 'Confirmed', 'simulation-rejected': 'Cannot proceed', 'wallet-rejected': 'Wallet approval declined',
+  reverted: 'Transaction reverted', unknown: 'Outcome unknown', cancelled: 'Cancelled',
+};
 export type TransactionPort = {
   assertContext(): Promise<void>;
   simulate(input: TransactionInput): Promise<void>;
@@ -57,11 +63,11 @@ async function fail(error: unknown, emit: TransactionEmit, hash?: Hex, wallet = 
 export async function prepareTransaction(port: TransactionPort, input: TransactionInput, emit: TransactionEmit): Promise<Quote | undefined> {
   try {
     await port.assertContext();
-    await emit({ stage: 'simulating', message: 'Simulating the transaction and estimating the network fee…' });
+    await emit({ stage: 'simulating', message: 'Preparing your transaction and network-fee estimate…' });
     await port.simulate(input);
     const quote = await port.quote(input);
     await port.assertContext();
-    await emit({ stage: 'ready', message: 'Simulation passed. Review the fee before requesting wallet approval.' });
+    await emit({ stage: 'ready', message: 'Review the details and network fee, then approve in your wallet.' });
     return quote;
   } catch (error) { await fail(error, emit); }
 }
