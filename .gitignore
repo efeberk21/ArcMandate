@@ -20,6 +20,11 @@ contracts/lib/
 private/
 *.log
 
+# Markdown: only the README is published
+*.md
+*.markdown
+!/README.md
+
 
 .vercel
 .env*

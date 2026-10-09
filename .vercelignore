@@ -5,6 +5,8 @@ node_modules
 .env
 .env.*
 private
+*.md
+*.markdown
 contracts/out
 contracts/cache
 contracts/broadcast

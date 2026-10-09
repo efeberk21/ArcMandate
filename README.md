@@ -1,100 +1,214 @@
+<img src="apps/web/public/brand/arcmandate-symbol.png" alt="ArcMandate emblem" width="88">
+
 # ArcMandate
 
-ArcMandate is an Arc USDC vault prototype that gives one software agent a bounded spending session. Owner wallet plus SLH-DSA-SHA2-128s signature authorizes a session and withdrawals. The owner or the PQ key can freeze a session. The testnet UI guides vault recovery, encrypted key backup/restore, agent setup, funding, sessions, agent payments, both freeze paths and hybrid withdrawal. Mainnet management remains disabled pending release checks.
+### Your money. Your agent. Your rules.
 
-## Release status — 8 October 2026
+**ArcMandate gives a software agent permission to spend USDC from a vault on Arc, within limits chosen by its owner.** The owner sets the allowed recipients, total budget, maximum amount per payment and expiry. The smart contract checks those rules whenever the agent makes a payment.
 
-P7 mainnet release preparation has started. The current frontend and payment/demo CLIs target **testnet**; there is no published mainnet deployment or live mainnet application yet. [The mainnet release runbook](MAINNET-RELEASE.md) records the remaining work. Adding mainnet funds alone does not enable the current application.
+Funds stay in the vault until a permitted payment sends them directly to a recipient. The owner manages spending authority with an EVM wallet and a separate Vault Key, and can freeze the session when access needs to stop.
 
-The revised funded testnet demo completed 11 successful transactions and three block-pinned rejection simulations. Three actual process interruptions after mined deployment, funding and withdrawal receipts recovered the original signed transaction hashes without repeating those actions. A separate script check confirmed that a distinct PQ relay can freeze a session while the owner's transaction is genuinely pending. [Public testnet closeout evidence](deployments/arc-testnet-closeout-2026-10-08.json) preserves the tested source commit and distinguishes script execution, simulation and wallet observation.
+[Open the application](https://arcmandate.vercel.app) · [Contract source](contracts/src/ArcMandateVault.sol) · [Developer guide](DEVELOPMENT.md) · [Threat model](THREAT-MODEL.md)
 
-Vercel publication is configured at the repository root. Use the Vite workspace build in `vercel.json`; the contract ABI/bytecode is the tracked generated artifact, so the hosting build does not require Foundry. The first public site remains on Arc Testnet. A hosting deployment does not deploy a vault onchain, and mainnet release remains pending. Browser storage and wallet permissions belong to each origin: export your public vault card and keep the encrypted Vault Key backup/password when moving from localhost to the stable HTTPS address. Pending operations remain in their original origin and must be reconciled there.
+> **Status — 9 October 2026:** The public application runs in **Arc Mainnet mode** and supports creating and managing a user's own vault. The funded workflow has been demonstrated on testnet. Our mainnet vault deployment and complete workflow with real USDC are still awaiting funding and validation. Publishing the frontend and confirming transactions onchain are separate milestones. See [release evidence](#release-evidence) for the completed checks and remaining work.
 
-Real MetaMask speed-up/cancel acceptance was waived after a wallet error. The original transaction hash became unavailable after an attempted speed-up; no successful replacement receipt was observed and the browser operation remained unresolved. Automatic lifecycle tests passing does not close this observed recovery limitation. This prototype has not undergone an independent security audit.
+## Why ArcMandate exists
 
-## Development
+Software agents can carry out tasks that involve payments: buying access to a service, paying for a completed job, or settling a small invoice. Those workflows need a way to define how much authority an agent receives and when that authority ends.
 
-- Node.js 22.12+ and npm 11
-- Foundry (Forge/Cast)
-- Exact release versions are in `toolchain.json` and `.node-version`: Node 25.5.0, npm 11.8.0, Forge 1.5.1 at the recorded commit. The supported development Node range remains 22.12+. `npm run check:toolchain` enforces release Node/npm; the Forge wrapper verifies version/commit. `ARC_ALLOW_TOOLCHAIN_MISMATCH=1` is a visible development-only override, never release evidence. CI checks installation, script syntax, tests, build and generated artifact drift.
-- `npm ci`
-- `npm run check` for local build and tests
-- `npm run preflight` for read-only Arc RPC checks
-- `npm run pq:probe` for ephemeral-key SLH-DSA verification against Arc RPCs
-- `npm run dev` for the web development server
-- `npm run build:web` followed by `npm run preview` serves the built user interface at `http://127.0.0.1:5173/` for wallet acceptance tests on Arc Testnet. Stop the development server first if it is using that port. The preview has no synthetic demo screen or smoke wallet bridge; internal integration tests use their separate harness.
-- The app opens on a clean vault setup screen and is fixed to Arc Testnet. Connect an EVM wallet to create a vault, or open an existing vault by address. Creation guides the user through wallet connection, encrypted key backup/restore, and transaction review. A new key must be exported and restored before deployment or funding. Existing vaults require the matching PQ backup. Historical demo evidence and synthetic preview screens are excluded from the user interface; integration scripts and regression tests remain available for development.
-- `npm run artifacts` regenerates the shared ABI and deployment bytecode from the pinned Foundry build; `npm run build:web` includes this step.
-- Transactions require review, fresh authorization checks, simulation and wallet approval. Receipt timeout retains the submitted hash for rechecking. Account/network/vault changes lock the Worker; edited forms invalidate the review.
-- Reload reads only wallet accounts already authorized for this origin, without opening a permission prompt; an explicit Disconnect is respected on later loads. Your saved vaults is an independent public bookmark list available before connecting, with wallet/watch filters, names and card/list export/import. Opened addresses and verified deployments persist independently of transaction-history retention. Creation review states that no USDC is transferred and no agent session is opened. PQ secrets and passwords are never restored automatically.
-- The root URL opens a welcome page with a continuation link to the remembered testnet vault. An explicit vault link takes priority; Create another vault persists the setup choice. Older confirmed wallet operations can recover the recent vault when no selection was saved. The selected address remains visible during RPC errors; the last verified view is labelled stale and management stays disabled until a fresh read succeeds.
-- Preview builds retain preceding hashed assets so an already-open page can finish loading its modules after a rebuild. Preview responses require cache revalidation. A missing module displays a manual Reload app action; the app never reloads or repeats wallet submission automatically. Pre-wallet failures are cancelled with no submission, while receipt failures preserve the submitted hash for reconciliation. Clean old build assets only when acceptance sessions are closed.
-- Funding and management require the full pinned runtime, with every owner/PQ immutable instantiated. Matching getters alone remain read only. Receipt confirmation checks the actual mined transaction intent and action event; cancellation does not confirm the original action, and repricing links to its actual hash.
-- Non-secret operations are saved before wallet submission and reconciled after reload. Unresolved funding/deployment cannot be silently repeated. Keep browser storage while unresolved; if the hash was lost, attach it from wallet activity. An emergency PQ freeze can use a distinct funded relay wallet despite another sender's pending operation. The same sender must first reconcile/cancel its pending nonce in its wallet. A freeze always uses fresh session/nonce state.
-- Vault views are bound to their network/address. Switching vaults clears the preceding view immediately; only a failed refresh of the same vault can retain a labelled stale view. Duration preset/custom changes cancel the previous review and signature.
-- Hash recovery checks the actual sender, network, destination, calldata, value and recorded wallet nonce before attaching a transaction. Cancellation/replacement requires the same sender/nonce proof. New submissions record and request an explicit nonce before wallet approval; external wallet activity can still race that nonce and must be reconciled. Old hashless records without a nonce cannot prove which identical historical action they represent.
-- Same-origin Web Locks serialize submission and operation-history writes. Confirmed receipt metadata and a deployed vault address are saved together. A hashless "no transaction was sent" statement is a local user attestation, not an onchain cancellation; finish any open wallet request first. Address casing does not hide pending operations.
-- Real account/network changes invalidate authorization immediately and lock the Worker. External locks clear password fields; an encrypted file retained in tab memory displays its filename. A key survives the setup-to-vault transition only for this owner's deployment verified against this Worker key. Leaving with a generated/restored key or unresolved operation prompts where the browser supports it; crash recovery still requires the encrypted backup.
-- The password is not persisted. Losing either management key, the encrypted file or its password can prevent withdrawal. Read [the threat model](THREAT-MODEL.md) for the device, frontend and network boundaries.
+ArcMandate was developed to explore **controlled payment delegation**. An owner deposits USDC into a dedicated vault, grants one agent a spending session, and keeps management access. The agent uses its own account to request payments. The vault decides whether each request fits the session.
 
-## Guided testnet workflow
+The same rules apply whether the request comes from a manually operated wallet, a script or an AI agent integration. The contract enforces payment permission; the software making the request determines what task to perform and when to pay.
 
-1. In **Overview**, connect the owner wallet and choose a new-vault setup, or reopen a saved vault/address. New setup opens the key wizard before vault creation. A vault address has 42 characters; **Find vault from its creation transaction** accepts a successful 66-character direct deployment hash. A payment hash or public key cannot open a vault. Download the public vault card to move a bookmark between browsers/origins; it is not the encrypted key backup.
-2. In **Vault Key**, generate → download encrypted backup → select the actual file → restore. Then review creation of your empty vault. For an existing vault, select its matching backup. Public file metadata is only a preliminary check; a fresh Worker decrypts and proves the key. Password fields clear on lock, and 30 minutes of inactivity locks the local signer. Reload/lock does not freeze an onchain session.
-3. In **Agent & session → Prepare agent**, prepare a separate wallet account manually, or run `npm run agent:create -- --name test-agent` locally. This creates an unencrypted testnet agent key under ignored `private/agents/test-agent/key.json`, refuses an existing directory, and sets POSIX permissions or a restricted Windows ACL before writing. Only the public address/path are printed. Never use the owner private key or PQ backup as an agent key.
-4. In **Funds**, deposit USDC into the vault and separately add USDC to the agent for network fees. Agent funding transfers owner funds directly to the agent; those funds are outside session limits. Fee estimates change. The native and ERC-20 USDC views describe the same underlying balance and must not be added together.
-5. Return to the owner, restore the management key if a context change locked it, then use **Agent & session → Set limits** and open the session last. Choose allowed recipients, total budget, per-payment cap and duration. The default is 24 hours; the budget does not renew daily or on deposit. Review shows the chain-based expiry before signing.
-6. Switch to the configured agent, choose **Agent & session → Make a payment**, and review the recipient, amount and fee, then approve the payment in your wallet. Authorization and fee checks run automatically before wallet approval; there is no separate simulation action. The connected agent pays the fee; vault funds move directly to the recipient. A session authorizes spending but starts no bot.
-7. Keep the same saved request/payment ID for the same intent. Reload recovers the original session/recipient/amount. An unknown transaction needs receipt reconciliation before another send; explicitly choosing a different request is a different payment. Use one executor for an account/request: browser OR CLI. Different origins/devices and independent CLI storage do not share browser nonce coordination.
-8. Freeze through the owner wallet or matching Vault Key plus a funded relay, wait for confirmation, then review withdrawal in **Funds**. Expiry or a used budget still requires freezing before withdrawal.
+## Who can use it?
 
-**Activity** distinguishes decoded onchain events from local wallet attempts, shows its scanned block range and provides bounded older ranges/explorer links. Damaged operation/payment histories fail closed and offer raw export, validation and quarantine before correction; readable pending records and original payment identities cannot be dropped. A local recovery statement is not cancellation proof. Public vault-list recovery is separate and cannot clear pending operations.
+| User | What ArcMandate can provide |
+| --- | --- |
+| Developers building AI or software agents | A contract that limits an agent's USDC payments without requiring the owner's signing keys for each payment. |
+| Teams experimenting with automated payments | A separate budget for one worker account, with approved recipients and a time limit. |
+| Builders of paid services or task workflows | A payment permission layer for integrations where recipients can receive USDC on Arc. |
+| Developers exploring wallet security | A working prototype of wallet plus post-quantum management approval, with two ways to revoke spending. |
 
-Transaction review opens in a keyboard-accessible panel. Closing it does not stop receipt tracking. **Recovery & diagnostics** exports local event names/timestamps only; it contains no secret keys, passwords, keyfile bytes, signatures or calldata. Historical unexplained reloads have no proven root cause; production preview is the stable wallet-acceptance environment.
+For example, a developer could integrate a worker that pays two known service providers for completed tasks. ArcMandate would enforce the recipient list and spending limits. The developer would supply the worker, verify that a task was completed, and decide whether a payment should be requested.
 
-The P2 vault contract is in [contracts/src/ArcMandateVault.sol](contracts/src/ArcMandateVault.sol). Testnet evidence is in [deployments/arc-testnet.json](deployments/arc-testnet.json): deployment, 1 USDC funding, two sessions, two agent payments, a PQ freeze, an owner freeze, hybrid withdrawal, and block-pinned negative simulations. The deployed testnet vault is [`0x91e4467997d28ad3443f910261f4d65b4c867bbd`](https://testnet.arcscan.app/address/0x91e4467997d28ad3443f910261f4d65b4c867bbd). It was emptied after the demo.
+The current application includes a manual agent payment console and public agent configuration export. The repository also contains a **testnet-only** payment CLI. An autonomous worker or hosted bot service is a separate integration.
 
-P1 authorization digest fixtures are in [fixtures/digest-vectors.json](fixtures/digest-vectors.json). `npm run fixtures:generate` regenerates them from the TypeScript implementation; Solidity tests independently compare their fixed expected values.
+## A concrete example
 
-Copy `.env.example` to root `.env` when overriding public RPC URLs. Node scripts use `ARC_TESTNET_RPC_URL` / `ARC_MAINNET_RPC_URL`. The web app separately uses `VITE_ARC_TESTNET_RPC_URL` / `VITE_ARC_MAINNET_RPC_URL`; restart Vite or rebuild after changing them. HTTPS endpoints (or loopback HTTP) are validated, and the RPC chain ID must still match. Every `VITE_*` value is public in the browser bundle: do not include private RPC credentials, wallet keys or PQ secrets.
+Suppose you deposit **10 USDC** and open a session with these rules:
 
-Without a web RPC override, testnet reads recover from rate limits, transient connection failures and lagging-head errors through the public Circle, Blockdaemon and dRPC endpoints listed in the [Arc RPC reference](https://docs.arc.io/arc/references/rpc-endpoints). Each endpoint is checked for the selected chain before reading state; fallback preserves the requested block and propagates contract reverts and identity failures. An explicit `VITE_ARC_*_RPC_URL` remains exclusive. Identical in-flight vault reads are shared without caching completed authorization state, and background tabs pause automatic vault polling. Wallet signing/submission still uses the connected wallet's provider.
+| Rule | Setting |
+| --- | --- |
+| Agent | A separate wallet account |
+| Allowed recipients | Two service-provider addresses |
+| Total session budget | 2 USDC |
+| Maximum per payment | 0.25 USDC |
+| Expiry | Two hours from now |
 
-`npm run accounts:testnet` creates disposable testnet keys in ignored `private/arc-testnet-keys.json`; it refuses to overwrite an existing file. `npm run demo:testnet -- --balances` reads their public balances. After obtaining testnet funds and building the contract, `npm run demo:testnet` runs the testnet sequence and writes `deployments/arc-testnet.json`. It never targets mainnet. The disposable file is unencrypted and used only for integration scripts; the product uses encrypted Worker keyfiles.
+The agent can make payments of up to 0.25 USDC to those two addresses, while the cumulative spend stays within 2 USDC and the session remains active and unexpired. A payment to another address, an oversized payment or a request for an old session is rejected.
 
-## P5 agent payments and testnet evidence
+The 2 USDC budget grants authority over part of the vault balance; it does not transfer 2 USDC into the agent's wallet. Depositing more money does not reset the session's spent amount or extend its expiry. If 2 USDC has been spent, further payments require a new session.
 
-The standalone agent CLI reads an ignored JSON file containing only `{ "privateKey": "0x..." }`. It never needs the owner wallet or PQ key. Use a unique, stable request ID for each intended payment and supply the session ID explicitly:
+To end the session, the owner freezes it. After confirmation, the owner wallet and Vault Key can authorize withdrawal of the remaining funds.
 
-```text
-npm run agent:pay -- --request invoice-42 --vault 0x... --to 0x... --amount 0.05 --session 1 --deployment-block 65133845 --key-file private/agent-testnet-key.json
-```
+## How the permissions work
 
-The CLI targets Arc testnet only. Its ignored `private/agent-journal` records the exact request, agent account, random `paymentId`, signed transaction and hash before broadcast. Repeat the same command after timeout; a changed request is rejected. `confirmed` requires a current receipt plus matching `AgentPaid` proof, including for restored cached receipts. Signed calldata, signer, chain and hash are validated. `--reconcile` checks without signing or broadcasting. OS locks release on process death and do not rely on PID files; never delete journals to recover a lock.
+A **session** is one set of spending rules for one agent. Each vault has one owner, one Vault Key and at most one active session.
 
-Every request and vault using the same chain/agent shares `private/agent-wallet-locks`. Keep this directory and payment journals together. A reservation is written before signing, so a parallel or later request is rejected until the prior nonce is reconciled. `pending`/`used` need checking; `nonce-consumed` means another transaction consumed the signed nonce (exit code 4). After that proof, explicit `--retry-consumed` archives the old signed attempt and re-signs the **same paymentId/session/request** at a fresh nonce, subject to current authorization. Automatic fee replacement is not implemented. Old journals lacking `account` fail closed: preserve them and verify signer, receipt and payment event before a deliberate schema migration; do not create a new request or paymentId to bypass it. Locks cover processes sharing this checkout/storage; multiple machines require a single coordinator and shared durable storage.
+| Role | Authority |
+| --- | --- |
+| **Owner wallet** | Creates the vault. Together with the Vault Key, opens or replaces sessions and withdraws funds. Can freeze spending on its own. |
+| **Vault Key** | A separate SLH-DSA-SHA2-128s post-quantum signing key used for management approval. Can authorize a freeze through a funded relay. |
+| **Agent account** | Requests payments under the current session. Pays its own transaction fees and needs neither management key to pay. |
+| **Freeze relay** | Submits a Vault Key-authorized freeze and pays its fee. Receives no spending or withdrawal authority from that role. |
+| **Recipient** | Receives USDC directly from the vault when a permitted payment succeeds. |
 
-For a new full demo, set `ARC_DEMO_MANIFEST_PATH` to a new file under `deployments/` before `npm run demo:testnet`; the default completed P2 manifest is not overwritten. The historical [P5 manifest](deployments/arc-testnet-p5.json) remains unchanged. New demo management steps save signed raw transactions before broadcast under ignored `private/demo-journal`; retries reuse the original hash. Manifest snapshots use flush-and-rename. Fresh authorizations use current block state, and a previously mined withdrawal is finalized without another transfer. Changed source trees, reverted/stuck authorizations and externally changed demo state stop for reconciliation; do not delete the journals to start over. The revised funded script demo and three actual crash recoveries passed on 8 October; this script proof is separate from MetaMask UI acceptance.
+The Vault Key is generated and unlocked in a dedicated browser Worker. Its backup is encrypted with a password. The app requires downloading and restoring the actual backup before vault creation so that recoverability is checked before funds are deposited.
 
-## Browser integration smoke test
+On every agent payment, the contract checks the sender, session ID, expiry, recipient, payment amount, remaining budget, vault balance and payment ID. Reusing an already executed payment ID in the same session is rejected. Replacing or freezing a session invalidates the old session's payment authority.
 
-`npm run smoke:web` serves `http://127.0.0.1:5173/smoke.html` with a development-only EIP-1193 adapter for the disposable owner/relay accounts above. Every **Send wallet transaction** button submits a real testnet transaction. Keep this page local. The bridge refuses mainnet, checks Host/Origin and a request token, and never sends account private keys to the browser. It is excluded from the production entry point.
+~~~mermaid
+flowchart LR
+    Owner["Owner wallet + Vault Key"] -->|"Authorize spending rules"| Vault["USDC vault on Arc"]
+    Agent["Separate agent account"] -->|"Request payment"| Vault
+    Vault -->|"Check session and limits"| Rules{"Payment permitted?"}
+    Rules -->|"Yes: transfer USDC"| Recipient["Approved recipient"]
+    Rules -->|"No"| Reject["Reject payment"]
+~~~
 
-The harness captures the product's encrypted browser export unchanged in `private/web-smoke-keyfile.json`. Reload, enter management, select the captured file, and restore it with the test password. The product must prove a fresh signature and match the vault key. A later [P6 Chrome MetaMask run](deployments/p6-metamask-browser.json) also tested a browser download and user-operated Windows native file-picker restore after reload, followed by real extension-wallet management on Arc testnet.
+Either the owner wallet or the Vault Key can stop spending. Withdrawal requires both management keys and an inactive session. An expired or exhausted session still needs to be frozen before withdrawal.
 
-The P4 smoke sequence is deploy → fund 1 USDC → start → PQ freeze from relay → start → owner freeze → withdraw 1 USDC. `node scripts/record-web-smoke.mjs` validates its real receipts and final inactive/empty state and writes [the public smoke evidence](deployments/p4-browser-smoke.json). Rejected wallet requests and cancelled reviews have no receipt and are not counted as mined transactions.
+## Why Arc?
 
-`npm run release:snapshot` writes the ignored local file `deployments/revision-2026-10-05-release-snapshot.json` (override with `ARC_RELEASE_SNAPSHOT_PATH`) while preserving the public historical evidence. It binds successful deployment receipt/address, constructor and full runtime, and records commit/dirty source hash/lockfile/artifact/compiler settings. Gas price is a timed observation between two heads. The 8 October snapshot records clean tested commit `13ff30cbd91f92637eead67b491e6f9f645c833b`; later documentation edits do not change that historical provenance. Mainnet application enablement, deployment, explorer verification, actual mainnet evidence and HTTPS release checks remain P7 work.
+Arc supplies the parts used by this prototype:
 
+- **USDC settlement:** the vault holds and transfers USDC to recipients.
+- **USDC transaction fees:** owners, agents and freeze relays use USDC for gas on Arc.
+- **Native post-quantum verification:** the contract calls Arc's SLH-DSA-SHA2-128s verifier to check Vault Key management signatures.
 
-The web build exposes only `VITE_ARC_TESTNET_RPC_URL` and `VITE_ARC_MAINNET_RPC_URL`; automatic injection of other `VITE_*` variables is disabled. These RPC URLs are public and must contain no credentials, query parameters, fragments or private tokens in the path. Use the default public endpoints for the Vercel release. A custom RPC host also requires an explicit update to the `connect-src` allowlist in `vercel.json`. Secret credentials belong outside the browser bundle and are never required by this static frontend. The build ships no source maps; private files and local reports are excluded from Vercel source uploads.
+The post-quantum signature adds an approval requirement to application management. The connected EVM wallet and the network's own security remain separate trust boundaries. More detail is in the [threat model](THREAT-MODEL.md).
 
-### Hosted frontend
+## Using the application
 
-The [live application](https://arcmandate.vercel.app) now uses Arc Mainnet. [Production frontend evidence](deployments/p7-mainnet-frontend-2026-10-09.json) records the exact checked build and deployment. This publishes the mainnet frontend; no mainnet vault contract has been deployed yet. The [earlier testnet frontend evidence](deployments/p7-testnet-release-2026-10-09.json) remains a historical record, not the current network of the production URL. Localhost bookmarks, pending journals and encrypted key backups do not move automatically to the hosted origin. Switching origins never cancels an unresolved transaction.
+Use the [public application](https://arcmandate.vercel.app) with an EVM wallet on **Arc Mainnet**, chain ID **5042**. Transactions need USDC on that network. An existing supported vault can be viewed without connecting a wallet.
 
-### Mainnet release preparation
+### 1. Create or open a vault
 
-The default build remains Arc Testnet. A controlled mainnet build uses `npm run build -w @arcmandate/web -- --mode mainnet`; its network is chosen at build time, not by a URL. Mainnet selections, payment requests and bookmarks retain chain ID 5042, independent of testnet records. The browser payment console is the chosen mainnet executor; the existing local payment/demo CLI remains testnet-only. Mainnet runtime, owner, PQ, nonce, wallet-chain and unresolved-operation checks remain required. This prepared build is not evidence of a deployed mainnet vault. The user requested frontend production promotion before funding; mainnet contract deployment, verification and receipts remain pending.
+Choose **Create a vault** and connect the account that will own it. In **Vault Key**, generate a key, choose a backup password, download the encrypted file, then select that file and restore it.
 
-The [mainnet preparation preview](https://arcmandate-6etxvgtxy-efeberk.vercel.app) requires Vercel access. [Preparation evidence](deployments/p7-mainnet-preparation-2026-10-09.json) records its source and scoped checks. Root `vercel.json` explicitly builds mainnet. The prepared frontend was promoted to production at the user’s request; this does not claim a deployed mainnet vault or completed mainnet transaction evidence.
+Review the owner account, network, Vault Key and estimated transaction fee before approving creation in your wallet. Deployment creates an **empty vault**. Deposit and session creation are later steps.
+
+For an existing vault, choose **Open an existing vault** and enter its address, select a saved vault, or find it from its successful creation transaction. Use the matching encrypted Vault Key backup when management approval is needed.
+
+### 2. Prepare a separate agent
+
+In **Agent & session → Prepare agent**, enter another wallet account's public address. The owner and agent must be different accounts.
+
+The mainnet workflow uses the browser payment console. Choose the agent account yourself in your wallet when making a payment. Preparing an account or opening a session grants permission; an automated executor must be supplied separately.
+
+### 3. Fund the vault and transaction senders
+
+In **Funds**, deposit the USDC the agent may spend. Separately use **Add agent network fees** to fund the agent's own wallet for gas. A Vault Key freeze also needs a funded relay account.
+
+| Balance | Purpose |
+| --- | --- |
+| Vault USDC | Payments to approved recipients |
+| Owner wallet USDC | Deployment, management and funding transaction fees |
+| Agent wallet USDC | Agent payment transaction fees |
+| Relay wallet USDC | Vault Key freeze transaction fees |
+
+USDC transferred into the agent's own wallet is outside the vault's spending rules. Keep gas funding separate from the vault deposit. Arc's native and ERC-20 USDC balance views represent the same underlying funds and must not be added together.
+
+### 4. Set limits and open the session
+
+Return to the owner account and restore the Vault Key if switching accounts locked it. In **Agent & session → Set limits**, choose:
+
+- The agent account.
+- One to five allowed recipient addresses.
+- The total session budget.
+- The maximum amount per payment.
+- The session duration.
+
+Review the policy and expiry, authorize it with the Vault Key, and approve the transaction with the owner wallet. **Open the session last**, after accounts and funds are ready, because its expiry is time-based.
+
+### 5. Make an agent payment
+
+Connect the configured agent account and open **Agent & session → Make a payment**. Choose an allowed recipient, enter an amount and review the payment.
+
+The application checks current authorization, simulates the action and estimates the fee before wallet approval. Once the transaction succeeds, the vault sends USDC to the recipient and updates the session's spent amount. The agent pays the network fee from its own wallet.
+
+### 6. Freeze and withdraw
+
+Use **Freeze session** to stop spending. You can choose the owner wallet path or authorize a freeze with the Vault Key and a funded relay. A distinct relay can submit a freeze when the owner's account has a pending transaction.
+
+Wait for confirmation, then use **Funds → Withdraw**. Withdrawal needs the owner wallet and the matching Vault Key. A payment ordered before the freeze may execute first.
+
+### 7. Check activity and return later
+
+**Overview** shows the vault balance and session state. **Activity** shows decoded onchain events, explorer links and local wallet operation records.
+
+Save the vault or export its public vault card to reopen it in another browser. A vault card contains public metadata; the encrypted Vault Key backup and its password are needed separately. Wallet permissions and transaction journals belong to the browser origin where they were created.
+
+If a transaction's outcome is unknown, check its saved hash and wallet activity before sending again. Keep the original payment request when retrying. Reloading or locking the local key leaves the onchain session in its existing state.
+
+## Release evidence
+
+| Area | Current evidence |
+| --- | --- |
+| Public mainnet frontend | [Live app](https://arcmandate.vercel.app), [publication record](deployments/p7-mainnet-frontend-2026-10-09.json) and [latest wallet/UI checks](deployments/p7-mainnet-ui-2026-10-09.json). |
+| Mainnet preparation | [Build, network isolation and read-only verifier checks](deployments/p7-mainnet-preparation-2026-10-09.json). |
+| Funded testnet workflow | [8 October closeout](deployments/arc-testnet-closeout-2026-10-08.json): 11 successful transactions, three block-pinned rejection simulations and three actual process-interruption recoveries. |
+| Browser wallet acceptance | [Testnet MetaMask evidence](deployments/p6-metamask-browser.json). |
+| Funded mainnet workflow | Pending: our vault deployment, source verification, transaction receipts and final walkthrough. |
+
+The application source recorded in the latest frontend publication is `b503437fadb6d1af30ae0fc1132060d924652401`. Each historical evidence file identifies its own source and scope. Testnet evidence establishes those testnet results; mainnet receipts will be published after the funded run.
+
+## Prototype boundaries
+
+This is an experimental prototype with no independent security audit.
+
+- Each vault has one owner, one fixed Vault Key and one active agent session. The contract has no upgrade, key rotation or lost-key recovery path. Losing owner access or the backup/password can prevent withdrawal.
+- The browser Worker manages local key use, but a compromised device or frontend can compromise signing. Keep the encrypted backup and password recoverable and private.
+- Session budgets cover vault payments. They do not restrict the agent's own wallet or verify the quality of a purchased service.
+- Payment IDs prevent repeated execution within a session. Coordinating business requests across devices, sessions or executors requires an integration's own durable records.
+- Actual MetaMask speed-up/cancel acceptance remains incomplete after a testnet wallet error. The missing-original-hash recovery limitation is recorded in the [testnet closeout](deployments/arc-testnet-closeout-2026-10-08.json).
+- A reported MetaMask warning for the hosted site is still unresolved; its cause has not been established. The [latest publication record](deployments/p7-mainnet-ui-2026-10-09.json) retains this open release issue.
+
+## Run locally
+
+The default local build targets **Arc Testnet**. The hosted production build targets **Arc Mainnet**; the network is selected at build time.
+
+Prerequisites: Node.js 22.12+ and npm 11, plus Foundry for contract compilation. Exact release versions are in [toolchain.json](toolchain.json).
+
+~~~sh
+npm ci
+npm run artifacts
+npm run dev
+~~~
+
+For validation and a built testnet preview:
+
+~~~sh
+npm run check
+npm run preview
+~~~
+
+The preview serves `http://127.0.0.1:5173/`. To build the prepared mainnet frontend using the existing generated contract artifact:
+
+~~~sh
+npm run build -w @arcmandate/web -- --mode mainnet
+~~~
+
+See the [developer guide](DEVELOPMENT.md) for RPC configuration, the testnet CLI, transaction recovery and integration test tooling.
+
+## Repository map
+
+| Path | Contents |
+| --- | --- |
+| [contracts/src](contracts/src) | Vault, authorization digests and Arc verifier integration |
+| [apps/web/src](apps/web/src) | React application, wallet workflow and Vault Key Worker |
+| [packages/core/src](packages/core/src) | Shared policy, keyfile, digest and generated contract code |
+| [scripts](scripts) | Testnet executors, evidence recording and release checks |
+| [deployments](deployments) | Public deployment and validation records |
+| [DEVELOPMENT.md](DEVELOPMENT.md) | Detailed developer and recovery guide |
+| [THREAT-MODEL.md](THREAT-MODEL.md) | Security assumptions and implemented boundaries |
