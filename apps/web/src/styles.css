@@ -532,11 +532,14 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 }
 /* Welcome, starlight and workspace motion. */
 .sidebar { position: sticky; top: 16px; align-self: start; }
-.workspace-content > [role=tabpanel] { scroll-margin-top: 24px; min-height: calc(100dvh - 48px); }
+.workspace-content { scroll-margin-top: 24px; min-height: calc(100dvh - 48px); }
+.workspace-content > [role=tabpanel] { scroll-margin-top: 24px; }
+.pending-summary { align-items: center; flex-wrap: wrap; margin-bottom: 22px; }
+.pending-summary p { flex: 1; min-width: 180px; margin: 0; }
 @media (max-width: 850px) {
   .sidebar { top: 0; z-index: 4; background: #07090ef2; backdrop-filter: blur(12px); }
-  .workspace-content > [role=tabpanel], .workspace-content .panel { scroll-margin-top: 88px; }
-  .workspace-content > [role=tabpanel] { min-height: calc(100dvh - 112px); }
+  .workspace-content, .workspace-content > [role=tabpanel], .workspace-content .panel { scroll-margin-top: 88px; }
+  .workspace-content { min-height: calc(100dvh - 112px); }
 }
 main { position: relative; z-index: 1; }
 .starfield { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
