@@ -334,9 +334,16 @@ export default function App() {
     try {
       if (!provider) throw new Error('Open this page in a browser with an EVM wallet extension.');
       await provider.request({ method: 'eth_requestAccounts' });
-      const ticket = ++walletEpoch.current;
-      const next = await walletContext(provider, preferredAccount.current);
+      let ticket = ++walletEpoch.current;
+      let next = await walletContext(provider, preferredAccount.current);
       if (ticket !== walletEpoch.current) return;
+      if (next.account && next.chainId !== ARC_NETWORKS[network].chainId) {
+        await switchNetwork(provider, network);
+        ticket = ++walletEpoch.current;
+        next = await walletContext(provider, preferredAccount.current);
+        if (ticket !== walletEpoch.current) return;
+        if (next.chainId !== ARC_NETWORKS[network].chainId) throw new ContextChanged(`Your wallet must be on ${networkName}.`);
+      }
       rememberWalletDisconnect(false);
       connected.current = !!next.account; setAuthorizedAccounts(next.accounts); setAccount(next.account); setWalletChain(next.chainId); setWalletChecking(false); setWalletError(next.account ? '' : 'Choose an account currently authorized by your wallet.');
     } catch (error) { setWalletError(errorMessage(error)); }

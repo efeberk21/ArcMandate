@@ -83,6 +83,45 @@ beforeEach(async () => {
 afterEach(async () => { if (root) await act(async () => root.unmount()); host?.remove(); delete window.ethereum; });
 
 describe('vault and review integration', () => {
+  it('requests mainnet during explicit connection and verifies the wallet after its chain event without sending',async()=>{
+    mock.network='mainnet';
+    localStorage.setItem('arcmandate.wallet-disconnected.v1','true');
+    window.history.replaceState(null,'','/?network=mainnet&setup=1');
+    let chain='0x4cef52';
+    mock.request.mockImplementation(async({method,params})=>{
+      if(method==='eth_requestAccounts'||method==='eth_accounts')return[owner];
+      if(method==='eth_chainId')return chain;
+      if(method==='wallet_switchEthereumChain'){
+        expect(params).toEqual([{chainId:'0x13b2'}]);
+        chain='0x13b2';mock.events.get('chainChanged')?.(chain);return null;
+      }
+      throw new Error(`Unexpected request: ${method}`);
+    });
+    await act(async()=>{root.unmount();root=createRoot(host);root.render(<App/>);});
+    await click('Connect the required wallet');
+    expect(button('Review vault creation').disabled).toBe(false);
+    expect(host.querySelector('.inline-notice')).toBeNull();
+    expect(mock.request.mock.calls.every(call=>['eth_requestAccounts','eth_accounts','eth_chainId','wallet_switchEthereumChain'].includes(call[0].method))).toBe(true);
+  });
+  it.each(['rejected','unchanged'])('keeps mainnet creation blocked when the wallet switch is %s',async(outcome)=>{
+    mock.network='mainnet';
+    localStorage.setItem('arcmandate.wallet-disconnected.v1','true');
+    window.history.replaceState(null,'','/?network=mainnet&setup=1');
+    mock.request.mockImplementation(async({method})=>{
+      if(method==='eth_requestAccounts'||method==='eth_accounts')return[owner];
+      if(method==='eth_chainId')return'0x4cef52';
+      if(method==='wallet_switchEthereumChain'){
+        if(outcome==='rejected')throw Object.assign(new Error('User rejected network switch'),{code:4001});
+        return null;
+      }
+      throw new Error(`Unexpected request: ${method}`);
+    });
+    await act(async()=>{root.unmount();root=createRoot(host);root.render(<App/>);});
+    await click('Connect the required wallet');
+    expect(button('Review vault creation').disabled).toBe(true);
+    expect(host.querySelector('.error')?.textContent).toContain(outcome==='rejected'?'rejected':'Arc Mainnet');
+    expect(mock.request.mock.calls.some(call=>call[0].method==='eth_sendTransaction')).toBe(false);
+  });
   it('does not reinterpret an explicit testnet link or pending journal on a mainnet build',async()=>{
     mock.network='mainnet';mock.read.mockClear();
     const saved=JSON.stringify([{id:'testnet-pending',network:'testnet',action:'agent-gas',account:owner,vault,dataHash:`0x${'ab'.repeat(32)}`,stage:'unknown',createdAt:new Date().toISOString(),walletNonce:7}]);
