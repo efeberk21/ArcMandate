@@ -9,23 +9,25 @@ import { expectedVaultRuntime } from '@arcmandate/core/runtime';
 import type { SigningIntent } from './worker/pq.worker';
 import type { VaultSnapshot } from './lib/chain';
 
-const mock = vi.hoisted(() => ({ read: vi.fn(), lock: vi.fn(), sign: vi.fn(), simulate: vi.fn(), events: new Map<string, (...args: unknown[]) => void>(), request: vi.fn(), tx:vi.fn(),receipt:vi.fn(),active:false,session:0n,nonce:0n,keyVersion:0 }));
+const mock = vi.hoisted(() => ({ read: vi.fn(), lock: vi.fn(), sign: vi.fn(), simulate: vi.fn(), events: new Map<string, (...args: unknown[]) => void>(), request: vi.fn(), tx:vi.fn(),receipt:vi.fn(),active:false,session:0n,nonce:0n,keyVersion:0,network:'testnet' as 'testnet'|'mainnet' }));
 const owner = getAddress('0x1111111111111111111111111111111111111111');
 const vault = getAddress('0x2222222222222222222222222222222222222222');
 const agent = getAddress('0x3333333333333333333333333333333333333333');
 const publicKey = `0x${'aa'.repeat(32)}` as Hex;
-const snapshot: VaultSnapshot = { address: vault, owner, publicKey, sessionId: 0n, nonce: 0n, active: false, spent: 0n, balance: 3_000_000n, blockNumber: 100n, timestamp: 1_791_284_400n, trusted: true,
+const snapshot: VaultSnapshot = { chainId:5042002, address: vault, owner, publicKey, sessionId: 0n, nonce: 0n, active: false, spent: 0n, balance: 3_000_000n, blockNumber: 100n, timestamp: 1_791_284_400n, trusted: true,
   policy: { agent, totalBudget: 0n, perTxCap: 0n, expiresAt: 0n, recipients: [] } };
+vi.mock('./lib/release',async importOriginal=>{const actual=await importOriginal<typeof import('./lib/release')>();return {...actual,get releaseNetwork(){return mock.network;}};});
 vi.mock('./lib/chain', async importOriginal => {
   const actual = await importOriginal<typeof import('./lib/chain')>();
   const client = {
-    getChainId: async () => 5042002, getBlockNumber: async () => 100n,
+    chain:{get id(){return mock.network==='mainnet'?5042:5042002;}},
+    getChainId: async () => mock.network==='mainnet'?5042:5042002, getBlockNumber: async () => 100n,
     getBalance: async () => 10n ** 18n, getBlock: async () => ({ number: 100n, timestamp: 1_791_284_400n }),
     getContractEvents: async () => [], estimateGas: async () => 100000n, getGasPrice: async () => 1n,
     getTransaction:mock.tx,waitForTransactionReceipt:mock.receipt,
     getBytecode:async()=>expectedVaultRuntime(owner,publicKey),
     readContract: async ({ functionName, args }: { functionName: string; args: unknown[] }) => {
-      if (functionName === 'startSessionDigest') return startSessionDigest({ chainId: 5042002n, vault, owner }, args[0] as never, args[1] as never);
+      if (functionName === 'startSessionDigest') return startSessionDigest({ chainId: mock.network==='mainnet'?5042n:5042002n, vault, owner }, args[0] as never, args[1] as never);
       return functionName === 'active' ? mock.active : functionName==='sessionId'?mock.session:functionName==='controlNonce'?mock.nonce:functionName==='usedPaymentIds'?false:0n;
     },
   };
@@ -65,7 +67,7 @@ async function prepareSession() {
 }
 beforeEach(async () => {
   vi.clearAllMocks(); mock.events.clear();
-  mock.active=false;mock.session=0n;mock.nonce=0n;mock.keyVersion=0;
+  mock.network='testnet';mock.active=false;mock.session=0n;mock.nonce=0n;mock.keyVersion=0;
   vi.stubGlobal('localStorage', new TestStorage());
   Object.defineProperty(navigator,'locks',{configurable:true,value:{request:async (_name:string,options:unknown,callback?: (lock:unknown)=>unknown)=>typeof options==='function'?(options as (lock:unknown)=>unknown)({}):callback?.({})}});
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -81,6 +83,30 @@ beforeEach(async () => {
 afterEach(async () => { if (root) await act(async () => root.unmount()); host?.remove(); delete window.ethereum; });
 
 describe('vault and review integration', () => {
+  it('does not reinterpret an explicit testnet link or pending journal on a mainnet build',async()=>{
+    mock.network='mainnet';mock.read.mockClear();
+    const saved=JSON.stringify([{id:'testnet-pending',network:'testnet',action:'agent-gas',account:owner,vault,dataHash:`0x${'ab'.repeat(32)}`,stage:'unknown',createdAt:new Date().toISOString(),walletNonce:7}]);
+    localStorage.setItem('arcmandate.operations.v1',saved);
+    await act(async()=>{root.unmount();root=createRoot(host);root.render(<App/>);});
+    expect(host.querySelector('.masthead')?.textContent).toContain('Arc Mainnet');
+    expect(new URL(window.location.href).searchParams.has('vault')).toBe(false);
+    expect(mock.read).not.toHaveBeenCalled();
+    expect(host.querySelector('.pending-summary')).toBeNull();
+    expect(localStorage.getItem('arcmandate.operations.v1')).toBe(saved);
+    expect(host.textContent).toContain('Switch to Arc Mainnet');
+  });
+  it('prepares mainnet owner plus PQ authorization without requesting wallet submission',async()=>{
+    mock.network='mainnet';mock.read.mockResolvedValue({...snapshot,chainId:5042});
+    mock.request.mockImplementation(async({method})=>method==='eth_accounts'?[owner]:method==='eth_chainId'?'0x13b2':'0x0');
+    window.history.replaceState(null,'',`/?network=mainnet&vault=${vault}`);
+    await act(async()=>{root.unmount();root=createRoot(host);root.render(<App/>);});
+    await prepareSession();await click('Authorize with Vault Key');
+    expect(host.querySelector('.transaction-drawer')?.textContent).toContain('Arc Mainnet');
+    expect(mock.sign.mock.calls.at(-1)?.[0].context.chainId).toBe(5042n);
+    expect(button('Open session in wallet').disabled).toBe(false);
+    expect(mock.request.mock.calls.some(call=>call[0].method==='eth_sendTransaction')).toBe(false);
+  });
+
   it('opens the welcome page at the root and resumes the remembered vault only on request',async()=>{
     localStorage.setItem('arcmandate.vault-selection.v1',JSON.stringify({network:'testnet',address:vault,setup:false}));
     window.history.replaceState(null,'','/');await act(async()=>{root.unmount();root=createRoot(host);root.render(<App/>);});

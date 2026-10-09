@@ -10,8 +10,9 @@ export function publicRpcUrl(network: keyof typeof ARC_NETWORKS, env: Record<str
 export function publicRpcUrls(network: keyof typeof ARC_NETWORKS, env: Record<string, unknown>): string[] {
   const primary = publicRpcUrl(network, env);
   const override = env[network === 'testnet' ? 'VITE_ARC_TESTNET_RPC_URL' : 'VITE_ARC_MAINNET_RPC_URL'];
-  // Explicit overrides remain exclusive; mainnet management is still disabled.
-  if (override !== undefined || network !== 'testnet') return [primary];
-  // Public testnet providers listed at https://docs.arc.io/arc/references/rpc-endpoints.
+  // Explicit overrides remain exclusive; no hidden fallback changes a chosen provider.
+  if (override !== undefined) return [primary];
+  // Public providers listed at https://docs.arc.io/arc/references/connect-to-arc.
+  if (network === 'mainnet') return [primary, 'https://rpc.blockdaemon.mainnet.arc.io/', 'https://rpc.drpc.mainnet.arc.io/'];
   return [primary, 'https://rpc.blockdaemon.testnet.arc.io/', 'https://rpc.drpc.testnet.arc.io/'];
 }

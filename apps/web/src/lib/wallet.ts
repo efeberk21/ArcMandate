@@ -1,3 +1,4 @@
+import { networkLabel } from './release';
 import { getAddress, toHex, type Address, type Hex } from 'viem';
 import { ARC_NETWORKS } from '@arcmandate/core';
 import type { Network } from './chain';
@@ -71,7 +72,7 @@ export async function switchNetwork(provider: BrowserWallet, network: Network): 
   } catch (error) {
     if (typeof error !== 'object' || error === null || !('code' in error) || error.code !== 4902) throw error;
     await provider.request({ method: 'wallet_addEthereumChain', params: [{
-      chainId: toHex(config.chainId), chainName: network === 'testnet' ? 'Arc Testnet' : 'Arc',
+      chainId: toHex(config.chainId), chainName: networkLabel(network),
       nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 },
       rpcUrls: [config.rpcUrl], blockExplorerUrls: [config.explorerUrl],
     }] });

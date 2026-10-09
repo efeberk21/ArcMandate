@@ -1,3 +1,4 @@
+import { ARC_NETWORKS } from '@arcmandate/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Address } from 'viem';
 import { readVault, type ArcClient, type Network, type VaultSnapshot } from './chain';
@@ -16,6 +17,7 @@ export function useVaultState(client: ArcClient, network: Network, vault: Addres
   const [view, setView] = useState<View>({ identity, snapshot: null, error: '', reading: !!vault });
 
   const acceptSnapshot = useCallback((snapshot: VaultSnapshot) => {
+    if (snapshot.chainId !== ARC_NETWORKS[network].chainId) throw new Error('Vault state belongs to another network.');
     if (vaultIdentity(network, snapshot.address) !== selected.current || selected.current !== identity) return;
     const minimum = minimumBlocks.get(identity) ?? 0n;
     if (snapshot.blockNumber < minimum) return;

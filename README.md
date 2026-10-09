@@ -92,3 +92,7 @@ The web build exposes only `VITE_ARC_TESTNET_RPC_URL` and `VITE_ARC_MAINNET_RPC_
 ### Hosted frontend
 
 The [live Arc Testnet application](https://arcmandate.vercel.app) is published on Vercel. [Release evidence](deployments/p7-testnet-release-2026-10-09.json) records its exact source commit and the wallet-free vault read, Worker and security-header checks. This is a testnet release; no mainnet contract has been deployed. Localhost bookmarks, pending journals and encrypted key backups do not move automatically to the hosted origin. Switching origins never cancels an unresolved transaction.
+
+### Mainnet release preparation
+
+The default build remains Arc Testnet. A controlled mainnet build uses `npm run build -w @arcmandate/web -- --mode mainnet`; its network is chosen at build time, not by a URL. Mainnet selections, payment requests and bookmarks retain chain ID 5042, independent of testnet records. The browser payment console is the chosen mainnet executor; the existing local payment/demo CLI remains testnet-only. Mainnet runtime, owner, PQ, nonce, wallet-chain and unresolved-operation checks remain required. This prepared build is not evidence of a deployed mainnet vault. Production promotion awaits actual mainnet deployment and receipts.

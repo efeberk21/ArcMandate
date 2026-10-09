@@ -1,3 +1,4 @@
+import { networkLabel } from './release';
 import { ARC_NETWORKS } from '@arcmandate/core';
 import type { Address, Hex } from 'viem';
 import type { VaultSnapshot, Network } from './chain';
@@ -14,8 +15,7 @@ export function capability(action: Action, state: CapabilityState): Capability {
   const reasons: string[] = []; let fix: Capability['fix'] = null;
   const add = (message: string, next: Capability['fix'] = null) => { reasons.push(message); fix ??= next; };
   if (!state.provider || !state.account) add('Connect an EVM wallet to continue.', 'connect');
-  else if (state.walletChain !== ARC_NETWORKS[state.network].chainId) add('Switch your wallet to Arc Testnet.', 'switch');
-  if (state.network !== 'testnet') add('Transactions are available on testnet only.');
+  else if (state.walletChain !== ARC_NETWORKS[state.network].chainId) add(`Switch your wallet to ${networkLabel(state.network)}.`, 'switch');
   if (state.checking) add('Verifying the changed wallet account or network.');
   if (!state.locksAvailable) add('Use a browser with Web Locks support for safe transaction submission.');
   if (state.historyError) add('Resolve the saved operation history before sending.', 'pending');
@@ -28,7 +28,7 @@ export function capability(action: Action, state: CapabilityState): Capability {
     if (state.vault) add('Choose Create another vault first.');
     if (state.phase !== 'restored' || !state.publicKey) add('Create or select a Vault Key backup, then restore it to verify recovery.', 'key');
   } else {
-    if (!state.vault || !snapshot || !sameAddress(state.vault, snapshot.address)) add('Open a vault and read its current state.', 'refresh');
+    if (!state.vault || !snapshot || !sameAddress(state.vault, snapshot.address) || snapshot.chainId !== ARC_NETWORKS[state.network].chainId) add('Open a vault and read its current state.', 'refresh');
     else {
       if (state.readError) add('Refresh the stale vault state before sending.', 'refresh');
       if (!snapshot.trusted) add('This contract build is unverified. Transactions are disabled.');

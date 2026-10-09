@@ -1,3 +1,4 @@
+import { networkLabel } from './release';
 import { ARC_NETWORKS } from '@arcmandate/core';
 import { addressInput } from '@arcmandate/core/policy';
 import { capability, walletRole, type CapabilityState } from './capabilities';
@@ -8,10 +9,10 @@ export type NextStep = { id: StepAction; title: string; body: string; primaryAct
 export function deriveNextStep(state: AppState): NextStep {
   const step = (id: StepAction, title: string, body: string, primaryAction: string, blockedBy: string[] = []): NextStep => ({ id,title,body,primaryAction,blockedBy });
   if (state.historyError || pendingOperationsFor(state.network,state.account,state.vault,state.operations).length) return step('pending','Check the existing transaction','Unknown or submitted is not a success. Check wallet activity and the saved receipt before retrying. Emergency freeze remains available with a distinct sender.','Resolve operation');
-  if (state.vault && (!state.snapshot || state.readError)) return step('refresh', state.readError ? 'Vault state is unavailable' : 'Reading your vault', 'Refreshing this page does not delete a session. Read the selected vault again to recover its current onchain state.', 'Refresh vault');
+  if (state.vault && (!state.snapshot || state.snapshot.chainId !== ARC_NETWORKS[state.network].chainId || state.readError)) return step('refresh', state.readError ? 'Vault state is unavailable' : 'Reading your vault', 'Refreshing this page does not delete a session. Read the selected vault again to recover its current onchain state.', 'Refresh vault');
   if (state.snapshot && !state.snapshot.trusted) return step('diagnostics','Unverified contract build','Keep the address and your backup. This build is not approved for transactions. Export its public diagnostic details; do not send funds.','Export details');
   if (!state.account) return step('connect','Connect your wallet','Use your owner account to manage the vault or the agent account to pay. Saved vaults remain available without a connection.',state.provider?'Connect wallet':'How to connect a wallet');
-  if (state.walletChain !== ARC_NETWORKS[state.network].chainId) return step('switch','Switch to Arc Testnet','Your wallet account remains yours; management and payments require the testnet network.','Switch network');
+  if (state.walletChain !== ARC_NETWORKS[state.network].chainId) return step('switch',`Switch to ${networkLabel(state.network)}`,'Your wallet account remains yours; management and payments require the displayed network.','Switch network');
   if (!state.vault) {
     if (state.phase === 'locked') return step('key','Create or restore your Vault Key','Create your second management key, or unlock an existing backup. Keep the encrypted file and its password.','Set up Vault Key');
     if (state.phase === 'generated') return step('key','Verify your encrypted backup','Download the backup, then select the downloaded file and restore it. This proves you can recover the key before funding.','Verify backup');

@@ -4,6 +4,7 @@ import { vaultAbi } from '@arcmandate/core/contracts';
 import type { Policy } from '@arcmandate/core/digest';
 import { matchesVaultRuntime } from '@arcmandate/core/runtime';
 import { SimulationRejected, type TransactionInput } from './transactions';
+import { networkLabel } from './release';
 import { publicRpcUrls } from './rpc-config';
 import { publicRpcTransport } from './rpc-transport';
 
@@ -16,7 +17,7 @@ export const usdcAbi = parseAbi([
 export function arcChain(network: Network) {
   const config = ARC_NETWORKS[network];
   return defineChain({
-    id: config.chainId, name: network === 'testnet' ? 'Arc Testnet' : 'Arc',
+    id: config.chainId, name: networkLabel(network),
     nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 },
     rpcUrls: { default: { http: publicRpcUrls(network, {
       VITE_ARC_TESTNET_RPC_URL: import.meta.env.VITE_ARC_TESTNET_RPC_URL,
@@ -33,6 +34,7 @@ export function arcClient(network: Network) {
 
 export type ArcClient = ReturnType<typeof arcClient>;
 export type VaultSnapshot = {
+  chainId: typeof ARC_NETWORKS[Network]['chainId'];
   address: Address; owner: Address; publicKey: Hex; sessionId: bigint; nonce: bigint;
   active: boolean; policy: Policy; spent: bigint; balance: bigint;
   blockNumber: bigint; timestamp: bigint;
@@ -55,7 +57,7 @@ export function readVault(client: ArcClient, address: Address, blockNumber?: big
 }
 
 async function readVaultSnapshot(client: ArcClient, address: Address, blockNumber?: bigint): Promise<VaultSnapshot> {
-  if (await client.getChainId() !== client.chain.id) throw new Error('RPC chain does not match the selected network');
+  if (![ARC_NETWORKS.testnet.chainId, ARC_NETWORKS.mainnet.chainId].includes(client.chain.id as never) || await client.getChainId() !== client.chain.id) throw new Error('RPC chain does not match the selected network');
   const block = await client.getBlock(blockNumber === undefined ? {} : { blockNumber });
   const at = { address, abi: vaultAbi, blockNumber: block.number } as const;
   const [owner, publicKey, sessionId, nonce, active, policy, spent, balance, token, verifier] = await Promise.all([
@@ -75,7 +77,7 @@ async function readVaultSnapshot(client: ArcClient, address: Address, blockNumbe
   }
   const code = await client.getBytecode({ address, blockNumber: block.number });
   return {
-    address, owner, publicKey, sessionId, nonce, active,
+    chainId: client.chain.id as VaultSnapshot['chainId'], address, owner, publicKey, sessionId, nonce, active,
     policy: { ...policy, recipients: [...policy.recipients] }, spent, balance,
     blockNumber: block.number, timestamp: block.timestamp,
     trusted: matchesVaultRuntime(code, owner, publicKey),

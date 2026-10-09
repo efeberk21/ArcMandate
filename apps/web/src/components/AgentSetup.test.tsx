@@ -3,7 +3,7 @@ import { act } from 'react';import { createRoot,type Root } from 'react-dom/clie
 import { AgentSetup } from './AgentSetup';import type { VaultSnapshot } from '../lib/chain';
 vi.mock('../lib/chain',()=>({arcClient:()=>({getBalance:async()=>0n})}));
 const owner='0x1111111111111111111111111111111111111111',agent='0x3333333333333333333333333333333333333333',vault='0x2222222222222222222222222222222222222222';
-const snapshot:VaultSnapshot={address:vault,owner,publicKey:`0x${'aa'.repeat(32)}`,trusted:true,active:true,sessionId:1n,nonce:1n,spent:0n,balance:1_000_000n,blockNumber:100n,timestamp:1000n,policy:{agent,totalBudget:1_000_000n,perTxCap:100_000n,expiresAt:2000n,recipients:[owner]}};
+const snapshot:VaultSnapshot={chainId:5042002,address:vault,owner,publicKey:`0x${'aa'.repeat(32)}`,trusted:true,active:true,sessionId:1n,nonce:1n,spent:0n,balance:1_000_000n,blockNumber:100n,timestamp:1000n,policy:{agent,totalBudget:1_000_000n,perTxCap:100_000n,expiresAt:2000n,recipients:[owner]}};
 let root:Root,host:HTMLDivElement;const copy=vi.fn();const storageKey=`arcmandate.cli-request.v1:${vault}`;
 beforeEach(()=>{Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true});vi.stubGlobal('localStorage',new TestStorage());Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:copy.mockResolvedValue(undefined)}});Object.defineProperty(navigator,'locks',{configurable:true,value:{request:async(_name:string,callback:()=>unknown)=>callback()}});host=document.createElement('div');document.body.append(host);root=createRoot(host);});
 afterEach(async()=>{await act(async()=>root.unmount());host.remove();vi.unstubAllGlobals();});

@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, fileURLToPath(new URL('../..', import.meta.url)), 'VITE_ARC_');
   const publicNames = ['VITE_ARC_TESTNET_RPC_URL', 'VITE_ARC_MAINNET_RPC_URL'];
-  const define: Record<string, string> = {};
+  const define: Record<string, string> = { __ARC_RELEASE_NETWORK__: JSON.stringify(mode === 'mainnet' ? 'mainnet' : 'testnet') };
   for (const name of publicNames) {
     const value = env[name];
     if (value !== undefined) {
