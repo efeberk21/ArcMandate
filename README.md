@@ -155,7 +155,7 @@ If a transaction's outcome is unknown, check its saved hash and wallet activity 
 
 | Area | Current evidence |
 | --- | --- |
-| Public mainnet frontend | [Live app](https://arcmandate.vercel.app), [publication record](deployments/p7-mainnet-frontend-2026-10-09.json) and [latest wallet/UI checks](deployments/p7-mainnet-ui-2026-10-09.json). |
+| Public mainnet frontend | [Live app](https://arcmandate.vercel.app), [10 October receipt UI publication](deployments/p7-mainnet-receipt-ui-2026-10-10.json) and [earlier wallet/UI checks](deployments/p7-mainnet-ui-2026-10-09.json). |
 | Mainnet preparation | [Build, network isolation and read-only verifier checks](deployments/p7-mainnet-preparation-2026-10-09.json). |
 | Funded testnet workflow | [8 October closeout](deployments/arc-testnet-closeout-2026-10-08.json): 11 successful transactions, three block-pinned rejection simulations and three actual process-interruption recoveries. |
 | Browser wallet acceptance | [Testnet MetaMask evidence](deployments/p6-metamask-browser.json). |
@@ -166,7 +166,7 @@ The funded mainnet acceptance used application source `b503437fadb6d1af30ae0fc11
 
 The reference mainnet vault is `0x99cAae907095bBB95D8714ee2a23369dB2377d7A`, created in block `25142201` by [this transaction](https://explorer.arc.io/tx/0xa696ab775a6eacdbc59f567b0159e96831d7ec2b129ccb7b0952e161064e24d6). Creation transferred **0 USDC** and cost **0.038374662 USDC** in network fees. Funded acceptance cost **0.0640359225 USDC**. Owner, agent and vault balances reconcile exactly to the original total minus those fees, counting native/ERC-20 USDC once. After withdrawing the remaining 0.08 USDC, the agent returned its available gas funds; MetaMask left 0.00044625 USDC in the user-controlled agent account. The public vault link opens without connecting a wallet.
 
-Two accepted hashes briefly returned transaction-not-found before RPC indexing caught up. Rechecking the saved receipts resolved both without duplicate sends. The receipt flow now waits through a bounded sequence of transaction-visibility reads before reporting an unknown outcome; sender, network, nonce, calldata and event verification still apply.
+Two accepted hashes briefly returned transaction-not-found before RPC indexing caught up. Rechecking the saved receipts resolved both without duplicate sends. The receipt flow now waits through a bounded sequence of transaction-visibility reads before reporting an unknown outcome; sender, network, nonce, calldata and event verification still apply. The [new publication record](deployments/p7-mainnet-receipt-ui-2026-10-10.json) binds the tested fix to its source commit and verifies all 13 hosted files against a clean mainnet build.
 
 ## Prototype boundaries
 

@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "recordedForDate": "2026-10-10",
+  "timezone": "Europe/Istanbul",
+  "recordedAt": "2026-10-09T23:21:16.137Z",
+  "sourceCommit": "7bfe9da8cb0a9187186b1a6be7b6e079e15b595c",
+  "sourceDirty": false,
+  "productionUrl": "https://arcmandate.vercel.app",
+  "deploymentUrl": "https://arcmandate-9ckdrttcz-efeberk.vercel.app",
+  "deploymentId": "dpl_HRX22wVP6QLXhE9wSTvbXaJQpBCF",
+  "readyState": "READY",
+  "change": "Bounded public RPC transaction-visibility polling before validating accepted wallet hashes. No automatic resubmission.",
+  "validation": {
+    "command": "npm run check",
+    "passed": true,
+    "typescriptTests": 157,
+    "typescriptTestFiles": 26,
+    "solidityTests": 24,
+    "invariantRuns": 64,
+    "invariantCalls": 8192,
+    "mainnetBuild": "isolated clean output directory",
+    "allHostedFilesMatch": true
+  },
+  "files": [
+    {
+      "path": "favicon.svg",
+      "httpStatus": 200,
+      "sha256": "17930ca2e4fa8251f479de9ce7d67c5592e7a220c9afa03ae5f9dac9507a860f",
+      "matches": true
+    },
+    {
+      "path": "index.html",
+      "httpStatus": 200,
+      "sha256": "688879d433989f0b6083ecc4a8795c55eaada157906b9d5f7ab4b1a1a0c498df",
+      "matches": true
+    },
+    {
+      "path": "assets/ccip-aZDUbkOR.js",
+      "httpStatus": 200,
+      "sha256": "612366f44e9ef3756bddad30f2c39f350629aac1246fb115fe8f8fcab53e9886",
+      "matches": true
+    },
+    {
+      "path": "assets/index-CcICSoqN.js",
+      "httpStatus": 200,
+      "sha256": "48e216e2340379e460dd848f46d578fe5b8840d0f9c6ff85a11a2fc99bf79b43",
+      "matches": true
+    },
+    {
+      "path": "assets/index-CEOu618P.css",
+      "httpStatus": 200,
+      "sha256": "60c6bf435c96e6a55140549d4995d9edb438e9581c5e87d50d26e0f15884b2cf",
+      "matches": true
+    },
+    {
+      "path": "assets/pq.worker-CrkDU-0i.js",
+      "httpStatus": 200,
+      "sha256": "fd4386d97599625153e3caee08ebe04024c0037ddc6d07c808522333607a1a8c",
+      "matches": true
+    },
+    {
+      "path": "brand/arcmandate-symbol.png",
+      "httpStatus": 200,
+      "sha256": "e631595032a11fe78b6947bff00a819f422f9b7a061d0c1dfd2cb7f46f614a9b",
+      "matches": true
+    },
+    {
+      "path": "fonts/barlow-condensed-bold.ttf",
+      "httpStatus": 200,
+      "sha256": "7dde307fa887fc65ff5830cfada77a7decc5dae8d3c816c9d39ba3f1af1c4ed7",
+      "matches": true
+    },
+    {
+      "path": "fonts/barlow-condensed-regular.ttf",
+      "httpStatus": 200,
+      "sha256": "c82d65280835cb3cd1b499863cf68cae8c6193c45ffae9495d28d01f749a9ae2",
+      "matches": true
+    },
+    {
+      "path": "fonts/barlow-condensed-semibold.ttf",
+      "httpStatus": 200,
+      "sha256": "0d85af813fc3ed87db0c6265515689b2eef5cbaf7aab17922528dfc95a2cd73f",
+      "matches": true
+    },
+    {
+      "path": "fonts/barlow-OFL.txt",
+      "httpStatus": 200,
+      "sha256": "10b0e6bb43166a50fbe7cde2895bd7f703738a5da843acb5c97c95dc9ea26817",
+      "matches": true
+    },
+    {
+      "path": "fonts/ibm-plex-mono-OFL.txt",
+      "httpStatus": 200,
+      "sha256": "3ff4395aeb203050b3d4e775861cf0b93b598e0a6d2b16f0eb41df3350b15695",
+      "matches": true
+    },
+    {
+      "path": "fonts/ibm-plex-mono-regular.ttf",
+      "httpStatus": 200,
+      "sha256": "a7fdc993f9f0387caedba4e42521136fa97e4c0837ae6239bf0413ccf8af00c2",
+      "matches": true
+    }
+  ],
+  "fundedAcceptanceEvidence": "arc-mainnet-acceptance-2026-10-10.json",
+  "scope": "The funded acceptance used the previous application version. This publication adds the receipt-visibility fix, verified by regression tests and exact hosted-file matching; no extra funded transaction was requested to retest the UI fix."
+}

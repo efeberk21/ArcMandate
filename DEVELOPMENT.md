@@ -91,7 +91,7 @@ npm run build -w @arcmandate/web -- --mode mainnet
 
 The browser payment console is the selected mainnet executor. The existing local payment/demo CLI remains testnet-only. Runtime, owner, PQ, nonce, wallet-chain and unresolved-operation checks still apply. Deployment creates an empty vault; funding and session creation are separate transactions.
 
-[Production frontend evidence](deployments/p7-mainnet-frontend-2026-10-09.json) and [the latest UI release record](deployments/p7-mainnet-ui-2026-10-09.json) preserve the checked source and publication. The earlier testnet frontend record is historical. A mainnet frontend publication does not establish a successful mainnet vault deployment or funded walkthrough.
+[Initial production frontend evidence](deployments/p7-mainnet-frontend-2026-10-09.json), [earlier UI checks](deployments/p7-mainnet-ui-2026-10-09.json) and [the 10 October receipt UI publication](deployments/p7-mainnet-receipt-ui-2026-10-10.json) preserve their checked source and publication. The earlier testnet frontend record is historical. Funded acceptance is established by its separate receipt manifest, rather than frontend publication alone.
 
 Browser storage and wallet permissions belong to each origin. Export the public vault card and keep the encrypted Vault Key backup/password when moving from localhost to the stable HTTPS address. Pending operations remain in their original origin and must be reconciled there; changing origins never cancels an unresolved transaction.
 
