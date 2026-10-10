@@ -13,6 +13,7 @@
   --ui: 'Segoe UI', Arial, sans-serif;
   --data: 'IBM Plex Mono', Consolas, monospace;
   font-family: var(--ui);
+  font-optical-sizing: auto;
   color: var(--chalk);
   background: var(--plate);
   font-synthesis: none;
@@ -35,7 +36,7 @@ a:hover { text-decoration-color: var(--rated); }
 .plate-label { color: var(--secondary); font-size: 12px; font-weight: 400; }
 .technical-icon { width: 20px; height: 20px; flex-shrink: 0; }
 .masthead { min-height: 100px; display: flex; justify-content: space-between; align-items: center; gap: 24px; }
-.brand { display: flex; gap: 13px; align-items: center; text-decoration: none; font-size: 22px; font-weight: 500; letter-spacing: -.04em; }
+.brand { display: flex; gap: 13px; align-items: center; text-decoration: none; font-size: 22px; font-weight: 500; letter-spacing: -.025em; }
 .brand-mark { display: flex; align-items: center; justify-content: center; width: 46px; height: 46px; flex-shrink: 0; }
 .brand-emblem { display: block; width: 100%; height: 100%; object-fit: contain; }
 .brand small { display: block; color: var(--secondary); font-weight: 400; font-size: 11px; letter-spacing: 0; margin-top: 2px; }
@@ -58,7 +59,7 @@ a:hover { text-decoration-color: var(--rated); }
 .workspace-mode { font-size: 11px; color: var(--secondary); padding-top: 6px; }
 .panel { background: var(--plate-raised); border: 1px solid var(--etch); border-radius: 24px; padding: 26px; margin-bottom: 22px; min-width: 0; scroll-margin-top: 24px; }
 .panel > p { color: var(--secondary); max-width: 80ch; }
-.section-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 20px; }
+.section-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px; margin-bottom: 20px; }
 .section-index { display: none; }
 .badge { display: inline-flex; align-items: center; gap: 7px; border: 1px solid transparent; border-radius: 40px; padding: 6px 10px; font-size: 10px; font-weight: 400; white-space: nowrap; color: var(--chalk); background: var(--plate-soft); }
 .status-mark { width: 5px; height: 5px; border-radius: 50%; background: #7e8797; }
@@ -74,7 +75,8 @@ a:hover { text-decoration-color: var(--rated); }
 .wallet-info > p { margin: 5px 0; font-size: 12px; }
 .wallet-info > button { margin-top: 12px; margin-right: 0; }
 .wallet-info .badge { margin-left: 8px; }
-button { border: 1px solid transparent; background: var(--rated); color: var(--plate); border-radius: 40px; padding: 11px 19px; font: 500 12px var(--ui); cursor: pointer; margin: 6px 8px 6px 0; transition: border-color 180ms, background-color 180ms, box-shadow 180ms; min-height: 42px; box-shadow: 0 4px 24px #ff8a4512; }
+button { border: 1px solid transparent; background: var(--rated); color: var(--plate); border-radius: 40px; padding: 11px 19px; font: 500 13px var(--ui); cursor: pointer; margin: 6px 8px 6px 0; transition: border-color 180ms, background-color 180ms, box-shadow 180ms; min-height: 44px; box-shadow: 0 4px 24px #ff8a4512; }
+button:active:not(:disabled) { filter: brightness(.92); }
 button:hover:not(:disabled) { background: #ff9a5f; box-shadow: 0 4px 28px #ff8a4525; }
 button.secondary, button.danger { background: var(--plate-soft); color: var(--chalk); border-color: var(--etch); box-shadow: none; }
 button.secondary:hover:not(:disabled) { background: #1c202a; border-color: #6e4933; }
@@ -327,7 +329,7 @@ button.text-button:hover:not(:disabled), button.text-button:focus-visible:not(:d
 .freeze-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
 .recipient-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .recipient-row label { flex: 1 1 240px; }
-.checkbox-label { display: flex; align-items: flex-start; gap: 10px; }
+.checkbox-label { display: flex; flex-direction: row; align-items: flex-start; gap: 12px; line-height: 1.6; }
 .checkbox-label input { width: auto; flex: none; margin-top: 5px; }
 .drawer-backdrop { position: fixed; inset: 0; z-index: 100; background: #000a; display: flex; justify-content: flex-end; }
 .transaction-drawer { width: min(700px, 100%); max-height: 100dvh; overflow-y: auto; overscroll-behavior: contain; background: #10131b; padding: 24px; box-shadow: -12px 0 60px #0008; }
@@ -353,7 +355,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .workspace-nav button { display: flex; align-items: center; gap: 12px; text-align: left; margin: 0; padding: 14px 12px; border: 1px solid transparent; border-radius: 14px; background: transparent; color: var(--secondary); box-shadow: none; }
 .workspace-nav button:hover { background: var(--plate-raised); box-shadow: none; color: var(--chalk); }
 .workspace-nav button[aria-selected=true] { background: #ff8a4510; color: var(--chalk); border-color: #ff8a4530; }
-.workspace-nav small, .sidebar-key small { display: block; font-size: 10px; font-weight: 400; margin-top: 4px; color: var(--secondary); line-height: 1.4; }
+.workspace-nav small, .sidebar-key small { display: block; font-size: 11px; font-weight: 400; margin-top: 4px; color: var(--secondary); line-height: 1.5; }
 .nav-symbol { font-size: 21px; width: 22px; flex-shrink: 0; text-align: center; color: var(--secondary); }
 .nav-mobile-title { display: none; }
 [aria-selected=true] .nav-symbol { color: var(--rated); }
@@ -410,7 +412,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .journey-number { display: flex; align-items: center; justify-content: center; flex: 0 0 22px; height: 22px; border: 1px solid var(--etch); border-radius: 50%; color: var(--secondary); font-size: 11px; }
 .journey-number.complete { color: var(--verified); border-color: #71b49b50; }
 .journey-step strong { display: block; font-size: 12px; font-weight: 500; }
-.journey-step small { display: block; font-size: 10px; line-height: 1.5; color: var(--secondary); margin-top: 5px; }
+.journey-step small { display: block; font-size: 11px; line-height: 1.5; color: var(--secondary); margin-top: 5px; }
 .vault-access, .session-help, .creation-details { border-top: 1px solid var(--etch); padding-top: 2px; }
 .vault-access > summary, .creation-details > summary { color: var(--chalk); }
 .state-footnote { color: var(--secondary); font-size: 10px; margin: 10px 2px; }
@@ -563,7 +565,7 @@ main { position: relative; z-index: 1; }
 .welcome { padding: 25px 0 32px; }
 .welcome-hero { display: grid; grid-template-columns: 1.15fr 1fr; align-items: center; gap: 60px; min-height: 500px; padding: 32px 0 60px; }
 .welcome-copy { max-width: 580px; animation: content-arrive 550ms ease both; }
-.welcome h1 { font-size: clamp(42px, 5.3vw, 72px); line-height: 1.04; letter-spacing: -.055em; margin: 22px 0 28px; font-weight: 500; }
+.welcome h1 { font-size: clamp(42px, 5.3vw, 72px); line-height: 1.06; letter-spacing: -.035em; margin: 22px 0 28px; font-weight: 500; }
 .welcome h1 em { color: var(--rated); font-style: normal; }
 .welcome h1:focus { outline: none; }
 .welcome-lead { font-size: 20px; max-width: 30ch; color: var(--chalk); }
@@ -589,7 +591,7 @@ main { position: relative; z-index: 1; }
 .welcome-principles article:nth-child(2) { animation-delay: 90ms; }.welcome-principles article:nth-child(3) { animation-delay: 180ms; }
 .welcome-number { font: 11px var(--data); color: var(--rated); }
 .welcome-principles h2 { font-size: 18px; margin-top: 18px; }
-.welcome-principles p { color: var(--secondary); font-size: 12px; line-height: 1.8; }
+.welcome-principles p { color: var(--secondary); font-size: 13px; line-height: 1.7; }
 .welcome-note { color: var(--secondary); text-align: center; font-size: 12px; padding-top: 22px; }
 @media (max-width: 850px) { .welcome-hero { gap: 20px; min-height: 430px; }.welcome-principles { gap: 12px; }.welcome-principles article { padding: 20px; } }
 @media (max-width: 600px) {
@@ -599,6 +601,8 @@ main { position: relative; z-index: 1; }
 
 /* Scheduled payments use the existing vault controls and spacing. */
 .automatic-payments .field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.automatic-payments .field-grid + .field-grid { margin-top: 16px; }
+.automatic-payments .field-grid label { min-width: 0; margin: 0; }
 .automatic-plan, .automatic-form { margin-top: 28px; border-top: 1px solid var(--etch); padding-top: 22px; }
 .automatic-payments .welcome-actions { flex-wrap: wrap; margin-block: 16px; }
 .automatic-payments .checkbox-label { margin-block: 16px; flex-direction: row; }
