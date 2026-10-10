@@ -38,3 +38,7 @@ private/
 
 .vercel
 .env*
+
+# Operator-specific mainnet acceptance and release tracking stay local.
+/deployments/automation-mainnet-*.json
+/deployments/automation-release-*.json

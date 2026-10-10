@@ -10,7 +10,7 @@ Funds stay in the vault until a permitted payment sends them directly to a recip
 
 [Open the application](https://arcmandate.vercel.app) · [View the mainnet vault](https://arcmandate.vercel.app/?network=mainnet&vault=0x99cAae907095bBB95D8714ee2a23369dB2377d7A) · [Contract source](contracts/src/ArcMandateVault.sol) · [Developer guide](DEVELOPMENT.md) · [Threat model](THREAT-MODEL.md)
 
-> **Status — 10 October 2026:** Mainnet vault management is live and previously passed funded MetaMask acceptance. A hosted scheduler now supports web-managed payment plans, separate service agent accounts and browser-independent execution. Real testnet acceptance confirmed two scheduled payments across a service redeployment, freeze blocking the next payment, and withdrawal. Funded acceptance of the new mainnet scheduler is pending; the earlier manual mainnet receipts are not evidence of automatic execution.
+> **Status — 10 October 2026:** Arc Mainnet vault management and hosted automatic payments are live. Mainnet verification confirmed two scheduled 0.01 USDC payments while the browser was closed, with a service redeployment between payments. The frontend manages finite payment schedules without requiring a terminal or per-payment wallet approval. Testnet verification also covered freeze blocking a later payment and withdrawal.
 
 ## Why ArcMandate exists
 
@@ -157,7 +157,7 @@ If a transaction's outcome is unknown, check its saved hash and wallet activity 
 
 | Area | Current evidence |
 | --- | --- |
-| Hosted scheduler acceptance | [Real scheduled testnet payments and freeze](deployments/automation-testnet-2026-10-10.json). Mainnet scheduler acceptance is recorded separately when completed. |
+| Hosted scheduler acceptance | Two scheduled mainnet payments with the browser closed and a service redeployment between payments. [Testnet payments and freeze](deployments/automation-testnet-2026-10-10.json). |
 | Public mainnet frontend | [Live app](https://arcmandate.vercel.app), [10 October receipt UI publication](deployments/p7-mainnet-receipt-ui-2026-10-10.json) and [earlier wallet/UI checks](deployments/p7-mainnet-ui-2026-10-09.json). |
 | Mainnet preparation | [Build, network isolation and read-only verifier checks](deployments/p7-mainnet-preparation-2026-10-09.json). |
 | Funded testnet workflow | [8 October closeout](deployments/arc-testnet-closeout-2026-10-08.json): 11 successful transactions, three block-pinned rejection simulations and three actual process-interruption recoveries. |
