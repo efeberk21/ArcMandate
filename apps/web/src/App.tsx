@@ -21,6 +21,7 @@ import { capability, walletRole, type CapabilityState } from './lib/capabilities
 import { NextStepCard } from './components/NextStep';
 import { TransactionDrawer } from './components/TransactionDrawer';
 import { VaultLibrary } from './components/VaultLibrary';
+import { AutomaticPayments } from './components/AutomaticPayments';
 import { AgentSetup } from './components/AgentSetup';
 import { AgentConsole } from './components/AgentConsole';
 import { Welcome } from './components/Welcome';
@@ -77,7 +78,7 @@ export default function App() {
   const [vaultError, setVaultError] = useState('');
   const [panel,setPanel]=useState<'overview'|'agent'|'funds'|'key'|'activity'>(initialSelection.setup?'key':'overview');
   const [drawerOpen,setDrawerOpen]=useState(false);
-  const [agentView,setAgentView]=useState<'setup'|'limits'|'payment'>('setup');
+  const [agentView,setAgentView]=useState<'automatic'|'setup'|'limits'|'payment'>('automatic');
   const [fundsView,setFundsView]=useState<'deposit'|'withdraw'|'gas'>('deposit');
   const [freezeOpen,setFreezeOpen]=useState(false);
   const [copyMessage,setCopyMessage]=useState('');
@@ -414,8 +415,8 @@ export default function App() {
   const canManage = !walletChecking && !!account && walletChain === ARC_NETWORKS[network].chainId;
   const capabilities:CapabilityState={network,account,walletChain,provider:!!provider,vault,snapshot,readError,checking:walletChecking,phase:pq.phase,publicKey:pq.publicKey,
     operations,historyError:historyError||draftError,busy,keyBusy:pq.busy,assetsUnavailable:assetLoadError,locksAvailable:!!navigator.locks};
-  useEffect(()=>{setSessionForm({agent:'',budget:'',cap:'',minutes:'1440',recipients:''});setDurationPreset('1440');setFundAmount('');setWithdrawAmount('');setWithdrawTo('');setGasAmount('');setAgentView('setup');setFundsView('deposit');setFreezeOpen(false);setCopyMessage('');},[vault]);
-  useEffect(()=>{if(snapshot?.active){setAgentView('payment');setSessionForm(previous=>({...previous,agent:snapshot.policy.agent,budget:formatUnits(snapshot.policy.totalBudget,6),cap:formatUnits(snapshot.policy.perTxCap,6),recipients:snapshot.policy.recipients.join('\n')}));}},[snapshot?.address]);
+  useEffect(()=>{setSessionForm({agent:'',budget:'',cap:'',minutes:'1440',recipients:''});setDurationPreset('1440');setFundAmount('');setWithdrawAmount('');setWithdrawTo('');setGasAmount('');setAgentView('automatic');setFundsView('deposit');setFreezeOpen(false);setCopyMessage('');},[vault]);
+  useEffect(()=>{if(snapshot?.active){setAgentView('automatic');setSessionForm(previous=>({...previous,agent:snapshot.policy.agent,budget:formatUnits(snapshot.policy.totalBudget,6),cap:formatUnits(snapshot.policy.perTxCap,6),recipients:snapshot.policy.recipients.join('\n')}));}},[snapshot?.address]);
   const ownerConnected = !!snapshot && account === getAddress(snapshot.owner);
 
   async function currentVault(rpc: ArcClient, address: Address, net: Network) {
@@ -676,7 +677,7 @@ export default function App() {
     else if(id==='freeze'){setFreezeOpen(true);requestAnimationFrame(()=>document.getElementById('freeze-session')?.scrollIntoView({block:'center',behavior:'smooth'}));}
     else if(id==='session'){setAgentView('limits');go('agent');}
     else if(id==='fund'){setFundsView('deposit');go('funds');}
-    else if(id==='agent'){setAgentView(snapshot?.active?'payment':'setup');go('agent');}
+    else if(id==='agent'){setAgentView('automatic');go('agent');}
     else go('key');
   }
   function exportDetails() {
@@ -699,7 +700,7 @@ export default function App() {
   const consoleGate=capability('agent-pay',capabilities);
   const recipients=sessionForm.recipients.split(/[\s,]+/).filter(Boolean);
   const recipientRows=sessionForm.recipients.split('\n');
-  const pageTitles:Record<WorkspacePanel,{title:string;description:string}>={overview:{title:vault?(selectedCard?.label||'Your vault'):'Create your first vault',description:vault?'Your money, spending limits and next step in one place.':'Keep USDC in your own vault. Give a separate agent a spending budget.'},agent:{title:'Agent & spending',description:'Prepare an agent, choose its limits, then make a payment.'},funds:{title:'Move your funds',description:'Choose where the money goes. Every transfer is reviewed before your wallet opens.'},key:{title:'Secure your Vault Key',description:'Your second management key. Keep its encrypted backup and password.'},activity:{title:'Activity & recovery',description:'Track what happened and resolve transactions with an uncertain outcome.'}};
+  const pageTitles:Record<WorkspacePanel,{title:string;description:string}>={overview:{title:vault?(selectedCard?.label||'Your vault'):'Create your first vault',description:vault?'Your money, spending limits and next step in one place.':'Keep USDC in your own vault. Give a separate agent a spending budget.'},agent:{title:'Agent & spending',description:'Prepare automatic payments, authorize spending limits and manage your schedule.'},funds:{title:'Move your funds',description:'Choose where the money goes. Every transfer is reviewed before your wallet opens.'},key:{title:'Secure your Vault Key',description:'Your second management key. Keep its encrypted backup and password.'},activity:{title:'Activity & recovery',description:'Track what happened and resolve transactions with an uncertain outcome.'}};
   return <><Starfield/><main>
     <a className="skip-link" href={showWelcome?'#welcome-heading':'#workspace-tabs'}>{showWelcome?'Skip to getting started':'Skip to workspace'}</a>
     <header className="masthead"><a className="brand" href={`/?network=${network}`} onClick={event=>{event.preventDefault();openWelcome();}}><span className="brand-mark"><BrandMark/></span><span>ArcMandate<small>Agent spending control</small></span></a><div className="masthead-meta"><StatusBadge label={networkName}/><details className="wallet-menu" id="wallet-menu" onKeyDown={event=>{if(event.key==='Escape'){event.currentTarget.open=false;event.currentTarget.querySelector('summary')?.focus();}}} onBlur={event=>{if(!event.currentTarget.contains(event.relatedTarget))event.currentTarget.open=false;}}><summary><span className={`wallet-dot ${account?'connected':''}`} aria-hidden="true"/>{account?`${walletRole(capabilities)} · ${account.slice(0,6)}…${account.slice(-4)}`:'Wallet not connected'}<span aria-hidden="true">⌄</span></summary><section className="wallet-popover" aria-label="Network and wallet"><h2>Your wallet</h2>
@@ -738,7 +739,8 @@ export default function App() {
     </div>
     <div id="panel-key" role="tabpanel" aria-labelledby="tab-key" hidden={panel!=='key'}><KeyPanel key={vault??'new-vault'} pq={pq} expectedKey={snapshot?.publicKey} disabled={busy||walletChecking||!!vault&&!snapshot} onChange={invalidate}/>{vault&&pq.phase==='restored'&&<div className="task-footer"><p>Key unlocked. Return to your vault to choose the next action.</p><button onClick={()=>go('overview')}>Continue to your vault</button></div>}{!vault&&<section className="panel"><h2>Create your empty vault</h2>{actionButton('deploy','Review vault creation')}</section>}</div>
     <div id="panel-agent" role="tabpanel" aria-labelledby="tab-agent" hidden={panel!=='agent'}>{snapshot?<>
-      <div className="task-switcher" aria-label="Agent tasks">{(['setup','limits','payment'] as const).map(item=><button key={item} className="secondary" aria-pressed={agentView===item} onClick={()=>setAgentView(item)}>{({setup:'1 · Prepare agent',limits:'2 · Set limits',payment:'3 · Make a payment'})[item]}</button>)}</div>
+      <div className="task-switcher" aria-label="Agent tasks">{(['automatic','limits','setup','payment'] as const).map(item=><button key={item} className="secondary" aria-pressed={agentView===item} onClick={()=>setAgentView(item)}>{({automatic:'Automatic payments',limits:'Spending limits',setup:'Manual account tools',payment:'Manual payment'})[item]}</button>)}</div>
+      <div hidden={agentView!=='automatic'}><AutomaticPayments key={`${snapshot.chainId}:${snapshot.address}:${account}`} snapshot={snapshot} account={account} provider={provider} walletChain={walletChain} disabled={busy||walletChecking||!!readError} onAgent={address=>{if(sessionForm.agent!==address){invalidate();setSessionForm(previous=>({...previous,agent:address}));}}} onLimits={()=>setAgentView('limits')} onGas={()=>{setFundsView('gas');go('funds');}} onDeposit={()=>{setFundsView('deposit');go('funds');}} onFreeze={()=>nextAction('freeze')}/></div>
       <div hidden={agentView!=='setup'}><AgentSetup network={network} key={snapshot.address} snapshot={snapshot} agent={sessionForm.agent|| (snapshot.active?snapshot.policy.agent:'')} onAgent={value=>{invalidate();setSessionForm(previous=>({...previous,agent:value}));}} onGas={()=>{setFundsView('gas');go('funds');}} operations={operations} verifiedBlock={verifiedCreation?.address.toLowerCase()===snapshot.address.toLowerCase()?verifiedCreation.block:undefined}/><div className="task-footer"><p>{snapshot.balance===0n?'Add USDC to the vault, then choose spending limits. Open the session last.':'Next, choose where this agent can pay and how much it can spend.'}</p><div>{snapshot.balance===0n&&<button onClick={()=>nextAction('fund')}>Continue to vault deposit</button>}<button className={snapshot.balance===0n?'secondary':undefined} onClick={()=>setAgentView('limits')}>Continue to spending limits</button></div></div></div>
       <div hidden={agentView!=='limits'}>
       <section className="panel session-form" id="session-form"><span className="eyebrow">Spending permission</span><h2>{snapshot.active?'Replace session':'Open session'}</h2><p>Choose the agent’s budget, approved recipients and expiry. Your owner wallet and Vault Key approve these limits.</p><p>Agent: <span className="mono">{sessionForm.agent||'Choose the account in Agent setup'}</span> <button className="text-button" onClick={()=>setAgentView('setup')}>Change agent</button></p>
@@ -777,7 +779,7 @@ export default function App() {
       </>}
       <p role="status">{transaction.message}</p>{['simulation-rejected','wallet-rejected','unknown','cancelled','reverted'].includes(transaction.stage)&&<p>{explainError(new Error(transaction.message)).advice}</p>}
       {transaction.hash&&<p className="mono"><a target="_blank" rel="noreferrer" href={`${ARC_NETWORKS[transactionNetwork].explorerUrl}/tx/${transaction.hash}`}>View transaction {transaction.hash}</a></p>}
-      {transaction.stage==='confirmed'&&<><p className="notice">Confirmed onchain. {displayedOperation?.action==='deploy'?'Your empty vault is saved. Prepare an agent, then deposit and open a session.':displayedOperation?.action==='start'?'Session rules are active. This does not start a bot; switch to the configured agent to make a payment.':displayedOperation?.action==='owner-freeze'||displayedOperation?.action==='pq-freeze'?'Session frozen. The owner can now review a withdrawal.':'The verified action effect is recorded in Activity.'}</p><button onClick={()=>{setDrawerOpen(false);if(displayedOperation?.action==='owner-freeze'||displayedOperation?.action==='pq-freeze'){setFundsView('withdraw');go('funds');}else {setAgentView(displayedOperation?.action==='start'?'payment':'setup');go('agent');}}}>Continue to next step</button></>}
+      {transaction.stage==='confirmed'&&<><p className="notice">Confirmed onchain. {displayedOperation?.action==='deploy'?'Your empty vault is saved. Prepare an agent, then deposit and open a session.':displayedOperation?.action==='start'?'Session rules are active. Open Automatic payments to review and activate a schedule.':displayedOperation?.action==='owner-freeze'||displayedOperation?.action==='pq-freeze'?'Session frozen. The owner can now review a withdrawal.':'The verified action effect is recorded in Activity.'}</p><button onClick={()=>{setDrawerOpen(false);if(displayedOperation?.action==='owner-freeze'||displayedOperation?.action==='pq-freeze'){setFundsView('withdraw');go('funds');}else {setAgentView('automatic');go('agent');}}}>Continue to next step</button></>}
     </section></TransactionDrawer>
     <footer><span>ArcMandate · {networkName}</span><p>Keep your encrypted Vault Key backup and password. Vault cards and agent configuration contain public metadata only.</p></footer></div></div>
   </main></>;

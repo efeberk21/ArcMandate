@@ -16,7 +16,10 @@
     "test:contracts": "node scripts/forge.mjs test --root contracts",
     "artifacts": "npm run build:contracts && node scripts/export-artifacts.mjs",
     "test:ts": "vitest run --passWithNoTests",
-    "typecheck": "tsc --noEmit && npm run typecheck -w @arcmandate/web",
+    "typecheck": "tsc --noEmit && tsc -p services/automation/tsconfig.json && npm run typecheck -w @arcmandate/web",
+    "automation:dev": "wrangler dev --config services/automation/wrangler.jsonc --env testnet",
+    "automation:build": "wrangler deploy --config services/automation/wrangler.jsonc --dry-run",
+    "automation:deploy": "wrangler deploy --config services/automation/wrangler.jsonc",
     "build:web": "npm run artifacts && npm run build -w @arcmandate/web",
     "dev": "npm run dev -w @arcmandate/web",
     "preview": "npm run preview -w @arcmandate/web",
@@ -34,10 +37,12 @@
     "demo:testnet": "tsx scripts/testnet-demo.ts"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "5.20261010.1",
     "@types/node": "26.6.3",
     "tsx": "4.23.15",
     "typescript": "7.0.2",
-    "vitest": "4.1.11"
+    "vitest": "4.1.11",
+    "wrangler": "4.149.0"
   },
   "dependencies": {
     "@noble/hashes": "2.4.0",
