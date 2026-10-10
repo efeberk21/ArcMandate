@@ -3,9 +3,13 @@ import { fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, fileURLToPath(new URL('../..', import.meta.url)), 'VITE_ARC_');
+  const env = loadEnv(mode, fileURLToPath(new URL('../..', import.meta.url)), ['VITE_ARC_', 'VITE_AUTOMATION_']);
   const publicNames = ['VITE_ARC_TESTNET_RPC_URL', 'VITE_ARC_MAINNET_RPC_URL'];
   const define: Record<string, string> = { __ARC_RELEASE_NETWORK__: JSON.stringify(mode === 'mainnet' ? 'mainnet' : 'testnet') };
+  const automation = env.VITE_AUTOMATION_API_URL ?? `https://arcmandate-automation${mode === 'mainnet' ? '' : '-testnet'}.arcmandate.workers.dev`;
+  const automationUrl = new URL(automation);
+  if (automationUrl.protocol !== 'https:' || automationUrl.username || automationUrl.password || automationUrl.search || automationUrl.hash || automationUrl.pathname !== '/') throw new Error('Automation endpoint must be a public HTTPS origin.');
+  define['import.meta.env.VITE_AUTOMATION_API_URL'] = JSON.stringify(automationUrl.origin);
   for (const name of publicNames) {
     const value = env[name];
     if (value !== undefined) {
@@ -19,7 +23,7 @@ export default defineConfig(({ mode }) => {
   }
   return {
     envDir: '../..',
-    // No automatic VITE_* injection: only the two intentionally public RPC URLs above.
+    // No automatic VITE_* injection: only the intentionally public endpoints above.
     envPrefix: [],
     define,
     server: { host: '127.0.0.1', port: 5173, strictPort: true },

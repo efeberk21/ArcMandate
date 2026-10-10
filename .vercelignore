@@ -1,6 +1,10 @@
 node_modules
 .git
 .tools
+.wrangler
+services/automation/.wrangler
+.dev.vars*
+services/automation/.dev.vars*
 .npm-cache
 .env
 .env.*

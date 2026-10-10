@@ -4,13 +4,13 @@
 
 ### Your money. Your agent. Your rules.
 
-**ArcMandate gives a software agent permission to spend USDC from a vault on Arc, within limits chosen by its owner.** The owner sets the allowed recipients, total budget, maximum amount per payment and expiry. The smart contract checks those rules whenever the agent makes a payment.
+**ArcMandate schedules automatic USDC payments from a vault on Arc, within limits chosen by its owner.** The owner sets the allowed recipients, total budget, maximum amount per payment and expiry. The smart contract checks those rules whenever the agent makes a payment.
 
 Funds stay in the vault until a permitted payment sends them directly to a recipient. The owner manages spending authority with an EVM wallet and a separate Vault Key, and can freeze the session when access needs to stop.
 
 [Open the application](https://arcmandate.vercel.app) · [View the mainnet vault](https://arcmandate.vercel.app/?network=mainnet&vault=0x99cAae907095bBB95D8714ee2a23369dB2377d7A) · [Contract source](contracts/src/ArcMandateVault.sol) · [Developer guide](DEVELOPMENT.md) · [Threat model](THREAT-MODEL.md)
 
-> **Status — 10 October 2026:** The public application runs in **Arc Mainnet mode**. Our [mainnet vault](https://explorer.arc.io/address/0x99cAae907095bBB95D8714ee2a23369dB2377d7A?tab=contract) is deployed and its source is verified with an exact match. Funded MetaMask acceptance passed: two agent payments, session replacement, owner/PQ freezes and withdrawal. The vault was emptied and spending revoked after testing. This demonstrates the manual wallet workflow; an autonomous mainnet worker remains a separate integration. See [release evidence](#release-evidence) for the precise scope.
+> **Status — 10 October 2026:** Mainnet vault management is live and previously passed funded MetaMask acceptance. A hosted scheduler now supports web-managed payment plans, separate service agent accounts and browser-independent execution. Real testnet acceptance confirmed two scheduled payments across a service redeployment, freeze blocking the next payment, and withdrawal. Funded acceptance of the new mainnet scheduler is pending; the earlier manual mainnet receipts are not evidence of automatic execution.
 
 ## Why ArcMandate exists
 
@@ -29,9 +29,9 @@ The same rules apply whether the request comes from a manually operated wallet, 
 | Builders of paid services or task workflows | A payment permission layer for integrations where recipients can receive USDC on Arc. |
 | Developers exploring wallet security | A working prototype of wallet plus post-quantum management approval, with two ways to revoke spending. |
 
-For example, a developer could integrate a worker that pays two known service providers for completed tasks. ArcMandate would enforce the recipient list and spending limits. The developer would supply the worker, verify that a task was completed, and decide whether a payment should be requested.
+For example, an owner can schedule two 0.01 USDC payments to an approved recipient, one minute apart. After the owner activates the plan, the hosted worker submits both payments even if the browser is closed. The contract enforces spending authority; the service enforces timing.
 
-The current application includes a manual agent payment console and public agent configuration export. The repository also contains a **testnet-only** payment CLI. An autonomous worker or hosted bot service is a separate integration.
+The **Automatic payments** screen prepares a service-managed payment account and creates finite schedules with a fixed recipient, amount and interval. The hosted worker signs payments without asking for a wallet approval each time. A manual payment console and testnet CLI remain available as developer tools. This is deterministic scheduled execution, not an LLM deciding what to buy.
 
 ## A concrete example
 
@@ -100,11 +100,11 @@ Review the owner account, network, Vault Key and estimated transaction fee befor
 
 For an existing vault, choose **Open an existing vault** and enter its address, select a saved vault, or find it from its successful creation transaction. Use the matching encrypted Vault Key backup when management approval is needed.
 
-### 2. Prepare a separate agent
+### 2. Prepare automatic payments
 
-In **Agent & session → Prepare agent**, enter another wallet account's public address. The owner and agent must be different accounts.
+Open **Agent & session → Automatic payments**. Sign in with a free owner-wallet message, then choose **Prepare automatic payment account**. The service creates a separate account for this vault; no terminal, private-key import or manual agent account switch is required.
 
-The mainnet workflow uses the browser payment console. Choose the agent account yourself in your wallet when making a payment. Preparing an account or opening a session grants permission; an automated executor must be supplied separately.
+The service stores the agent signing key encrypted. It never receives your owner private key or Vault Key. A compromised service can use the authority you already granted, within the contract's limits. Keep gas funding small; the agent account's own funds are outside the vault policy.
 
 ### 3. Fund the vault and transaction senders
 
@@ -131,17 +131,19 @@ Return to the owner account and restore the Vault Key if switching accounts lock
 
 Review the policy and expiry, authorize it with the Vault Key, and approve the transaction with the owner wallet. **Open the session last**, after accounts and funds are ready, because its expiry is time-based.
 
-### 5. Make an agent payment
+### 5. Activate a payment plan
 
-Connect the configured agent account and open **Agent & session → Make a payment**. Choose an allowed recipient, enter an amount and review the payment.
+Return to **Automatic payments**. Choose an allowed recipient, a fixed amount, first payment time, interval and number of payments (1–100). All payments must fit the vault balance, remaining budget, per-payment limit and session expiry. Times are shown in your browser's time zone and stored as absolute UTC times.
 
-The application checks current authorization, simulates the action and estimates the fee before wallet approval. Once the transaction succeeds, the vault sends USDC to the recipient and updates the session's spent amount. The agent pays the network fee from its own wallet.
+Review the total and schedule, check the authorization box and select **Activate automatic payments**. Opening a spending session alone does not activate a plan. The hosted worker executes the plan with no per-payment wallet prompt, including while the page is closed. Each submitted payment has a network-fee cap of 0.01 USDC; fees come from the separate agent account.
+
+A time missed by at least one minute is skipped; missed payments are not caught up in a burst. Network confirmation may be delayed. Pause stops new service submissions, while a transaction already sent may still confirm. Freeze revokes the onchain authority. An old plan never adopts a replacement session automatically.
 
 ### 6. Freeze and withdraw
 
 Use **Freeze session** to stop spending. You can choose the owner wallet path or authorize a freeze with the Vault Key and a funded relay. A distinct relay can submit a freeze when the owner's account has a pending transaction.
 
-Wait for confirmation, then use **Funds → Withdraw**. Withdrawal needs the owner wallet and the matching Vault Key. A payment ordered before the freeze may execute first.
+Wait for confirmation, then use **Funds → Withdraw**. Withdrawal needs the owner wallet and the matching Vault Key. A payment ordered before the freeze may execute first. After stopping the plan and resolving pending payments, **Return unused fees to owner** returns the agent’s available gas balance to the immutable vault owner, less a buffered network fee. A small reserve can remain.
 
 ### 7. Check activity and return later
 
@@ -155,6 +157,7 @@ If a transaction's outcome is unknown, check its saved hash and wallet activity 
 
 | Area | Current evidence |
 | --- | --- |
+| Hosted scheduler acceptance | [Real scheduled testnet payments and freeze](deployments/automation-testnet-2026-10-10.json). Mainnet scheduler acceptance is recorded separately when completed. |
 | Public mainnet frontend | [Live app](https://arcmandate.vercel.app), [10 October receipt UI publication](deployments/p7-mainnet-receipt-ui-2026-10-10.json) and [earlier wallet/UI checks](deployments/p7-mainnet-ui-2026-10-09.json). |
 | Mainnet preparation | [Build, network isolation and read-only verifier checks](deployments/p7-mainnet-preparation-2026-10-09.json). |
 | Funded testnet workflow | [8 October closeout](deployments/arc-testnet-closeout-2026-10-08.json): 11 successful transactions, three block-pinned rejection simulations and three actual process-interruption recoveries. |
@@ -214,6 +217,7 @@ See the [developer guide](DEVELOPMENT.md) for RPC configuration, the testnet CLI
 | [apps/web/src](apps/web/src) | React application, wallet workflow and Vault Key Worker |
 | [packages/core/src](packages/core/src) | Shared policy, keyfile, digest and generated contract code |
 | [scripts](scripts) | Testnet executors, evidence recording and release checks |
+| [services/automation](services/automation) | Hosted scheduler, encrypted agent keys, owner authentication and durable transaction state |
 | [deployments](deployments) | Public deployment and validation records |
 | [DEVELOPMENT.md](DEVELOPMENT.md) | Detailed developer and recovery guide |
 | [THREAT-MODEL.md](THREAT-MODEL.md) | Security assumptions and implemented boundaries |

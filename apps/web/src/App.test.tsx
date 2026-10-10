@@ -214,7 +214,7 @@ describe('vault and review integration', () => {
     expect(host.querySelector('#freeze-session')).not.toBeNull();
   });
   it('preserves empty recipient rows while editing and enforces the five-row UI limit',async()=>{
-    await click('Agent & session');await click('2 · Set limits');await fill('Recipient 1',owner);
+    await click('Agent & session');await click('Spending limits');await fill('Recipient 1',owner);
     await click('Add recipient');expect(field('Recipient 2').value).toBe('');
     await fill('Recipient 2','0x33');expect(field('Recipient 1').value).toBe(owner);expect(field('Recipient 2').value).toBe('0x33');
     await click('Add recipient');await click('Add recipient');await click('Add recipient');

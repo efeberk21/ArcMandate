@@ -20,12 +20,12 @@ export function deriveNextStep(state: AppState): NextStep {
   }
   const snapshot=state.snapshot!;
   if (snapshot.active && (snapshot.timestamp >= snapshot.policy.expiresAt || snapshot.spent >= snapshot.policy.totalBudget)) return step('session',snapshot.timestamp >= snapshot.policy.expiresAt ? 'Session expired' : 'Session budget used','The owner can replace the session to grant new authority, or freeze it before withdrawing. A deposit does not renew a used budget.','Review session options');
-  if (snapshot.active && snapshot.balance > 0n) return step('agent','The session permits payments','Connect the configured agent account to make a payment within these limits. Opening a session does not start a bot.','Open agent console');
+  if (snapshot.active && snapshot.balance > 0n) return step('agent','The session permits payments','Open Automatic payments to activate or check a schedule under these limits. Opening a session alone does not activate a plan.','Open payment plans');
   if (walletRole(state) !== 'Owner') return step('agent','Prepare the agent or view this vault','Payments use the configured agent. To change spending limits, connect the owner wallet. Freeze options remain available below.','View agent setup');
   if (state.phase !== 'restored' || state.publicKey?.toLowerCase() !== snapshot.publicKey.toLowerCase()) return step('key','Unlock this vault’s management key','Select the matching encrypted backup. The owner can freeze an active session without unlocking it.','Unlock Vault Key');
   let agentChosen=false;
   try { const agent=addressInput(state.agentAddress??'','Agent');agentChosen=agent.toLowerCase()!==snapshot.owner.toLowerCase()&&agent.toLowerCase()!==snapshot.address.toLowerCase(); } catch { /* Incomplete setup stays actionable. */ }
-  if(!agentChosen&&!snapshot.active) return step('agent','Prepare your agent account','Choose a separate payment account and check its fee balance before opening a timed session. Your owner wallet keeps management access.','Prepare agent');
+  if(!agentChosen&&!snapshot.active) return step('agent','Prepare your agent account','Prepare the automatic payment account on this site and fund its network fees before opening a session.','Prepare agent');
   if (snapshot.balance === 0n) return step('fund','Deposit USDC into your vault','Add USDC to the vault. The agent pays recipients from here; its own wallet only needs network fees.','View deposit');
   return step('session','Choose your agent’s spending limits','Check the agent account and its fee balance, then choose recipients, budget and duration. Open the session last; time spent waiting for wallet approval reduces its usable duration.','Set spending limits');
 }

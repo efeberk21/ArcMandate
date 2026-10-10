@@ -2,6 +2,17 @@
 
 ArcMandate is an immutable, single-session USDC vault prototype. This document describes implemented boundaries; it is not an audit.
 
+## Hosted scheduled payments
+
+- The scheduler creates one service-managed agent per vault/network. Owner and PQ keys stay outside this service. The contract enforces recipient, amount, budget and expiry; the service enforces timing. A service compromise can spend the remaining authorized budget and agent gas funds.
+- Agent keys use AES-GCM encryption with authenticated chain/vault context. The encryption key is a Worker secret, separate from stored ciphertext. This does not protect against an operator or compromised Worker that can access both.
+- Login requires an EOA owner signature over a five-minute nonce and domain/chain/vault context. The 30-minute bearer session stays in frontend memory. Mutations verify the supported runtime and immutable owner. Contract-wallet owner signatures are not supported by this service yet.
+- One Durable Object serializes each vault's API requests and alarms. Signed bytes/hash/nonce are persisted before broadcast. Retries reconcile the same receipt and AgentPaid proof or rebroadcast identical bytes. Nonce conflicts pause execution. One current plan supports up to 100 occurrences; ten archived plans are retained. Onchain history is independent.
+- Cloud/RPC outages, quotas and insufficient gas can delay or pause execution. Times missed by at least 60 seconds are skipped rather than charged in a burst. Exact-time settlement is not guaranteed. A persisted watchdog schedules recovery after worker interruption.
+- Pause/stop cannot cancel transactions already broadcast. Owner/PQ freeze remains independently available. Old plans never adopt new sessions. Manual payments consume the same budget and can cause plans to pause.
+- Each submitted payment's legacy network fee is capped at 0.01 USDC; no automatic fee replacement. Unused agent gas returns only to the immutable owner after revocation and payment reconciliation, less a buffered fee. A small reserve may remain.
+- Losing the service encryption key can make agent gas balances inaccessible. Owner + PQ can still withdraw vault funds after freeze. Restoring an old service database snapshot is not a supported live recovery procedure without reconciling outstanding transaction identities first.
+
 ## Authority
 
 - Starting or replacing a session and withdrawing require both the owner wallet and the vault's PQ key. Either key can freeze an active session.

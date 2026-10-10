@@ -1,0 +1,21 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "arcmandate-automation",
+  "main": "worker.ts",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "vars": {
+    "APP_ORIGIN": "https://arcmandate.vercel.app",
+    "NETWORK": "mainnet",
+    "MAX_PAYMENT_FEE_WEI": "10000000000000000"
+  },
+  "durable_objects": { "bindings": [{ "name": "VAULTS", "class_name": "VaultScheduler" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["VaultScheduler"] }],
+  "env": {
+    "testnet": {
+      "name": "arcmandate-automation-testnet",
+      "vars": { "APP_ORIGIN": "http://localhost:5173", "NETWORK": "testnet", "MAX_PAYMENT_FEE_WEI": "10000000000000000" },
+      "durable_objects": { "bindings": [{ "name": "VAULTS", "class_name": "VaultScheduler" }] }
+    }
+  }
+}

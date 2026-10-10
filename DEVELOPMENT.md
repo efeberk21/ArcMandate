@@ -2,6 +2,24 @@
 
 Start with the [README](README.md) for the project's purpose, permission model and application walkthrough. This guide retains the detailed development, testnet execution and recovery notes.
 
+## Hosted automation
+
+End users use **Automatic payments** on the website. The commands here are operator/developer tooling, not a user prerequisite.
+
+`services/automation/worker.ts` serves owner-authenticated JSON endpoints and a Durable Object per chain/vault. SQLite-backed Durable Object storage holds encrypted agent keys, schedules and transaction journals; alarms execute without a browser or external cron. `engine.ts` contains the execution state machine and `chain.ts` validates the exact vault runtime and onchain effects.
+
+- `npm run automation:build`: bundle validation, without deployment.
+- `npm run automation:dev`: local testnet service. Use an ignored `.dev.vars` with `AGENT_ENCRYPTION_KEY`, a random 32-byte hex encryption key. Never put it in a `VITE_*` value.
+- `npm run automation:deploy`: mainnet Worker deployment using the configured account. Provision `AGENT_ENCRYPTION_KEY` as a Worker secret first (or use Wrangler's `--secrets-file` with a protected ignored file). Keep a secure operator backup; rotating it without migrating ciphertext makes existing agent keys unavailable.
+- `npx wrangler deploy --config services/automation/wrangler.jsonc --env testnet`: isolated testnet service, using a separate secret.
+- `npx tsx scripts/automation-testnet.ts prepare|inspect|freeze|cleanup`: real testnet acceptance using explicitly disposable accounts. The harness refuses other chains. It never exercises a production owner key.
+
+Mainnet API: `https://arcmandate-automation.arcmandate.workers.dev`. Testnet uses the separate `arcmandate-automation-testnet` host. Vite chooses the endpoint by build mode; an explicit public `VITE_AUTOMATION_API_URL` override must be an HTTPS origin. The frontend CSP must allow that exact origin. Service `APP_ORIGIN` must equal the frontend origin; production is `https://arcmandate.vercel.app`, testnet development is `http://localhost:5173`.
+
+Only `/health` is public status. Vault routes are `/v1/<chainId>/<vault>/<action>` with JSON POST. Challenge/login require an owner message signature; state, agent preparation, plan activation/pause/resume/stop and fee return require the resulting bearer token. API output excludes agent secret material and serialized transactions. There is no endpoint to run arbitrary calls or choose a fee-return recipient.
+
+Run `npm run check` for existing contract/web tests plus automation types/tests. Mainnet acceptance must separately demonstrate hosted payments without per-payment wallet approval; historical manual receipts are not substituted for this evidence. See the [threat model](THREAT-MODEL.md) for custody and timing limits.
+
 **Network scope:** default local builds and the payment/demo CLI use Arc Testnet. The public production frontend uses Arc Mainnet. The network is chosen at build time; a URL cannot switch a testnet build into mainnet. The reference mainnet vault is deployed and source-verified; its [deployment evidence](deployments/arc-mainnet-2026-10-10.json) preserves the initial state. The separate [funded mainnet acceptance](deployments/arc-mainnet-acceptance-2026-10-10.json) records manual MetaMask payments, session replacement, both freeze paths, full withdrawal and agent gas return. No autonomous mainnet worker was used.
 
 ## Development
@@ -79,7 +97,7 @@ The P4 smoke sequence is deploy → fund 1 USDC → start → PQ freeze from rel
 `npm run release:snapshot` writes the ignored local file `deployments/revision-2026-10-05-release-snapshot.json` (override with `ARC_RELEASE_SNAPSHOT_PATH`) while preserving the public historical evidence. It binds successful deployment receipt/address, constructor and full runtime, and records commit/dirty source hash/lockfile/artifact/compiler settings. Gas price is a timed observation between two heads. The 8 October snapshot records clean tested commit `13ff30cbd91f92637eead67b491e6f9f645c833b`; later documentation edits do not change that historical provenance. Mainnet deployment, explorer verification and funded manual HTTPS acceptance are now recorded separately in the dated 10 October manifests.
 
 
-The web build exposes only `VITE_ARC_TESTNET_RPC_URL` and `VITE_ARC_MAINNET_RPC_URL`; automatic injection of other `VITE_*` variables is disabled. These RPC URLs are public and must contain no credentials, query parameters, fragments or private tokens in the path. Use the default public endpoints for the Vercel release. A custom RPC host also requires an explicit update to the `connect-src` allowlist in `vercel.json`. Secret credentials belong outside the browser bundle and are never required by this static frontend. The build ships no source maps; private files and local reports are excluded from Vercel source uploads.
+The web build exposes only `VITE_ARC_TESTNET_RPC_URL`, `VITE_ARC_MAINNET_RPC_URL` and `VITE_AUTOMATION_API_URL`; automatic injection of other `VITE_*` variables is disabled. These RPC URLs are public and must contain no credentials, query parameters, fragments or private tokens in the path. Use the default public endpoints for the Vercel release. A custom RPC host also requires an explicit update to the `connect-src` allowlist in `vercel.json`. Secret credentials belong outside the browser bundle and are never required by this static frontend. The build ships no source maps; private files and local reports are excluded from Vercel source uploads.
 
 ## Hosted frontend and mainnet builds
 

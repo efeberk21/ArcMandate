@@ -1,0 +1,117 @@
+{
+  "recordedAt": "2026-10-10T08:27:38.642Z",
+  "network": "Arc Mainnet",
+  "chainId": 5042,
+  "productionUrl": "https://arcmandate.vercel.app",
+  "deploymentId": "dpl_FPXRJNDFjf5kdCkUxLSjHNuKHNwz",
+  "workerUrl": "https://arcmandate-automation.arcmandate.workers.dev",
+  "workerVersion": "62bf17f9-7812-46aa-b057-48da59287a54",
+  "tests": {
+    "typescript": 187,
+    "solidity": 24,
+    "invariantCalls": 8192
+  },
+  "files": [
+    {
+      "path": "assets/ccip-DZ6870-z.js",
+      "httpStatus": 200,
+      "sha256": "9553b4686e9c2132208ca39a9bfd3e74bc7cf5c8cd6db6949e317376502e5de6",
+      "matches": true
+    },
+    {
+      "path": "assets/index-DU67CT3-.css",
+      "httpStatus": 200,
+      "sha256": "7103c174f008e34e5833dd3c368b264a06fa2c06f134dff97440c9303970012f",
+      "matches": true
+    },
+    {
+      "path": "assets/index-Wx2sZLEn.js",
+      "httpStatus": 200,
+      "sha256": "eefee669c4f9d4b1abd0cb4d3018226d5604920f7becf02f763bea0f685568bf",
+      "matches": true
+    },
+    {
+      "path": "assets/pq.worker-CrkDU-0i.js",
+      "httpStatus": 200,
+      "sha256": "fd4386d97599625153e3caee08ebe04024c0037ddc6d07c808522333607a1a8c",
+      "matches": true
+    },
+    {
+      "path": "brand/arcmandate-symbol.png",
+      "httpStatus": 200,
+      "sha256": "e631595032a11fe78b6947bff00a819f422f9b7a061d0c1dfd2cb7f46f614a9b",
+      "matches": true
+    },
+    {
+      "path": "favicon.svg",
+      "httpStatus": 200,
+      "sha256": "17930ca2e4fa8251f479de9ce7d67c5592e7a220c9afa03ae5f9dac9507a860f",
+      "matches": true
+    },
+    {
+      "path": "fonts/barlow-condensed-bold.ttf",
+      "httpStatus": 200,
+      "sha256": "7dde307fa887fc65ff5830cfada77a7decc5dae8d3c816c9d39ba3f1af1c4ed7",
+      "matches": true
+    },
+    {
+      "path": "fonts/barlow-condensed-regular.ttf",
+      "httpStatus": 200,
+      "sha256": "c82d65280835cb3cd1b499863cf68cae8c6193c45ffae9495d28d01f749a9ae2",
+      "matches": true
+    },
+    {
+      "path": "fonts/barlow-condensed-semibold.ttf",
+      "httpStatus": 200,
+      "sha256": "0d85af813fc3ed87db0c6265515689b2eef5cbaf7aab17922528dfc95a2cd73f",
+      "matches": true
+    },
+    {
+      "path": "fonts/barlow-OFL.txt",
+      "httpStatus": 200,
+      "sha256": "10b0e6bb43166a50fbe7cde2895bd7f703738a5da843acb5c97c95dc9ea26817",
+      "matches": true
+    },
+    {
+      "path": "fonts/ibm-plex-mono-OFL.txt",
+      "httpStatus": 200,
+      "sha256": "3ff4395aeb203050b3d4e775861cf0b93b598e0a6d2b16f0eb41df3350b15695",
+      "matches": true
+    },
+    {
+      "path": "fonts/ibm-plex-mono-regular.ttf",
+      "httpStatus": 200,
+      "sha256": "a7fdc993f9f0387caedba4e42521136fa97e4c0837ae6239bf0413ccf8af00c2",
+      "matches": true
+    },
+    {
+      "path": "index.html",
+      "httpStatus": 200,
+      "sha256": "d25cc3cc4f945d0401888ce7cc56af9071a047f311429c3eef04714666c68028",
+      "matches": true
+    }
+  ],
+  "mainnetSchedulerAcceptance": "pending",
+  "testnetAcceptance": "automation-testnet-2026-10-10.json",
+  "rpcRecovery": {
+    "checkedAt": "2026-10-10T08:36:18.163Z",
+    "challengeHttpStatus": 200,
+    "mainnetVaultChainId": 5042,
+    "testsPassed": 34,
+    "sharedWithFrontend": true
+  },
+  "finalChecks": {
+    "checkedAt": "2026-10-10T08:43:44.797Z",
+    "command": "npm run check",
+    "passed": true,
+    "typescriptTests": 187,
+    "solidityTests": 24,
+    "invariantCalls": 8192
+  },
+  "mainnetSetup": {
+    "ownerLoginVerified": true,
+    "agent": "0x8DC91f1e817770a4Dd281C6eF8e0b496Ad4b33a0",
+    "funded": false,
+    "planActivated": false
+  }
+}

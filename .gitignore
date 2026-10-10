@@ -3,6 +3,8 @@ node_modules/
 .npm-cache/
 dist/
 coverage/
+.wrangler/
+.dev.vars*
 .vercel/
 contracts/out/
 contracts/cache/

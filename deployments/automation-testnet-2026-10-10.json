@@ -1,0 +1,194 @@
+{
+  "chainId": 5042002,
+  "service": "https://arcmandate-automation-testnet.arcmandate.workers.dev",
+  "vault": "0xebcd760e14824851fc929bf9e65593d6a45b675a",
+  "agent": "0x8d29CC9aAf009ee617680F30eF22E54eDb49D5A1",
+  "receipts": [
+    {
+      "label": "deploy",
+      "hash": "0xef2fbab2ea7dbdf6196c6359d797633416d48bc1c30a234c8c756ee78a0a0399",
+      "block": "66446866"
+    },
+    {
+      "label": "agent-gas",
+      "hash": "0x8bdabd628046d826acc72c871d397ce319c4b4aa70364c28c28997cbd4d985f2",
+      "block": "66446877"
+    },
+    {
+      "label": "vault-funding",
+      "hash": "0x6ed2f9fbbb5ce9653e7e4f4c195b176f3195fc68bc85d520d553bf20f49f0d96",
+      "block": "66446886"
+    },
+    {
+      "label": "start-session",
+      "hash": "0x9775e99026daf9958d5f307fcc91cc262ae444a023560a949cac39b679129278",
+      "block": "66446897"
+    },
+    {
+      "label": "owner-freeze",
+      "hash": "0x8355cce929a49b2c95ac62c295eac7ff7b1c3a673c1884e6631d5ecce238a60b",
+      "block": "66447391"
+    },
+    {
+      "label": "withdraw",
+      "hash": "0xced307c8f3dacc65afb069a400f6e897d33edea9f2be21a50879f5ca62acc622",
+      "block": "66447611"
+    }
+  ],
+  "state": {
+    "vault": "0xebCd760e14824851fc929BF9e65593d6A45b675A",
+    "chainId": 5042002,
+    "agent": "0x8d29CC9aAf009ee617680F30eF22E54eDb49D5A1",
+    "plan": {
+      "recipient": "0x5704BF0960c1701f2a73086623bAf6fD5707649A",
+      "amount": "10000",
+      "startAt": 1791620107241,
+      "intervalSeconds": 90,
+      "count": 3,
+      "id": "e4781a85-30b8-44a1-a452-f67b5177bd8f",
+      "sessionId": "1",
+      "agent": "0x8d29CC9aAf009ee617680F30eF22E54eDb49D5A1",
+      "status": "stopped",
+      "createdAt": 1791620021488,
+      "updatedAt": 1791620750173,
+      "nextIndex": 2,
+      "payments": [
+        {
+          "index": 0,
+          "dueAt": 1791620107241,
+          "paymentId": "0x568b092465a3dee1a5a1768c3df1c58cbf3acfcc655d23be23fe07d3a6912c81",
+          "status": "confirmed",
+          "hash": "0xf01377de9d88d6c088f8a3867f5014e0b096c9bcb9a67a6b057e214d94d0d2ff",
+          "nonce": 0,
+          "block": "66447077",
+          "message": "Confirmed onchain."
+        },
+        {
+          "index": 1,
+          "dueAt": 1791620197241,
+          "paymentId": "0xd395c86f94effc0756e86b548f77b80ad9b0612ca4aa0f05c8ff1e269385b0cc",
+          "status": "confirmed",
+          "hash": "0xb4a0401fea6e5d8d8971f1b69b841e5019068a1ac9f8f6b721c00cec82837237",
+          "nonce": 1,
+          "block": "66447313",
+          "message": "Confirmed onchain."
+        }
+      ],
+      "message": "Plan stopped. Freeze the session to revoke all spending authority. A transaction already sent may still confirm."
+    },
+    "history": [],
+    "lastCheckedAt": 1791620287242,
+    "lastError": null,
+    "feeReturn": {
+      "hash": "0xd4e84192756cb3af3dde2db4e41cba6ea088251e469992802a822bfd99af9788",
+      "nonce": 2,
+      "amount": "13791250000000000",
+      "status": "confirmed",
+      "message": "Returned to the vault owner. A small network-fee reserve may remain."
+    }
+  },
+  "scope": "Hosted server scheduled transactions; developer harness used for setup. Not interactive browser acceptance.",
+  "verifiedReceipts": [
+    {
+      "label": "deploy",
+      "hash": "0xef2fbab2ea7dbdf6196c6359d797633416d48bc1c30a234c8c756ee78a0a0399",
+      "status": "success",
+      "block": "66446866",
+      "from": "0x5704bf0960c1701f2a73086623baf6fd5707649a",
+      "to": null,
+      "gasUsed": "1784868",
+      "effectiveGasPrice": "25000000000"
+    },
+    {
+      "label": "agent-gas",
+      "hash": "0x8bdabd628046d826acc72c871d397ce319c4b4aa70364c28c28997cbd4d985f2",
+      "status": "success",
+      "block": "66446877",
+      "from": "0x5704bf0960c1701f2a73086623baf6fd5707649a",
+      "to": "0x3600000000000000000000000000000000000000",
+      "gasUsed": "73926",
+      "effectiveGasPrice": "25000000000"
+    },
+    {
+      "label": "vault-funding",
+      "hash": "0x6ed2f9fbbb5ce9653e7e4f4c195b176f3195fc68bc85d520d553bf20f49f0d96",
+      "status": "success",
+      "block": "66446886",
+      "from": "0x5704bf0960c1701f2a73086623baf6fd5707649a",
+      "to": "0x3600000000000000000000000000000000000000",
+      "gasUsed": "48938",
+      "effectiveGasPrice": "25000000000"
+    },
+    {
+      "label": "start-session",
+      "hash": "0x9775e99026daf9958d5f307fcc91cc262ae444a023560a949cac39b679129278",
+      "status": "success",
+      "block": "66446897",
+      "from": "0x5704bf0960c1701f2a73086623baf6fd5707649a",
+      "to": "0xebcd760e14824851fc929bf9e65593d6a45b675a",
+      "gasUsed": "620160",
+      "effectiveGasPrice": "25000000000"
+    },
+    {
+      "label": "owner-freeze",
+      "hash": "0x8355cce929a49b2c95ac62c295eac7ff7b1c3a673c1884e6631d5ecce238a60b",
+      "status": "success",
+      "block": "66447391",
+      "from": "0x5704bf0960c1701f2a73086623baf6fd5707649a",
+      "to": "0xebcd760e14824851fc929bf9e65593d6a45b675a",
+      "gasUsed": "60311",
+      "effectiveGasPrice": "25000000000"
+    },
+    {
+      "label": "withdraw",
+      "hash": "0xced307c8f3dacc65afb069a400f6e897d33edea9f2be21a50879f5ca62acc622",
+      "status": "success",
+      "block": "66447611",
+      "from": "0x5704bf0960c1701f2a73086623baf6fd5707649a",
+      "to": "0xebcd760e14824851fc929bf9e65593d6a45b675a",
+      "gasUsed": "447075",
+      "effectiveGasPrice": "25000000000"
+    },
+    {
+      "label": "scheduled-1",
+      "hash": "0xf01377de9d88d6c088f8a3867f5014e0b096c9bcb9a67a6b057e214d94d0d2ff",
+      "status": "success",
+      "block": "66447077",
+      "from": "0x8d29cc9aaf009ee617680f30ef22e54edb49d5a1",
+      "to": "0xebcd760e14824851fc929bf9e65593d6a45b675a",
+      "gasUsed": "120125",
+      "effectiveGasPrice": "25000000000"
+    },
+    {
+      "label": "scheduled-2",
+      "hash": "0xb4a0401fea6e5d8d8971f1b69b841e5019068a1ac9f8f6b721c00cec82837237",
+      "status": "success",
+      "block": "66447313",
+      "from": "0x8d29cc9aaf009ee617680f30ef22e54edb49d5a1",
+      "to": "0xebcd760e14824851fc929bf9e65593d6a45b675a",
+      "gasUsed": "103025",
+      "effectiveGasPrice": "25000000000"
+    },
+    {
+      "label": "agent-fee-return",
+      "hash": "0xd4e84192756cb3af3dde2db4e41cba6ea088251e469992802a822bfd99af9788",
+      "status": "success",
+      "block": "66448348",
+      "from": "0x8d29cc9aaf009ee617680f30ef22e54edb49d5a1",
+      "to": "0x5704bf0960c1701f2a73086623baf6fd5707649a",
+      "gasUsed": "21000",
+      "effectiveGasPrice": "25000000000"
+    }
+  ],
+  "finalState": {
+    "active": false,
+    "balanceUnits": "0"
+  },
+  "verifiedAt": "2026-10-10T08:27:14.551Z",
+  "workerRedeployedBetweenPayments": true,
+  "thirdPaymentBlockedAfterFreeze": true,
+  "versions": [
+    "7180d717-e37c-4c01-b3eb-cc33bf8bcd3f",
+    "e46010f7-4fa5-4f57-bac8-3cdca34a422d"
+  ]
+}

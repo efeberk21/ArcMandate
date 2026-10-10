@@ -26,7 +26,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://rpc.testnet.arc.io https://rpc.blockdaemon.testnet.arc.io https://rpc.drpc.testnet.arc.io https://rpc.mainnet.arc.io https://rpc.blockdaemon.mainnet.arc.io https://rpc.drpc.mainnet.arc.io; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+          "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://arcmandate-automation.arcmandate.workers.dev https://rpc.testnet.arc.io https://rpc.blockdaemon.testnet.arc.io https://rpc.drpc.testnet.arc.io https://rpc.mainnet.arc.io https://rpc.blockdaemon.mainnet.arc.io https://rpc.drpc.mainnet.arc.io; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
         }
       ]
     }
