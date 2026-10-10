@@ -1,33 +1,45 @@
 {
-  "recordedAt": "2026-10-10T08:27:38.642Z",
+  "recordedAt": "2026-10-10T14:20:44.460Z",
   "network": "Arc Mainnet",
   "chainId": 5042,
   "productionUrl": "https://arcmandate.vercel.app",
-  "deploymentId": "dpl_FPXRJNDFjf5kdCkUxLSjHNuKHNwz",
+  "deploymentId": "dpl_C1XzwDVyS56JiH24SUCeWHap9FHB",
   "workerUrl": "https://arcmandate-automation.arcmandate.workers.dev",
-  "workerVersion": "62bf17f9-7812-46aa-b057-48da59287a54",
+  "workerVersion": "e223ef76-528c-481d-94d4-b93a865a1747",
   "tests": {
-    "typescript": 187,
+    "typescript": 192,
     "solidity": 24,
     "invariantCalls": 8192
   },
   "files": [
     {
-      "path": "assets/ccip-DZ6870-z.js",
+      "path": "favicon.svg",
       "httpStatus": 200,
-      "sha256": "9553b4686e9c2132208ca39a9bfd3e74bc7cf5c8cd6db6949e317376502e5de6",
+      "sha256": "17930ca2e4fa8251f479de9ce7d67c5592e7a220c9afa03ae5f9dac9507a860f",
+      "matches": true
+    },
+    {
+      "path": "index.html",
+      "httpStatus": 200,
+      "sha256": "c67af0fa97b71ccb4d13bc3d62e46103b52e49ed6feadd81bc94ab05dae18986",
+      "matches": true
+    },
+    {
+      "path": "assets/ccip-DFqQ1H1B.js",
+      "httpStatus": 200,
+      "sha256": "b0668d874c3f16d3197aaa80f100bd50b46395c19eae92507eee363a0440c84a",
+      "matches": true
+    },
+    {
+      "path": "assets/index-aEarCAu6.js",
+      "httpStatus": 200,
+      "sha256": "231c84c3036c199ce4f2d3a1db907261d8b841111b09f1d42f5a20c1b660cc88",
       "matches": true
     },
     {
       "path": "assets/index-DU67CT3-.css",
       "httpStatus": 200,
       "sha256": "7103c174f008e34e5833dd3c368b264a06fa2c06f134dff97440c9303970012f",
-      "matches": true
-    },
-    {
-      "path": "assets/index-Wx2sZLEn.js",
-      "httpStatus": 200,
-      "sha256": "eefee669c4f9d4b1abd0cb4d3018226d5604920f7becf02f763bea0f685568bf",
       "matches": true
     },
     {
@@ -40,12 +52,6 @@
       "path": "brand/arcmandate-symbol.png",
       "httpStatus": 200,
       "sha256": "e631595032a11fe78b6947bff00a819f422f9b7a061d0c1dfd2cb7f46f614a9b",
-      "matches": true
-    },
-    {
-      "path": "favicon.svg",
-      "httpStatus": 200,
-      "sha256": "17930ca2e4fa8251f479de9ce7d67c5592e7a220c9afa03ae5f9dac9507a860f",
       "matches": true
     },
     {
@@ -83,15 +89,9 @@
       "httpStatus": 200,
       "sha256": "a7fdc993f9f0387caedba4e42521136fa97e4c0837ae6239bf0413ccf8af00c2",
       "matches": true
-    },
-    {
-      "path": "index.html",
-      "httpStatus": 200,
-      "sha256": "d25cc3cc4f945d0401888ce7cc56af9071a047f311429c3eef04714666c68028",
-      "matches": true
     }
   ],
-  "mainnetSchedulerAcceptance": "pending",
+  "mainnetSchedulerAcceptance": "two automatic payments confirmed while browser closed, including worker redeployment; revocation and refunds deferred at user request",
   "testnetAcceptance": "automation-testnet-2026-10-10.json",
   "rpcRecovery": {
     "checkedAt": "2026-10-10T08:36:18.163Z",
@@ -111,7 +111,72 @@
   "mainnetSetup": {
     "ownerLoginVerified": true,
     "agent": "0x8DC91f1e817770a4Dd281C6eF8e0b496Ad4b33a0",
-    "funded": false,
-    "planActivated": false
+    "funded": true,
+    "planActivated": true
+  },
+  "sourceCommit": "56776fdd8f09744f30896b2fb25ce89f09de5074",
+  "sourceFiles": [
+    {
+      "path": "apps/web/src/components/AutomaticPayments.tsx",
+      "sha256": "6e56129c299be9d158b40c5619e5d7eb96d3ab86b2ede7b28fc7dd2b471e692b"
+    },
+    {
+      "path": "packages/core/src/rpc-transport.ts",
+      "sha256": "191e6fab83f220b67456804ec7c43a50156784d0e5c52690ab6a83d2a001dc95"
+    },
+    {
+      "path": "services/automation/chain.ts",
+      "sha256": "b6ed99cc075f38b243356944e519464ff676846e6aea0782901211f3f4d5bb24"
+    },
+    {
+      "path": "services/automation/crypto.ts",
+      "sha256": "be00555709faa0c6c3b7bf2e41f85285c2e7ce2c228c09210ef11861bf5b6e0a"
+    },
+    {
+      "path": "services/automation/engine.test.ts",
+      "sha256": "5300487af6adfad5b627c2e0556b84d52e60653ac7bf149378c213f86356474c"
+    },
+    {
+      "path": "services/automation/engine.ts",
+      "sha256": "91e70075678a36f0fd10c2bba47491c8c716c96769bfee988c17470e2b46e42f"
+    },
+    {
+      "path": "services/automation/model.ts",
+      "sha256": "f15b2074d93c2fd105c93cc750b49e40b157dad4881c7af4b3a02bc057259be2"
+    },
+    {
+      "path": "services/automation/tsconfig.json",
+      "sha256": "edf9d7e7703a62f2333817c743ae88913d4c90b9f49f80052e392aed3055e98c"
+    },
+    {
+      "path": "services/automation/worker.test.ts",
+      "sha256": "829085b4f8746df1983d8110da2d70c53c27c2edae06765fc8a47e7dd1918dcd"
+    },
+    {
+      "path": "services/automation/worker.ts",
+      "sha256": "5320b7fe42046a12cd9bd7b6a34e96a6f66b5bc64b295751602dc510f616a585"
+    },
+    {
+      "path": "services/automation/wrangler.jsonc",
+      "sha256": "927ecbce01c138400575a0313d4a0c31b1252ee1d26fc4caf7c26dcb6ff01ba4"
+    },
+    {
+      "path": "services/automation/chain.test.ts",
+      "sha256": "e2237fbdeec68db5e819413198c3c4f3693a87e9e712502848350b2a9558036e"
+    },
+    {
+      "path": "apps/web/src/components/AutomaticPayments.test.tsx",
+      "sha256": "52bda86a683b0c6355d10fb91fe6da4edaa2487b11915b79e41cd54d4f26eeca"
+    }
+  ],
+  "secretMatchesInBuild": 0,
+  "testnetWorkerVersion": "505eecaf-7d45-400c-aa83-fd29f77556c7",
+  "mainnetAcceptanceEvidence": "automation-mainnet-2026-10-10.json",
+  "latestChecks": {
+    "checkedAt": "2026-10-10T14:25:23.318859+00:00",
+    "typescriptTests": 192,
+    "typecheckPassed": true,
+    "mainnetBuildPassed": true,
+    "hostedFilesMatched": 13
   }
 }

@@ -1,0 +1,127 @@
+{
+  "network": "Arc Mainnet",
+  "chainId": 5042,
+  "sourceCommit": "56776fdd8f09744f30896b2fb25ce89f09de5074",
+  "workerVersion": "1470b3d4-22c1-4b86-b912-53bb6de81706",
+  "vault": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+  "owner": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+  "agent": "0x8DC91f1e817770a4Dd281C6eF8e0b496Ad4b33a0",
+  "status": "two-automatic-payments-confirmed-cleanup-pending",
+  "receipts": [
+    {
+      "label": "agent-gas",
+      "hash": "0x5fe7e14fce450d9dc3e5ab7c85f26a9e6f06e26e44723c86a892630143b3e453",
+      "block": "25214698",
+      "status": "success",
+      "amountUsdc": "0.03"
+    },
+    {
+      "label": "vault-funding",
+      "hash": "0xbd3ea54f000bea91b281516cd2aa950005e1370bb1c1b8e46ae8bcda16e7c9c1",
+      "block": "25215041",
+      "status": "success",
+      "amountUsdc": "0.03"
+    },
+    {
+      "label": "start-session",
+      "hash": "0x0a602da0c9b87b219120555fbb71c7760b3c8bc3cae773de15054077bd52a3d8",
+      "block": "25215282",
+      "status": "success"
+    },
+    {
+      "label": "replace-session",
+      "hash": "0xb5bd5ef3bf54562957430ee4745e1a4e4e81522ef47fc3804e38f08cf7097a2b",
+      "block": "25253251",
+      "status": "success"
+    },
+    {
+      "label": "automatic-payment-1",
+      "hash": "0xa8ee649567be40eefc93cd894a1b8fa6d8b97c709073fcfcc6ff8a3c18e0f5a3",
+      "block": "25254560",
+      "status": "success",
+      "from": "0x8dc91f1e817770a4dd281c6ef8e0b496ad4b33a0",
+      "to": "0x99caae907095bbb95d8714ee2a23369db2377d7a",
+      "paymentId": "0xd3aa38f69758563050a25921e226566b06e0e6aab6fd6046216cf86428c3bcc1",
+      "sessionId": "7",
+      "recipient": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+      "amountUsdc": "0.01",
+      "observedAt": "2026-10-10T14:21:19.767Z"
+    },
+    {
+      "label": "automatic-payment-2",
+      "hash": "0x5cc09bb95d3f41789abd24059680f1c31ae7087b9c879708b4d0ddea64710897",
+      "block": "25254796",
+      "status": "success",
+      "from": "0x8dc91f1e817770a4dd281c6ef8e0b496ad4b33a0",
+      "to": "0x99caae907095bbb95d8714ee2a23369db2377d7a",
+      "paymentId": "0xa2cf86e726494d0cddd2fc8e4a574a3d5254e6b25d7fb3716e90da78b922c391",
+      "sessionId": "7",
+      "recipient": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+      "amountUsdc": "0.01",
+      "observedAt": "2026-10-10T14:24:35.505Z"
+    }
+  ],
+  "automaticPaymentsConfirmed": 2,
+  "policy": {
+    "chainId": 5042,
+    "address": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+    "owner": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+    "active": true,
+    "sessionId": "7",
+    "agent": "0x8DC91f1e817770a4Dd281C6eF8e0b496Ad4b33a0",
+    "expiresAt": 1791644933000,
+    "budget": "30000",
+    "spent": "0",
+    "cap": "10000",
+    "balance": "30000",
+    "recipients": [
+      "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38"
+    ]
+  },
+  "plan": {
+    "recipient": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+    "amount": "10000",
+    "count": 2,
+    "intervalSeconds": 120,
+    "sessionId": "7",
+    "startAt": 1791642060000
+  },
+  "previousAttempt": {
+    "sessionId": "6",
+    "startAt": 1791622440000,
+    "intervalSeconds": 120,
+    "count": 2,
+    "browserClosedAt": "2026-10-10T08:52:19.730Z",
+    "outcome": "Paused before signing; stopped with no transaction broadcast and no spending.",
+    "automaticPaymentsConfirmed": 0
+  },
+  "browserClosedAt": "2026-10-10T14:19:05.352Z",
+  "latestPolicy": {
+    "chainId": 5042,
+    "address": "0x99cAae907095bBB95D8714ee2a23369dB2377d7A",
+    "owner": "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38",
+    "active": true,
+    "sessionId": "7",
+    "agent": "0x8DC91f1e817770a4Dd281C6eF8e0b496Ad4b33a0",
+    "expiresAt": 1791644933000,
+    "budget": "30000",
+    "spent": "20000",
+    "cap": "10000",
+    "balance": "10000",
+    "recipients": [
+      "0x48ABFba33961BCf0A0c6904ba34167432A3a0E38"
+    ]
+  },
+  "agentGasBalanceWei": "25536999776180550",
+  "checkedAt": "2026-10-10T14:24:36.266Z",
+  "workerRedeployment": {
+    "version": "e223ef76-528c-481d-94d4-b93a865a1747",
+    "completedBeforeSecondPayment": true
+  },
+  "cleanup": {
+    "sessionFrozen": false,
+    "vaultRemainderWithdrawn": false,
+    "agentFeesReturned": false,
+    "deferredAtUserRequest": true
+  }
+}
