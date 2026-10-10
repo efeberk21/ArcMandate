@@ -1,6 +1,71 @@
 # ArcMandate developer guide
 
-Start with the [README](README.md) for the project's purpose, permission model and application walkthrough. This guide retains the detailed development, testnet execution and recovery notes.
+Start with the [README](README.md) for the project's purpose, mainnet demonstration and permission model. This guide retains the full application walkthrough, development, testnet execution and recovery notes.
+
+## Web application walkthrough
+
+Use the [public application](https://arcmandate.vercel.app) with an EVM wallet on **Arc Mainnet**, chain ID **5042**. Transactions need USDC on that network. An existing supported vault can be viewed without connecting a wallet.
+
+### 1. Create or open a vault
+
+Choose **Create a vault** and connect the account that will own it. In **Vault Key**, generate a key, choose a backup password, download the encrypted file, then select that file and restore it.
+
+Review the owner account, network, Vault Key and estimated transaction fee before approving creation in your wallet. Deployment creates an **empty vault**. Deposit and session creation are later steps.
+
+For an existing vault, choose **Open an existing vault** and enter its address, select a saved vault, or find it from its successful creation transaction. Use the matching encrypted Vault Key backup when management approval is needed.
+
+### 2. Prepare automatic payments
+
+Open **Agent & session → Automatic payments**. Sign in with a free owner-wallet message, then choose **Prepare automatic payment account**. The service creates a separate account for this vault; no terminal, private-key import or manual agent account switch is required.
+
+The service stores the agent signing key encrypted. It never receives your owner private key or Vault Key. A compromised service can use the authority you already granted, within the contract's limits. Keep gas funding small; the agent account's own funds are outside the vault policy.
+
+### 3. Fund the vault and transaction senders
+
+In **Funds**, deposit the USDC the agent may spend. Separately use **Add agent network fees** to fund the agent's own wallet for gas. A Vault Key freeze also needs a funded relay account.
+
+| Balance | Purpose |
+| --- | --- |
+| Vault USDC | Payments to approved recipients |
+| Owner wallet USDC | Deployment, management and funding transaction fees |
+| Agent wallet USDC | Agent payment transaction fees |
+| Relay wallet USDC | Vault Key freeze transaction fees |
+
+USDC transferred into the agent's own wallet is outside the vault's spending rules. Keep gas funding separate from the vault deposit. Arc's native and ERC-20 USDC balance views represent the same underlying funds and must not be added together.
+
+### 4. Set limits and open the session
+
+Return to the owner account and restore the Vault Key if switching accounts locked it. In **Agent & session → Set limits**, choose:
+
+- The agent account.
+- One to five allowed recipient addresses.
+- The total session budget.
+- The maximum amount per payment.
+- The session duration.
+
+Review the policy and expiry, authorize it with the Vault Key, and approve the transaction with the owner wallet. **Open the session last**, after accounts and funds are ready, because its expiry is time-based.
+
+### 5. Activate a payment plan
+
+Return to **Automatic payments**. Choose an allowed recipient, a fixed amount, first payment time, interval and number of payments (1–100). All payments must fit the vault balance, remaining budget, per-payment limit and session expiry. Times are shown in your browser's time zone and stored as absolute UTC times.
+
+Review the total and schedule, check the authorization box and select **Activate automatic payments**. Opening a spending session alone does not activate a plan. The hosted worker executes the plan with no per-payment wallet prompt, including while the page is closed. Each submitted payment has a network-fee cap of 0.01 USDC; fees come from the separate agent account.
+
+A time missed by at least one minute is skipped; missed payments are not caught up in a burst. Network confirmation may be delayed. Pause stops new service submissions, while a transaction already sent may still confirm. Freeze revokes the onchain authority. An old plan never adopts a replacement session automatically.
+
+### 6. Freeze and withdraw
+
+Use **Freeze session** to stop spending. You can choose the owner wallet path or authorize a freeze with the Vault Key and a funded relay. A distinct relay can submit a freeze when the owner's account has a pending transaction.
+
+Wait for confirmation, then use **Funds → Withdraw**. Withdrawal needs the owner wallet and the matching Vault Key. A payment ordered before the freeze may execute first. After stopping the plan and resolving pending payments, **Return unused fees to owner** returns the agent’s available gas balance to the immutable vault owner, less a buffered network fee. A small reserve can remain.
+
+### 7. Check activity and return later
+
+**Overview** shows the vault balance and session state. **Activity** shows decoded onchain events, explorer links and local wallet operation records.
+
+Save the vault or export its public vault card to reopen it in another browser. A vault card contains public metadata; the encrypted Vault Key backup and its password are needed separately. Wallet permissions and transaction journals belong to the browser origin where they were created.
+
+If a transaction's outcome is unknown, check its saved hash and wallet activity before sending again. Keep the original payment request when retrying. Reloading or locking the local key leaves the onchain session in its existing state.
 
 ## Hosted automation
 
@@ -107,13 +172,13 @@ The [public application](https://arcmandate.vercel.app) uses Arc Mainnet, chain 
 npm run build -w @arcmandate/web -- --mode mainnet
 ~~~
 
-The browser payment console is the selected mainnet executor. The existing local payment/demo CLI remains testnet-only. Runtime, owner, PQ, nonce, wallet-chain and unresolved-operation checks still apply. Deployment creates an empty vault; funding and session creation are separate transactions.
+The hosted automation service is the website's scheduled mainnet executor. A browser payment console remains available for manual payments; the local payment/demo CLI remains testnet-only. Runtime, owner, PQ, nonce, wallet-chain and unresolved-operation checks still apply. Deployment creates an empty vault; funding and session creation are separate transactions.
 
 [Initial production frontend evidence](deployments/p7-mainnet-frontend-2026-10-09.json), [earlier UI checks](deployments/p7-mainnet-ui-2026-10-09.json) and [the 10 October receipt UI publication](deployments/p7-mainnet-receipt-ui-2026-10-10.json) preserve their checked source and publication. The earlier testnet frontend record is historical. Funded acceptance is established by its separate receipt manifest, rather than frontend publication alone.
 
 Browser storage and wallet permissions belong to each origin. Export the public vault card and keep the encrypted Vault Key backup/password when moving from localhost to the stable HTTPS address. Pending operations remain in their original origin and must be reconciled there; changing origins never cancels an unresolved transaction.
 
-Mainnet validation now includes encrypted backup recovery, vault deployment, source verification and the funded manual payment/freeze/withdrawal workflow. Current results and remaining integration boundaries are listed in the [README release evidence](README.md#release-evidence). The reported MetaMask site warning remains unclassified in the historical publication record; autonomous mainnet execution and complete real-wallet speed-up/cancel acceptance remain separate work.
+Mainnet validation includes encrypted backup recovery, vault deployment, source verification, the funded manual payment/freeze/withdrawal workflow and two hosted scheduled payments with the browser closed. See the [mainnet demonstration](README.md#a-real-mainnet-demonstration) for the automatic payment receipts. The reported MetaMask site warning remains unclassified in the historical publication record; complete real-wallet speed-up/cancel acceptance remains open.
 
 ### Scheduler activation checks
 
