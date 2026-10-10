@@ -1,4 +1,4 @@
-![ArcMandate — Payments on schedule. Control stays with you.](assets/readme/banner.svg)
+![ArcMandate — Payments on schedule. Control stays with you.](assets/readme/banner-light.svg)
 
 # ArcMandate
 
