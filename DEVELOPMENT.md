@@ -114,3 +114,7 @@ The browser payment console is the selected mainnet executor. The existing local
 Browser storage and wallet permissions belong to each origin. Export the public vault card and keep the encrypted Vault Key backup/password when moving from localhost to the stable HTTPS address. Pending operations remain in their original origin and must be reconciled there; changing origins never cancels an unresolved transaction.
 
 Mainnet validation now includes encrypted backup recovery, vault deployment, source verification and the funded manual payment/freeze/withdrawal workflow. Current results and remaining integration boundaries are listed in the [README release evidence](README.md#release-evidence). The reported MetaMask site warning remains unclassified in the historical publication record; autonomous mainnet execution and complete real-wallet speed-up/cancel acceptance remain separate work.
+
+### Scheduler activation checks
+
+Before accepting a schedule, the service verifies access to the encrypted agent key, checks its pending nonce, estimates the exact vault payment and checks the agent gas balance against the fee cap. This does not sign or broadcast a transaction. Every due payment repeats these checks. Gas estimation uses the sender address with transaction preparation disabled; signing uses explicitly checked legacy fees. Failed preparation is retained in service status without exposing RPC messages or signing material.

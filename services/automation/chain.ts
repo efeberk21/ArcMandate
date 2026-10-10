@@ -7,6 +7,10 @@ import { publicRpcTransport } from '../../packages/core/src/rpc-transport.js';
 import { same, type FeeReturn, type Payment, type Plan, type Vault } from './model.js';
 
 const tokenAbi = parseAbi(['function balanceOf(address) view returns (uint256)']);
+async function rpcStep<T>(name: string, work: () => Promise<T>): Promise<T> {
+  try { return await work(); }
+  catch (cause) { const error = new Error('Network operation failed.', { cause }); error.name = name; throw error; }
+}
 export function chainAccess(network: 'testnet' | 'mainnet', rpcUrl?: string) {
   const config = ARC_NETWORKS[network];
   const chain = defineChain({ id: config.chainId, name: `Arc ${network}`, nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 }, rpcUrls: { default: { http: [rpcUrl || config.rpcUrl] } } });
@@ -30,13 +34,29 @@ export function chainAccess(network: 'testnet' | 'mainnet', rpcUrl?: string) {
       expiresAt: Number(policy.expiresAt) * 1000, budget: policy.totalBudget.toString(), spent: spent.toString(),
       cap: policy.perTxCap.toString(), balance: balance.toString(), recipients: [...policy.recipients] };
   }
+  async function preparePayment(vault: Address, key: Hex, plan: Plan, payment: Payment, maxFeeWei: bigint) {
+    if (maxFeeWei <= 0n || maxFeeWei > 10_000_000_000_000_000n) throw new Error('Invalid service fee cap.');
+    const account = privateKeyToAccount(key);
+    if (!same(account.address, plan.agent)) throw new Error('Agent key does not match this plan.');
+    const data = encodeFunctionData({ abi: vaultAbi, functionName: 'agentPay', args: [BigInt(plan.sessionId), payment.paymentId, plan.recipient, BigInt(plan.amount)] });
+    const [mined, pending] = await rpcStep('AgentNonceError', () => Promise.all([rpc.getTransactionCount({ address: account.address }), rpc.getTransactionCount({ address: account.address, blockTag: 'pending' })]));
+    if (mined !== pending) throw new Error('Agent already has a pending transaction.');
+    // Legacy fee explicitly capped: no surprise gas expenditure and identical-byte retries.
+    const [gasEstimate, gasPrice, balance] = await rpcStep('PaymentEstimationError', () => Promise.all([
+      rpc.estimateGas({ account: account.address, to: vault, data, prepare: false }), rpc.getGasPrice(), rpc.getBalance({ address: account.address }),
+    ]));
+    const gas = (gasEstimate * 120n + 99n) / 100n;
+    if (gas * gasPrice > maxFeeWei) throw new Error('Network fee exceeds the service safety cap. Plan paused.');
+    if (balance < gas * gasPrice) throw new Error('Add USDC to the agent for network fees, then resume.');
+    return { account, data, gas, gasPrice, nonce: mined };
+  }
   return { chain, rpc, read,
     async signFeeReturn(key: Hex, owner: Address, maxFeeWei: bigint): Promise<FeeReturn> {
       const account = privateKeyToAccount(key);
       const wallet = createWalletClient({ account, chain, transport });
       const [nonce, pending, balance, gasPrice] = await Promise.all([rpc.getTransactionCount({ address: account.address }), rpc.getTransactionCount({ address: account.address, blockTag: 'pending' }), rpc.getBalance({ address: account.address }), rpc.getGasPrice()]);
       if (nonce !== pending) throw new Error('Resolve the agent’s pending transaction first.');
-      const estimate = await rpc.estimateGas({ account, to: owner, value: 1n });
+      const estimate = await rpc.estimateGas({ account: account.address, to: owner, value: 1n, prepare: false });
       const gas = (estimate * 120n + 99n) / 100n, fee = gas * gasPrice;
       if (maxFeeWei <= 0n || maxFeeWei > 10_000_000_000_000_000n || fee > maxFeeWei) throw new Error('Fee return exceeds the network fee cap.');
       if (balance <= fee) throw new Error('Remaining fee balance is too small to return after network fees.');
@@ -56,23 +76,14 @@ export function chainAccess(network: 'testnet' | 'mainnet', rpcUrl?: string) {
       if (!same(receipt.from, agent) || !receipt.to || !same(receipt.to, owner)) throw new Error('Fee return receipt mismatch.');
       return receipt.status === 'success' ? 'confirmed' : 'failed';
     },
+    async preflight(vault: Address, key: Hex, plan: Plan, payment: Payment, maxFeeWei: bigint) {
+      await preparePayment(vault, key, plan, payment, maxFeeWei);
+    },
     async sign(vault: Address, key: Hex, plan: Plan, payment: Payment, maxFeeWei: bigint) {
-      if (maxFeeWei <= 0n || maxFeeWei > 10_000_000_000_000_000n) throw new Error('Invalid service fee cap.');
-      const account = privateKeyToAccount(key);
-      if (!same(account.address, plan.agent)) throw new Error('Agent key does not match this plan.');
+      const { account, ...request } = await preparePayment(vault, key, plan, payment, maxFeeWei);
       const wallet = createWalletClient({ account, chain, transport });
-      const data = encodeFunctionData({ abi: vaultAbi, functionName: 'agentPay', args: [BigInt(plan.sessionId), payment.paymentId, plan.recipient, BigInt(plan.amount)] });
-      const [mined, pending] = await Promise.all([rpc.getTransactionCount({ address: account.address }), rpc.getTransactionCount({ address: account.address, blockTag: 'pending' })]);
-      if (mined !== pending) throw new Error('Agent already has a pending transaction.');
-      // Legacy fee explicitly capped: no surprise gas expenditure and identical-byte retries.
-      const [gasEstimate, gasPrice, balance] = await Promise.all([
-        rpc.estimateGas({ account, to: vault, data }), rpc.getGasPrice(), rpc.getBalance({ address: account.address }),
-      ]);
-      const gas = (gasEstimate * 120n + 99n) / 100n;
-      if (gas * gasPrice > maxFeeWei) throw new Error('Network fee exceeds the service safety cap. Plan paused.');
-      if (balance < gas * gasPrice) throw new Error('Add USDC to the agent for network fees, then resume.');
-      const signedTx = await wallet.signTransaction({ chain, to: vault, data, gas, gasPrice, nonce: mined, type: 'legacy', value: 0n });
-      return { signedTx, hash: keccak256(signedTx), nonce: mined };
+      const signedTx = await rpcStep('PaymentSigningError', () => wallet.signTransaction({ chain, to: vault, ...request, type: 'legacy', value: 0n }));
+      return { signedTx, hash: keccak256(signedTx), nonce: request.nonce };
     },
     async reconcile(vault: Address, plan: Plan, payment: Payment): Promise<'pending' | 'confirmed' | 'reverted' | 'nonce-conflict'> {
       if (!payment.hash || !payment.signedTx || keccak256(payment.signedTx) !== payment.hash) throw new Error('Payment journal is invalid.');

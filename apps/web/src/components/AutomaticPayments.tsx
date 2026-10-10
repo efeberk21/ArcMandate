@@ -22,11 +22,12 @@ export function AutomaticPayments({ snapshot, account, provider, walletChain, di
   const [token, setToken] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [pollError, setPollError] = useState('');
   const [fetchedAt, setFetchedAt] = useState<number | null>(null);
   const [recipient, setRecipient] = useState<string>(snapshot.policy.recipients[0] ?? '');
   const [amount, setAmount] = useState('');
   const [start, setStart] = useState(() => localInput(Date.now() + 180_000));
-  const [interval, setIntervalValue] = useState('1440');
+  const [interval, setIntervalValue] = useState('15');
   const [count, setCount] = useState('2');
   const [review, setReview] = useState(false);
   const [acknowledged, setAcknowledged] = useState(false);
@@ -63,11 +64,14 @@ export function AutomaticPayments({ snapshot, account, provider, walletChain, di
     let alive = true;
     const id = window.setInterval(() => {
       if (!alive || busy) return;
-      void api<State>('state').then(result => { if (alive) { accept(result); setError(''); } }).catch(cause => { if (alive) setError(cause.message); });
+      void api<State>('state').then(result => { if (alive) { accept(result); setPollError(''); } }).catch(cause => { if (alive) setPollError(cause.message); });
     }, 15_000);
     return () => { alive = false; window.clearInterval(id); };
   }, [token, busy]);
-  useEffect(() => { setReview(false); }, [snapshot.sessionId, snapshot.policy.agent, snapshot.active]);
+  useEffect(() => {
+    setReview(false);
+    setStart(previous => new Date(previous).getTime() < Date.now() + 30_000 ? localInput(Date.now() + 180_000) : previous);
+  }, [snapshot.sessionId, snapshot.policy.agent, snapshot.active]);
   useEffect(() => {
     let alive = true;
     if (!state?.agent) { setFeeBalance(null); return; }
@@ -89,6 +93,7 @@ export function AutomaticPayments({ snapshot, account, provider, walletChain, di
   let invalid = '';
   try {
     if (!state?.agent || !snapshot.active || snapshot.policy.agent.toLowerCase() !== state.agent.toLowerCase()) throw new Error('Open a spending session for your automatic payment account first.');
+    if (!recipient) throw new Error('Choose an allowed recipient.');
     const to = getAddress(recipient);
     if (!snapshot.policy.recipients.some(a => a.toLowerCase() === to.toLowerCase())) throw new Error('Choose an allowed recipient.');
     if (!/^(0|[1-9][0-9]*)(\.[0-9]{1,6})?$/.test(amount)) throw new Error('Enter a USDC amount with up to six decimals.');
@@ -114,13 +119,13 @@ export function AutomaticPayments({ snapshot, account, provider, walletChain, di
       {!token && <><p>Sign in with your vault’s owner wallet to prepare the payment account and manage schedules. Sign-in is free and does not move money.</p><button disabled={!canManage || busy} onClick={() => void run(login)}>{busy ? 'Connecting…' : 'Sign in to automatic payments'}</button>{!owner && <p className="field-hint">Connect this vault’s owner wallet.</p>}</>}
       {token && <>
         {!state?.agent ? <><p>Prepare a separate payment account managed by the service. Your owner wallet and Vault Key stay with you.</p><button disabled={busy || !canManage} onClick={() => void run(async () => accept(await api<State>('agent')))}>Prepare automatic payment account</button></> : <>
-          <dl className="summary"><dt>Automatic payment account</dt><dd className="mono">{state.agent}</dd><dt>Session connection</dt><dd>{snapshot.active && snapshot.policy.agent.toLowerCase() === state.agent.toLowerCase() ? `Authorized · session ${snapshot.sessionId}` : 'Spending session needed'}</dd></dl>
+          <dl className="summary"><dt>Automatic payment account</dt><dd className="mono">{state.agent}</dd><dt>Session connection</dt><dd>{snapshot.active && snapshot.policy.expiresAt > snapshot.timestamp && snapshot.policy.agent.toLowerCase() === state.agent.toLowerCase() ? `Authorized · session ${snapshot.sessionId}` : 'Spending session needed'}</dd></dl>
           <div className="welcome-actions"><button className="secondary" onClick={onGas}>Add payment network fees</button><button className="secondary" onClick={onDeposit}>Deposit to vault</button><button className="secondary" onClick={onLimits}>Set spending limits</button></div>
           <p>Payment account network-fee balance: <strong>{feeBalance === null ? 'Unavailable' : `${formatUnits(feeBalance, 18)} USDC`}</strong>.</p>
           {!snapshot.active && !unresolved && plan?.status !== 'running' && <button className="secondary" disabled={busy || !canManage || state.feeReturn?.status === 'signed'} onClick={() => void run(async () => accept(await api<State>('return-fees')))}>Return unused fees to owner</button>}
           {state.feeReturn && <p>{state.feeReturn.message} <a href={`${explorer}/tx/${state.feeReturn.hash}`} target="_blank" rel="noreferrer">Fee return · {state.feeReturn.status}</a></p>}
           <p className="field-hint">The service holds this account’s signing key. The vault enforces your recipient, amount, budget and expiry limits. The service enforces the schedule. Network fees come from the account’s separate balance, with a maximum of 0.01 USDC per submitted payment. Insufficient fees pause the plan.</p>
-          {plan && <article className="automatic-plan"><div className="section-heading"><h3>Current plan</h3><strong>{error ? 'Status unavailable' : plan.status}</strong></div>
+          {plan && <article className="automatic-plan"><div className="section-heading"><h3>Current plan</h3><strong>{pollError ? 'Status unavailable' : plan.status}</strong></div>
             <p>{plan.message}</p><dl className="summary"><dt>Recipient</dt><dd className="mono">{plan.recipient}</dd><dt>Each payment</dt><dd>{usdc(plan.amount)}</dd><dt>Frequency</dt><dd>Every {plan.intervalSeconds / 60} minutes · {plan.count} times</dd><dt>Original session</dt><dd>{plan.sessionId}</dd><dt>Next scheduled time</dt><dd>{plan.nextIndex < plan.count ? date(plan.startAt + plan.intervalSeconds * 1000 * plan.nextIndex) : 'Schedule ended'}</dd><dt>Confirmed payments</dt><dd>{plan.payments.filter(p => p.status === 'confirmed').length} of {plan.count}</dd></dl>
             <div className="welcome-actions">{plan.status === 'running' && <button className="secondary" disabled={busy || !canManage} onClick={() => void run(async () => accept(await api<State>('pause', { planId: plan.id })))}>Pause plan</button>}{plan.status === 'paused' && <button disabled={busy || !canManage} onClick={() => void run(async () => accept(await api<State>('resume', { planId: plan.id })))}>Resume plan</button>}{!['stopped', 'completed'].includes(plan.status) && <button className="secondary" disabled={busy || !canManage} onClick={() => void run(async () => accept(await api<State>('stop', { planId: plan.id })))}>Stop plan</button>}<button className="danger" onClick={onFreeze}>Freeze spending authority</button></div>
             <p className="field-hint">Pause stops new submissions by the service. Freeze revokes the onchain session. A transaction already sent may still confirm.</p>
@@ -140,6 +145,6 @@ export function AutomaticPayments({ snapshot, account, provider, walletChain, di
         {state?.lastError && <p className="warning">{state.lastError}</p>}
       </>}
     </>}
-    {error && <p role="alert" className="error">{error} Saved information may be stale; an active plan can continue on the server.</p>}
+    {(error || pollError) && <p role="alert" className="error">{error || pollError} Saved information may be stale; an active plan can continue on the server.</p>}
   </section>;
 }

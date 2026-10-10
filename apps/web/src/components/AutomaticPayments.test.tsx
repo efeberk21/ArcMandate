@@ -46,3 +46,17 @@ it('requires review and explicit activation; edits remove the prior review', asy
   await input('Each payment', '0.02'); expect(host.textContent).not.toContain('Review before activating');
   expect(fetcher.mock.calls.some(c => c[0].endsWith('/plan'))).toBe(false);
 });
+it('keeps an activation failure visible when the next background status read succeeds', async () => {
+  vi.useFakeTimers();
+  try {
+    const normal = fetcher.getMockImplementation()!;
+    fetcher.mockImplementation(async (url: string) => url.endsWith('/plan')
+      ? new Response(JSON.stringify({ error: 'Payment readiness unavailable.' }), { status: 400 })
+      : normal(url));
+    await render(); await click('Sign in'); await input('Each payment', '0.01'); await click('Review payment plan');
+    await act(async () => (host.querySelector('input[type=checkbox]') as HTMLInputElement).click());
+    await click('Activate automatic payments'); expect(host.textContent).toContain('Payment readiness unavailable.');
+    await act(async () => vi.advanceTimersByTimeAsync(15000));
+    expect(host.textContent).toContain('Payment readiness unavailable.');
+  } finally { vi.useRealTimers(); }
+});
