@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { privateKeyToAccount } from 'viem/accounts';
 import type { Hex } from 'viem';
 import worker, { VaultScheduler, type Env } from './worker';
-const mock = vi.hoisted(() => ({ read: vi.fn(), sign: vi.fn(), reconcile: vi.fn(), broadcast: vi.fn(), signFeeReturn: vi.fn(), reconcileFeeReturn: vi.fn() }));
+const mock = vi.hoisted(() => ({ read: vi.fn(), preflight: vi.fn(), sign: vi.fn(), reconcile: vi.fn(), broadcast: vi.fn(), signFeeReturn: vi.fn(), reconcileFeeReturn: vi.fn() }));
 vi.mock('./chain', () => ({ chainAccess: () => mock }));
 const owner = privateKeyToAccount(`0x${'11'.repeat(32)}`);
 const attacker = privateKeyToAccount(`0x${'22'.repeat(32)}`);
@@ -29,6 +29,7 @@ function setup() {
 }
 beforeEach(() => {
   vi.clearAllMocks();
+  mock.preflight.mockResolvedValue(undefined);
   mock.read.mockResolvedValue({ chainId: 5042, address: vault, owner: owner.address, active: false, sessionId: '0', agent: attacker.address,
     expiresAt: Date.now() + 600_000, budget: '100000', spent: '0', cap: '20000', balance: '100000', recipients: [owner.address] });
 });
@@ -74,6 +75,14 @@ describe('hosted authorization and isolation', () => {
     expect((await f.call('resume', { planId: id }, token)).status).toBe(400);
     expect((await f.call('state', {}, token)).body.plan.sessionId).toBe('7');
   });
+  it('rejects a plan before persistence or an alarm when payment readiness fails', async () => {
+    const f = setup(), token = await f.login(); const agent = (await f.call('agent', {}, token)).body.agent;
+    mock.read.mockResolvedValue({ ...(await mock.read()), active: true, agent, sessionId: '7' });
+    mock.preflight.mockRejectedValue(new Error('Add USDC to the agent for network fees, then resume.'));
+    const result = await f.call('plan', { recipient: owner.address, amount: '10000', startAt: Date.now() + 60_000, intervalSeconds: 60, count: 1 }, token);
+    expect(result.status).toBe(400); expect((f.data.get('state') as any).plan).toBeUndefined();
+    expect(f.alarm()).toBeNull(); expect(mock.sign).not.toHaveBeenCalled(); expect(mock.broadcast).not.toHaveBeenCalled();
+  });
   it('runs an alarm without a browser request and persists the signed transaction before broadcasting', async () => {
     const f = setup(), token = await f.login(); const agent = (await f.call('agent', {}, token)).body.agent;
     mock.read.mockResolvedValue({ ...(await mock.read()), active: true, agent, sessionId: '7' });
@@ -98,5 +107,18 @@ describe('hosted authorization and isolation', () => {
     mock.reconcileFeeReturn.mockResolvedValue('pending'); await f.actor.alarm(); expect(mock.broadcast).toHaveBeenCalledWith('0x1234');
     mock.reconcileFeeReturn.mockResolvedValue('confirmed'); await f.actor.alarm(); expect(f.alarm()).toBeNull();
     expect((await f.call('state', {}, token)).body.feeReturn.status).toBe('confirmed');
+  });
+  it('reports signing failure types without exposing RPC messages or signed bytes', async () => {
+    const f = setup(), token = await f.login(); const agent = (await f.call('agent', {}, token)).body.agent;
+    mock.read.mockResolvedValue({ ...(await mock.read()), active: true, agent, sessionId: '7' });
+    await f.call('plan', { recipient: owner.address, amount: '10000', startAt: Date.now() + 60_000, intervalSeconds: 60, count: 1 }, token);
+    (f.data.get('state') as any).plan.startAt = Date.now() - 1000;
+    const cause = Object.assign(new Error('sensitive-signed-bytes'), { name: 'RpcRequestError', code: -32005 });
+    mock.sign.mockRejectedValue(Object.assign(new Error('secret RPC credential', { cause }), { name: 'PaymentEstimationError' }));
+    await f.actor.alarm();
+    const state = (await f.call('state', {}, token)).body;
+    expect(state.lastError).toContain('PaymentEstimationError'); expect(state.lastError).toContain('code -32005');
+    expect(JSON.stringify(state)).not.toContain('sensitive-signed-bytes'); expect(JSON.stringify(state)).not.toContain('secret RPC credential');
+    expect(state.plan.status).toBe('paused'); expect(mock.broadcast).not.toHaveBeenCalled();
   });
 });

@@ -4,7 +4,7 @@ import { ARC_NETWORKS } from '../../packages/core/src/config.js';
 import { chainAccess } from './chain.js';
 import { digest, seal, unseal } from './crypto.js';
 import { nextWake, tick } from './engine.js';
-import { assertAuthority, createPlan, parseSchedule, pendingPayment, publicState, same, type RecordState } from './model.js';
+import { assertAuthority, createPlan, parseSchedule, paymentFor, pendingPayment, publicState, same, type RecordState } from './model.js';
 
 export interface Env {
   VAULTS: DurableObjectNamespace; APP_ORIGIN: string; NETWORK: 'testnet' | 'mainnet';
@@ -13,7 +13,20 @@ export interface Env {
 type Challenge = { nonce: string; message: string; expiresAt: number };
 type Login = { tokenHash: string; expiresAt: number };
 const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
-const safeError = (error: unknown) => error instanceof Error && error.constructor === Error ? error.message : 'Service or network unavailable. Your saved payment identity is preserved; refresh or resume after checking the status.';
+const safeError = (error: unknown) => {
+  if (error instanceof Error && error.constructor === Error && error.name === 'Error') return error.message;
+  // Only controlled exception names and numeric codes: RPC errors can contain keys,
+  // serialized transactions, request headers or credential-bearing URLs in messages.
+  const types: string[] = [];
+  let cause = error;
+  for (let i = 0; i < 6 && cause instanceof Error; i++) {
+    if (/^[A-Za-z]{1,70}Error$/.test(cause.name)) types.push(cause.name);
+    const code = (cause as Error & { code?: unknown }).code;
+    if (typeof code === 'number' && Number.isSafeInteger(code)) types.push(`code ${code}`);
+    cause = cause.cause;
+  }
+  return `Service or network unavailable${types.length ? ` (${types.join(', ')})` : ''}. Your saved payment identity is preserved; refresh or resume after checking the status.`;
+};
 function pathInfo(url: string) {
   const match = new URL(url).pathname.match(/^\/v1\/(5042|5042002)\/(0x[0-9a-fA-F]{40})\/(challenge|login|state|agent|plan|pause|resume|stop|return-fees)$/);
   if (!match) throw new Error('Unknown automation endpoint.');
@@ -119,8 +132,18 @@ export class VaultScheduler {
       if (!state.agent) throw new Error('Prepare your automatic payment account first.');
       if (pendingPayment(state.plan) || state.plan && !['stopped', 'completed'].includes(state.plan.status)) throw new Error('Stop the existing plan and resolve pending payments before creating another.');
       const schedule = parseSchedule(body, v, state.agent.address);
+      const nextPlan = createPlan(schedule, v, state.agent.address);
+      // Check protected-key access, nonce and gas before accepting a schedule.
+      // This only estimates: no transaction is signed or broadcast before its due time.
+      try {
+        await access.preflight(vault, await unseal(state.agent.sealedKey, this.env.AGENT_ENCRYPTION_KEY, `${chainId}:${vault.toLowerCase()}`), nextPlan, paymentFor(nextPlan, 0), BigInt(this.env.MAX_PAYMENT_FEE_WEI));
+      } catch (error) {
+        state.lastError = safeError(error);
+        await this.ctx.storage.put('state', state);
+        throw error;
+      }
       if (state.plan) state.history = [...state.history, state.plan].slice(-10);
-      state.plan = createPlan(schedule, v, state.agent.address);
+      state.plan = nextPlan;
       state.lastError = undefined;
       await this.store(state, nextWake(state));
     } else {
