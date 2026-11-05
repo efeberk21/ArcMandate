@@ -15,6 +15,19 @@ export function StatusBadge({ label, tone = 'neutral' }: { label: string; tone?:
   return <span className={`badge tone-${tone}`}><span className="status-mark" aria-hidden="true" />{label}</span>;
 }
 
+/** Remaining budget as an open arc, echoing the two arcs of the ArcMandate mark. */
+function BudgetArc({ ratio, live }: { ratio: number; live: boolean }) {
+  const sweep = 0.78; // the ring keeps an opening at the bottom, like the emblem
+  const filled = Math.max(0, Math.min(1, ratio)) * sweep;
+  return <span className={`budget-arc ${live ? "is-live" : ""}`}>
+    <svg viewBox="0 0 64 64" aria-hidden="true">
+      <circle className="budget-arc-track" cx="32" cy="32" r="27" pathLength="1" strokeDasharray={`${sweep} 1`}/>
+      {filled > 0 && <circle className="budget-arc-fill" cx="32" cy="32" r="27" pathLength="1" strokeDasharray={`${filled} 1`}/>}
+    </svg>
+    <span className="budget-fraction mono">{Math.round(ratio * 100)}%<small>remaining</small></span>
+  </span>;
+}
+
 const amount = (value: bigint) => formatUnits(value, 6);
 const short = (value: string) => `${value.slice(0, 8)}…${value.slice(-6)}`;
 type SessionState = 'active' | 'locked' | 'expired' | 'exhausted' | 'unanchored';
@@ -55,7 +68,7 @@ export function SessionPlate({ snapshot, onManage, onLockOut, lockDisabled = tru
     <div className="vault-stat-grid"><section className="vault-balance-card" aria-label="Vault balance"><span className="eyebrow">Held in your vault</span><div className="balance-amount"><strong>{amount(snapshot.balance)}</strong><span>USDC</span></div><p>Your agent’s budget gives spending permission. This is the money actually in the vault.</p></section>
     <section className="session-plate" aria-label="Anchored session">
       <div className="session-heading"><div className="session-identity"><h3>{titles[state]}</h3></div><StatusBadge label={labels[state]} tone={usable ? 'rated' : hasSession ? 'overload' : 'neutral'} /></div>
-      {hasPolicy?<><div className="session-budget"><div><span className="plate-label">{usable?'Remaining budget':'Unused budget'}</span><div className="load-value"><strong>{amount(remaining)}</strong><span>/ {amount(snapshot.policy.totalBudget)} USDC</span></div></div><span className="budget-fraction mono">{Math.round(ratio*100)}% remaining</span></div><dl className="session-specs"><div><dt>Per payment</dt><dd>{amount(snapshot.policy.perTxCap)} USDC</dd></div><div><dt>Time remaining</dt><dd>{state==='locked'?'Closed':hold}</dd></div><div><dt>Recipients</dt><dd>{snapshot.policy.recipients.length} allowed</dd></div></dl></>:<p className="empty-session-copy">{hasSession?'Agent spending is stopped. You can withdraw or set new limits.':'No agent can spend yet. Prepare an account, deposit and open a session.'}</p>}
+      {hasPolicy?<><div className="session-budget"><div><span className="plate-label">{usable?'Remaining budget':'Unused budget'}</span><div className="load-value"><strong>{amount(remaining)}</strong><span>/ {amount(snapshot.policy.totalBudget)} USDC</span></div></div><BudgetArc ratio={ratio} live={usable}/></div><dl className="session-specs"><div><dt>Per payment</dt><dd>{amount(snapshot.policy.perTxCap)} USDC</dd></div><div><dt>Time remaining</dt><dd>{state==='locked'?'Closed':hold}</dd></div><div><dt>Recipients</dt><dd>{snapshot.policy.recipients.length} allowed</dd></div></dl></>:<p className="empty-session-copy">{hasSession?'Agent spending is stopped. You can withdraw or set new limits.':'No agent can spend yet. Prepare an account, deposit and open a session.'}</p>}
       {usable&&snapshot.balance===0n&&<p className="warning">The session has permission, but the vault is empty.</p>}
       {usable && seconds <= 600 && <p className="warning" role="status">Expires within 10 minutes. Replace or freeze the session.</p>}
       <p className="instrument-note">{state === 'locked' ? 'Authority revoked. Session limits and recipients were cleared onchain.' : state === 'expired' || state === 'exhausted' ? 'Spending unavailable. Freeze this onchain session before withdrawal.' : state === 'unanchored' ? 'Creating the vault does not start a bot or a spending session.' : 'The budget stays fixed until you replace the session.'}</p>
