@@ -37,12 +37,12 @@
     "demo:testnet": "tsx scripts/testnet-demo.ts"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "5.20261010.1",
+    "@cloudflare/workers-types": "5.20261029.1",
     "@types/node": "26.6.3",
     "tsx": "4.23.15",
     "typescript": "7.0.2",
-    "vitest": "4.1.11",
-    "wrangler": "4.149.0"
+    "vitest": "4.1.12",
+    "wrangler": "4.156.0"
   },
   "dependencies": {
     "@noble/hashes": "2.4.0",
