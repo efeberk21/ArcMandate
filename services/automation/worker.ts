@@ -9,8 +9,15 @@ import { assertAuthority, createPlan, parseSchedule, paymentFor, pendingPayment,
 export interface Env {
   VAULTS: DurableObjectNamespace; APP_ORIGIN: string; NETWORK: 'testnet' | 'mainnet';
   AGENT_ENCRYPTION_KEY: string; MAX_PAYMENT_FEE_WEI: string; RPC_URL?: string;
+  /** Optional Cloudflare rate limiter keyed by client; absent in local tests. */
+  AUTH_LIMITER?: { limit(options: { key: string }): Promise<{ success: boolean }> };
 }
-type Challenge = { nonce: string; message: string; expiresAt: number };
+type Challenge = { nonce: string; message: string; expiresAt: number; client?: string };
+/** Live sign-in challenges per connection, and per vault before the oldest is evicted. */
+const CHALLENGES_PER_CLIENT = 3;
+const CHALLENGES_PER_VAULT = 24;
+/** Set only by the edge handler below; any copy sent by a caller is overwritten. */
+const CLIENT_HEADER = 'X-ArcMandate-Client';
 type Login = { tokenHash: string; expiresAt: number };
 const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
 const safeError = (error: unknown) => {
@@ -49,8 +56,16 @@ export default {
         if (chainId !== ARC_NETWORKS[env.NETWORK].chainId) throw new Error('Automation service is on another network.');
         const text = await request.text();
         if (text.length > 8192) return json({ error: 'Request too large.' }, 413);
+        const { action } = pathInfo(request.url);
+        // Only a hash of the connecting address is used, and it is never stored raw.
+        const client = (await digest(`client:${request.headers.get('CF-Connecting-IP') ?? 'unknown'}`)).slice(0, 32);
+        if ((action === 'challenge' || action === 'login') && env.AUTH_LIMITER && !(await env.AUTH_LIMITER.limit({ key: client })).success) {
+          return json({ error: 'Too many sign-in attempts. Wait a minute and try again.' }, 429);
+        }
+        const headers = new Headers(request.headers);
+        headers.set(CLIENT_HEADER, client);
         const stub = env.VAULTS.get(env.VAULTS.idFromName(`${chainId}:${vault.toLowerCase()}`));
-        response = await stub.fetch(new Request(request.url, { method: 'POST', headers: request.headers, body: text }));
+        response = await stub.fetch(new Request(request.url, { method: 'POST', headers, body: text }));
       }
     } catch (error) { response = json({ error: safeError(error) }, 400); }
     const headers = new Headers(response.headers);
@@ -85,17 +100,22 @@ export class VaultScheduler {
     let state = await this.ctx.storage.get<RecordState>('state');
     if (action === 'challenge') {
       const now = Date.now();
-      const challenges = (await this.ctx.storage.get<Challenge[]>('challenges') ?? []).filter(x => x.expiresAt > now);
-      if (challenges.length >= 8) throw new Error('Too many sign-in attempts. Try again in five minutes.');
+      const client = request.headers.get(CLIENT_HEADER) ?? 'unknown';
+      let challenges = (await this.ctx.storage.get<Challenge[]>('challenges') ?? []).filter(x => x.expiresAt > now);
+      // One connection cannot hold more than a few open sign-ins, and a full list
+      // evicts its oldest entry instead of refusing, so nobody can lock the owner
+      // out of sign-in by filling every slot.
+      if (challenges.filter(x => x.client === client).length >= CHALLENGES_PER_CLIENT) throw new Error('Too many sign-in attempts. Try again in five minutes.');
+      if (challenges.length >= CHALLENGES_PER_VAULT) challenges = challenges.slice(challenges.length - CHALLENGES_PER_VAULT + 1);
       if (!state) {
         const v = await access.read(vault);
         state = { vault, owner: v.owner, chainId, history: [] };
         await this.ctx.storage.put('state', state);
       }
-      const challenge: Challenge = { nonce: crypto.randomUUID(), expiresAt: now + 300_000, message: '' };
+      const challenge: Challenge = { nonce: crypto.randomUUID(), expiresAt: now + 300_000, message: '', client };
       challenge.message = `${this.env.APP_ORIGIN}\nArcMandate scheduled payments\nSign in to manage this vault's payment plans. This signature sends no transaction and grants no new onchain spending authority.\nOwner: ${state.owner}\nVault: ${vault}\nChain ID: ${chainId}\nNonce: ${challenge.nonce}\nIssued at: ${new Date(now).toISOString()}\nExpires at: ${new Date(challenge.expiresAt).toISOString()}`;
       await this.ctx.storage.put('challenges', [...challenges, challenge]);
-      return json({ ...challenge, owner: state.owner });
+      return json({ nonce: challenge.nonce, message: challenge.message, expiresAt: challenge.expiresAt, owner: state.owner });
     }
     if (!state || state.chainId !== chainId || !same(state.vault, vault)) throw new Error('Sign in to this vault first.');
     if (action === 'login') {
