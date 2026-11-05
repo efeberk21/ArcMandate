@@ -1,0 +1,386 @@
+/* ───────────────────────────────────────────────────────────────────────────
+   Night instrument — v2 visual layer, loaded after styles.css.
+   Palette unchanged (plate / chalk / rated / verified / overload). The sky is
+   one live canvas behind everything; surfaces are tinted glass over it, heavier
+   for structure (masthead, sidebar), lighter for interactive pieces.
+   ─────────────────────────────────────────────────────────────────────────── */
+@font-face {
+  font-family: 'Instrument Sans';
+  src: url('/fonts/instrument-sans-variable.woff2') format('woff2');
+  font-weight: 400 700;
+  font-display: swap;
+}
+
+:root {
+  --ui: 'Instrument Sans', 'Segoe UI', system-ui, sans-serif;
+  --glass-heavy: rgb(10 13 19 / .8);
+  --glass: rgb(16 20 28 / .6);
+  --glass-light: rgb(23 27 36 / .52);
+  --glass-edge: rgb(238 234 227 / .07);
+  --glass-edge-strong: rgb(238 234 227 / .11);
+  --blur: blur(18px) saturate(140%);
+  --rated-soft: rgb(255 138 69 / .1);
+  --rated-line: rgb(255 138 69 / .32);
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+  --masthead-h: 76px;
+  font-family: var(--ui);
+  font-size: 14.5px;
+}
+html { background: var(--plate); scroll-padding-top: calc(var(--masthead-h) + 16px); }
+body {
+  min-height: 100dvh;
+  background:
+    radial-gradient(1200px 700px at 82% -12%, rgb(255 138 69 / .075), transparent 62%),
+    radial-gradient(900px 600px at -10% 110%, rgb(120 150 220 / .05), transparent 60%),
+    var(--plate);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: rgb(255 138 69 / .35); color: var(--chalk); }
+
+/* The sky */
+.gravity-stars { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.gravity-stars-canvas { display: block; width: 100%; height: 100%; }
+.gravity-stars-fallback { position: absolute; inset: 0; opacity: .45; }
+.gravity-stars::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 75% 65% at 50% 45%, transparent 45%, rgb(7 9 14 / .5)); }
+
+/* Type: one family, size-specific tracking and leading */
+h1 { font-size: clamp(26px, 2.4vw, 32px); font-weight: 560; letter-spacing: -.028em; line-height: 1.15; text-wrap: balance; }
+h2 { font-weight: 560; letter-spacing: -.018em; }
+h3 { font-weight: 560; letter-spacing: -.015em; }
+p { line-height: 1.6; text-wrap: pretty; }
+.eyebrow { text-transform: none; letter-spacing: 0; font-size: 12px; font-weight: 500; color: var(--secondary); display: inline-flex; align-items: center; gap: 8px; }
+.eyebrow::before { content: ''; width: 14px; height: 1px; background: var(--rated); }
+
+/* Masthead: floating material, content scrolls beneath */
+.masthead {
+  position: sticky; top: 0; z-index: 30;
+  min-height: var(--masthead-h);
+  isolation: isolate;
+}
+/* Full-bleed material that dissolves into the page: no side or bottom edge. */
+body { overflow-x: clip; }
+.masthead::before {
+  content: ''; position: absolute; z-index: -1; pointer-events: none;
+  top: 0; bottom: -36px; left: 50%; width: 100vw; transform: translateX(-50%);
+  background: linear-gradient(to bottom, rgb(7 9 14 / .92), rgb(7 9 14 / .7) 55%, rgb(7 9 14 / 0));
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  mask-image: linear-gradient(to bottom, #000 50%, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, #000 50%, transparent);
+}
+.brand { font-size: 19px; font-weight: 600; letter-spacing: -.03em; }
+.brand-mark { width: 38px; height: 38px; }
+.brand small { font-size: 11.5px; letter-spacing: 0; font-weight: 450; }
+.masthead-meta .badge { background: var(--glass-light); border-color: var(--glass-edge); }
+.wallet-menu > summary { background: var(--glass-light); border-color: var(--glass-edge-strong); transition: border-color 160ms, background-color 160ms; }
+.wallet-menu > summary:hover { border-color: var(--rated-line); }
+.wallet-popover { background: var(--glass-heavy); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); border-color: var(--glass-edge-strong); transform-origin: top right; animation: popover-in 220ms var(--ease-out) both; }
+@keyframes popover-in { from { opacity: 0; transform: translateY(-4px) scale(.97); } to { opacity: 1; transform: none; } }
+
+/* Sidebar sits under the masthead */
+.sidebar { top: calc(var(--masthead-h) + 8px); }
+.workspace-nav button:hover { background: var(--glass-light); }
+.nav-active-marker { background: linear-gradient(110deg, rgb(255 138 69 / .14), rgb(255 138 69 / .04)); border-color: var(--rated-line); }
+.sidebar-key { border-top-color: var(--glass-edge-strong); }
+
+/* Surfaces: tinted glass with a lit top edge */
+.panel, .onboarding, .vault-toolbar, .vault-instrument, .empty-state, .loading-state,
+.funds-context, .journey-step, .welcome-principles article, .task-switcher, .agent-fee-status {
+  background: var(--glass);
+  border-color: var(--glass-edge-strong);
+  backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+  box-shadow: inset 0 1px 0 var(--glass-edge), 0 24px 60px -30px rgb(0 0 0 / .7);
+}
+.vault-panel { background: transparent; border: 0; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+/* Never stack glass on glass: nested panels go flat. */
+.vault-tools > .panel, .transaction-drawer .panel, .management-grid .panel .panel { backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: none; background: rgb(7 9 14 / .35); }
+.vault-instrument { border-radius: 26px; }
+.vault-instrument::before { background: radial-gradient(ellipse at 85% 0%, rgb(255 138 69 / .1), transparent 55%); }
+.vault-balance-card { border-right-color: var(--glass-edge-strong); }
+.vault-state-details { border-top-color: var(--glass-edge-strong); }
+.balance-amount strong { font-weight: 520; letter-spacing: -.045em; font-variant-numeric: tabular-nums; }
+.next-step-card { background: linear-gradient(120deg, rgb(255 138 69 / .13), rgb(255 138 69 / .03) 60%), var(--glass); border-color: var(--rated-line); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); box-shadow: inset 0 1px 0 rgb(255 190 150 / .08); }
+.transaction { border-color: var(--rated-line); }
+
+/* Budget arc: an open ring that starts at the lower left and sweeps clockwise. */
+.session-budget { align-items: center; }
+.budget-arc { position: relative; display: grid; place-items: center; width: 84px; height: 84px; flex-shrink: 0; }
+.budget-arc svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(130deg); overflow: visible; }
+.budget-arc circle { fill: none; stroke-width: 4; stroke-linecap: round; }
+.budget-arc-track { stroke: rgb(238 234 227 / .09); }
+.budget-arc-fill { stroke: #8c93a2; transition: stroke-dasharray 650ms var(--ease-out), stroke 300ms; }
+.budget-arc.is-live .budget-arc-fill { stroke: var(--rated); filter: drop-shadow(0 0 6px rgb(255 138 69 / .55)); }
+.budget-arc .budget-fraction { position: relative; display: flex; flex-direction: column; align-items: center; padding: 0; color: var(--chalk); font-size: 15px; line-height: 1.1; }
+.budget-arc .budget-fraction small { font: 450 9.5px var(--ui); color: var(--secondary); margin-top: 3px; }
+@media (max-width: 600px) { .session-budget { flex-direction: row !important; align-items: center !important; justify-content: space-between; } .budget-arc { width: 72px; height: 72px; } }
+
+/* Buttons: instant press feedback, lit primary */
+button { font-weight: 560; letter-spacing: -.005em; transition: transform 120ms var(--ease-out), border-color 180ms, background-color 180ms, box-shadow 180ms, color 180ms; }
+button:active:not(:disabled) { transform: scale(.97); filter: none; }
+button.primary-lit, .welcome-actions button:not(.secondary), .next-step-layout > button:not(.secondary):not(.danger) {
+  background: linear-gradient(180deg, #ff9a5c, var(--rated));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .28), 0 8px 28px -8px rgb(255 138 69 / .55);
+}
+.welcome-actions button:not(.secondary):hover:not(:disabled), .next-step-layout > button:not(.secondary):not(.danger):hover:not(:disabled) {
+  background: linear-gradient(180deg, #ffab77, #ff9455);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .32), 0 10px 34px -8px rgb(255 138 69 / .7);
+}
+button.secondary, button.danger { background: var(--glass-light); border-color: var(--glass-edge-strong); }
+button.secondary:hover:not(:disabled) { background: rgb(28 32 42 / .75); border-color: var(--rated-line); }
+.journey-step:hover { background: var(--glass-light); }
+.task-switcher { padding: 4px; gap: 4px; border-radius: 16px; }
+.task-switcher button, .task-switcher button.secondary { background: transparent; border-color: transparent; color: var(--secondary); box-shadow: none; font-weight: 500; }
+.task-switcher button:hover:not(:disabled) { background: rgb(238 234 227 / .04); color: var(--chalk); border-color: transparent; }
+/* Disabled primary reads as unavailable, not as a dimmed brown. */
+button:disabled:not(.secondary):not(.danger):not(.text-button) { background: rgb(238 234 227 / .04) !important; color: rgb(238 234 227 / .42); border-color: rgb(255 138 69 / .22); border-style: dashed; box-shadow: none !important; opacity: 1; }
+.task-switcher button[aria-pressed=true] { background: var(--glass-light); border-color: var(--rated-line); box-shadow: inset 0 1px 0 var(--glass-edge); }
+
+/* Fields: recessed into the glass */
+input, textarea, select { background: rgb(7 9 14 / .6); border-color: rgb(238 234 227 / .1); transition: border-color 160ms, box-shadow 160ms, background-color 160ms; }
+input:hover, textarea:hover, select:hover { border-color: rgb(238 234 227 / .18); }
+input:focus-visible, textarea:focus-visible, select:focus-visible { outline: none; border-color: var(--rated-line); box-shadow: 0 0 0 4px rgb(255 138 69 / .14); background: rgb(7 9 14 / .8); }
+label { font-weight: 450; }
+
+/* Notices */
+.error, .warning, .notice, .inline-notice { background: rgb(7 9 14 / .7); }
+
+/* Drawer: a heavier sheet that enters and leaves on the right */
+.drawer-backdrop { background: rgb(3 4 7 / .62); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+.transaction-drawer { background: var(--glass-heavy); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); border-left: 1px solid var(--glass-edge-strong); }
+
+/* Welcome: the sky carries the hero; one orchestrated arrival */
+.welcome-hero { min-height: min(640px, calc(100dvh - var(--masthead-h) - 40px)); padding: 24px 0 72px; }
+.welcome h1 { font-size: clamp(46px, 6vw, 84px); font-weight: 600; letter-spacing: -.045em; line-height: 1; margin: 22px 0 30px; }
+.welcome h1 em { background: linear-gradient(100deg, #ffb488, var(--rated) 55%, #e8703a); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.welcome-lead { font-size: 21px; font-weight: 480; letter-spacing: -.012em; line-height: 1.4; }
+.welcome-vault { background: radial-gradient(circle, rgb(255 138 69 / .09), transparent 62%); overflow: visible; }
+.welcome-orbit { border-color: rgb(220 229 255 / .09); }
+.orbit-two { border-color: rgb(255 138 69 / .22); }
+.welcome-orbit-label { background: var(--glass-heavy); border: 1px solid var(--glass-edge-strong); border-radius: 40px; letter-spacing: .02em; }
+.welcome-principles article { border-radius: 22px; }
+.welcome-principles h2 { font-size: 19px; }
+.welcome-number { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--rated-line); background: var(--rated-soft); font-size: 11px; }
+
+/* Tables and footer */
+th { font-weight: 500; }
+tbody tr { transition: background-color 140ms; }
+tbody tr:hover { background: rgb(238 234 227 / .025); }
+footer { border-top: 1px solid var(--glass-edge-strong); margin-top: 24px; padding-top: 22px; }
+
+@media (max-width: 850px) {
+  .sidebar { top: var(--masthead-h); z-index: 20; isolation: isolate; background: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .sidebar::before { content: ""; position: absolute; z-index: -1; pointer-events: none; top: -8px; bottom: -28px; left: 50%; width: 100vw; transform: translateX(-50%); background: linear-gradient(to bottom, rgb(7 9 14 / .88), rgb(7 9 14 / .7) 60%, rgb(7 9 14 / 0)); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); mask-image: linear-gradient(to bottom, #000 60%, transparent); -webkit-mask-image: linear-gradient(to bottom, #000 60%, transparent); }
+}
+@media (max-width: 600px) {
+  .masthead { padding: 12px 0; position: relative; }
+  .sidebar { top: 0; }
+  .welcome h1 { font-size: clamp(44px, 13vw, 60px); }
+  .welcome-lead { font-size: 18px; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .panel, .onboarding, .vault-toolbar, .vault-instrument, .empty-state, .loading-state, .funds-context, .journey-step,
+  .welcome-principles article, .task-switcher, .sidebar, .wallet-popover, .transaction-drawer, .next-step-card {
+    backdrop-filter: none !important; -webkit-backdrop-filter: none !important; background: var(--plate-raised) !important;
+  }
+  .masthead::before, .sidebar::before { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; background: var(--plate) !important; mask-image: none !important; -webkit-mask-image: none !important; }
+}
+@media (prefers-contrast: more) {
+  .panel, .vault-instrument, .journey-step, .welcome-principles article { border-color: #4a5160; background: var(--plate-raised); }
+}
+@media (prefers-reduced-motion: reduce) { button:active:not(:disabled) { transform: none; } }
+
+/* Welcome mark: the emblem held inside the vault's four limits. */
+.mandate-orbit { --size: min(500px, 100%); position: relative; width: var(--size); aspect-ratio: 1; justify-self: center; display: grid; place-items: center; container-type: inline-size; animation: content-arrive 800ms var(--ease-out) 120ms both; }
+.mandate-halo { position: absolute; inset: 18%; border-radius: 50%; background: radial-gradient(circle, rgb(255 138 69 / .2), rgb(255 138 69 / .05) 45%, transparent 70%); filter: blur(10px); animation: halo-breathe 9s ease-in-out infinite; }
+.mandate-rings { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; fill: none; }
+.mandate-rings circle { vector-effect: non-scaling-stroke; }
+.ring-boundary { stroke: rgb(238 234 227 / .08); stroke-dasharray: 2 7; }
+.ring-track { stroke: rgb(255 138 69 / .16); }
+.ring-inner { stroke: rgb(238 234 227 / .06); }
+.ring-sweep { transform-origin: 200px 200px; animation: orbit-turn 26s linear infinite; }
+.ring-sweep circle { stroke-width: 1.6; stroke-linecap: round; }
+.ring-sweep.reverse { animation-duration: 40s; animation-direction: reverse; }
+.ring-sweep.reverse circle { stroke: rgb(238 234 227 / .35); stroke-width: 1; }
+.ring-satellite { transform-origin: 200px 200px; animation: orbit-turn 60s linear infinite; }
+.ring-satellite circle { fill: #ffd5b8; filter: drop-shadow(0 0 6px #ff8a45); }
+.ring-satellite.slow { animation-duration: 90s; animation-direction: reverse; }
+.ring-satellite.slow circle { fill: var(--chalk); filter: drop-shadow(0 0 5px rgb(238 234 227 / .7)); }
+.mandate-mark { position: relative; width: 34%; aspect-ratio: 1; filter: drop-shadow(0 12px 40px rgb(255 138 69 / .28)); animation: emblem-float 8s ease-in-out infinite; }
+.mandate-mark .brand-emblem { width: 100%; height: 100%; }
+.mandate-limit {
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%) rotate(var(--angle)) translateX(35cqw) rotate(calc(var(--angle) * -1));
+  display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+  padding: 7px 13px 7px 10px; border-radius: 40px; font-size: 12px; font-weight: 500; color: var(--chalk);
+  background: var(--glass-heavy); border: 1px solid var(--glass-edge-strong);
+  backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+  box-shadow: inset 0 1px 0 var(--glass-edge), 0 10px 30px -12px rgb(0 0 0 / .8);
+}
+.mandate-limit i { width: 6px; height: 6px; border-radius: 50%; background: var(--rated); box-shadow: 0 0 8px rgb(255 138 69 / .8); }
+.mandate-caption { position: absolute; bottom: 1%; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 12px; color: var(--secondary); letter-spacing: .01em; }
+@keyframes halo-breathe { 0%, 100% { opacity: .85; transform: scale(1); } 50% { opacity: 1; transform: scale(1.06); } }
+@media (max-width: 850px) { .mandate-limit { font-size: 11px; padding: 6px 10px 6px 8px; } }
+@media (max-width: 600px) {
+  .mandate-orbit { --size: min(340px, 92vw); order: 2; margin-top: 12px; }
+  .mandate-limit { font-size: 10px; gap: 6px; padding: 5px 9px 5px 7px; }
+}
+.wallet-chevron { color: var(--secondary); transition: transform 200ms var(--ease-out); }
+.wallet-menu[open] .wallet-chevron { transform: rotate(180deg); }
+.nav-symbol { width: 20px; height: 20px; font-size: 0; }
+
+/* ── Star chart navigation ──────────────────────────────────────────────────
+   Pages sit as stars on one thin orbit line. The ArcMandate four-point star
+   marks where you are and glides along the rail to the page you pick. */
+.workspace-nav.star-chart { --rail-x: 21px; gap: 4px; padding: 6px 0; }
+.chart-rail { position: absolute; left: var(--rail-x); top: 30px; bottom: 30px; width: 1px; transform: translateX(-50%); pointer-events: none;
+  background: linear-gradient(to bottom, transparent, rgb(238 234 227 / .16) 12%, rgb(255 138 69 / .22) 50%, rgb(238 234 227 / .16) 88%, transparent); }
+.star-chart button { padding: 13px 12px 13px 46px; border: 1px solid transparent; border-radius: 16px; background: transparent !important; box-shadow: none !important; color: var(--secondary); }
+.star-chart button:hover:not(:disabled) { color: var(--chalk); background: linear-gradient(90deg, rgb(238 234 227 / .045), transparent 80%) !important; }
+.star-chart .nav-title { display: block; font-size: 13.5px; font-weight: 550; letter-spacing: -.01em; color: inherit; }
+.star-chart small { color: rgb(166 170 182 / .75); transition: color 200ms; }
+.star-chart button[aria-selected=true] { color: var(--chalk); }
+.star-chart button[aria-selected=true] small { color: rgb(255 190 150 / .8); }
+.chart-node { position: absolute; left: var(--rail-x); top: 50%; width: 5px; height: 5px; border-radius: 50%; transform: translate(-50%, -50%);
+  background: #6e7484; box-shadow: 0 0 0 4px var(--plate); transition: transform 240ms var(--ease-out), background-color 200ms, box-shadow 200ms; }
+.star-chart button:hover .chart-node { background: var(--chalk); transform: translate(-50%, -50%) scale(1.5); box-shadow: 0 0 0 4px var(--plate), 0 0 10px rgb(238 234 227 / .6); }
+.star-chart button[aria-selected=true] .chart-node { opacity: 0; }
+/* The marker is a beam of light across the row, with the star on the rail. */
+.star-chart .nav-active-marker { border: 0; border-radius: 16px; backdrop-filter: none; -webkit-backdrop-filter: none;
+  background: linear-gradient(90deg, rgb(255 138 69 / .16), rgb(255 138 69 / .05) 45%, transparent 85%);
+  box-shadow: inset 1px 0 0 rgb(255 138 69 / .0); transition: transform 520ms var(--ease-out), width 300ms ease, height 300ms ease; }
+.chart-star { position: absolute; left: var(--rail-x); top: 50%; width: 22px; height: 22px; transform: translate(-50%, -50%); }
+.chart-star::before { content: ''; position: absolute; inset: -9px; border-radius: 50%; background: radial-gradient(circle, rgb(255 138 69 / .45), transparent 65%); animation: star-pulse 4.5s ease-in-out infinite; }
+.chart-star::after { content: ''; position: absolute; inset: -5px; border-radius: 50%; border: 1px solid rgb(255 138 69 / .35); }
+.chart-star svg { position: relative; width: 100%; height: 100%; fill: #ffe2cf; filter: drop-shadow(0 0 4px #ff8a45) drop-shadow(0 0 10px rgb(255 138 69 / .6)); animation: star-turn 14s linear infinite; }
+@keyframes star-pulse { 0%, 100% { opacity: .7; transform: scale(.92); } 50% { opacity: 1; transform: scale(1.08); } }
+@keyframes star-turn { to { transform: rotate(360deg); } }
+
+/* Vault Key status as a small beacon under the chart */
+.sidebar-key { align-items: center; margin: 18px 0 0; padding: 14px; border: 1px solid var(--glass-edge-strong); border-radius: 16px; background: var(--glass); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); color: var(--chalk); font-weight: 500; }
+.sidebar-key > svg { width: 30px; height: 30px; padding: 6px; border-radius: 50%; border: 1px solid var(--rated-line); color: var(--rated); background: var(--rated-soft); flex-shrink: 0; }
+.sidebar-note { margin: 16px 14px 0; color: rgb(166 170 182 / .75); }
+
+@media (max-width: 850px) {
+  /* Horizontal chart: the rail runs under the labels, the star rides beneath the current page. */
+  .workspace-nav.star-chart { padding: 4px 0 14px; gap: 2px; }
+  .chart-rail { left: 8px; right: 8px; top: auto; bottom: 10px; width: auto; height: 1px; transform: none;
+    background: linear-gradient(90deg, transparent, rgb(238 234 227 / .16) 10%, rgb(255 138 69 / .22) 50%, rgb(238 234 227 / .16) 90%, transparent); }
+  .star-chart button { padding: 10px 12px 16px; justify-content: center; text-align: center; }
+  .chart-node { left: 50%; top: auto; bottom: -6.5px; transform: translate(-50%, 0); }
+  .star-chart button:hover .chart-node { transform: translate(-50%, 0) scale(1.5); }
+  .star-chart .nav-active-marker { background: linear-gradient(0deg, rgb(255 138 69 / .14), transparent 80%); }
+  .chart-star { left: 50%; top: auto; bottom: -12px; width: 16px; height: 16px; transform: translateX(-50%); }
+}
+@media (max-width: 600px) { .star-chart button { padding: 10px 4px 16px; } .star-chart .nav-title { display: none; } .star-chart .nav-mobile-title { display: block; font-size: 12.5px; font-weight: 550; } }
+
+/* ── Interaction layer ──────────────────────────────────────────────────────
+   Hover never floods a surface with orange. Light comes from the pointer:
+   a soft star-glow follows the cursor, borders catch it, text stays legible. */
+
+/* Primary actions: every unclassed button and .primary */
+button:not([class]):not([role=tab]):not([aria-pressed]), button.primary {
+  position: relative; overflow: hidden; isolation: isolate; color: #1a0e06;
+  background: linear-gradient(180deg, #ff9a5c, var(--rated));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .3), 0 8px 26px -10px rgb(255 138 69 / .6);
+}
+button:not([class]):not([role=tab]):not([aria-pressed])::after, button.primary::after {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(105deg, transparent 30%, rgb(255 255 255 / .38) 48%, transparent 66%);
+  transform: translateX(-120%);
+}
+@media (hover: hover) {
+  button:not([class]):not([role=tab]):not([aria-pressed]):hover:not(:disabled), button.primary:hover:not(:disabled) {
+    background: linear-gradient(180deg, #ffa56b, #ff9150);
+    transform: translateY(-1px);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / .35), 0 14px 34px -10px rgb(255 138 69 / .75);
+  }
+  button:not([class]):not([role=tab]):not([aria-pressed]):hover:not(:disabled)::after, button.primary:hover:not(:disabled)::after { transform: translateX(120%); transition: transform 700ms var(--ease-out); }
+}
+button:not([class]):not([role=tab]):not([aria-pressed]):active:not(:disabled), button.primary:active:not(:disabled) { transform: translateY(0) scale(.97); }
+.welcome-actions button span { transition: transform 260ms var(--ease-out); }
+
+/* Shared starlight: radial glow at the pointer + border that catches the light */
+.journey-step, .bookmark, .welcome-principles article, button.secondary, .task-switcher button { position: relative; isolation: isolate; }
+.journey-step::before, .bookmark::before, .welcome-principles article::before, button.secondary::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none; opacity: 0;
+  background: radial-gradient(220px circle at var(--mx, 50%) var(--my, 50%), rgb(255 138 69 / .14), transparent 65%);
+  transition: opacity 260ms ease;
+}
+.journey-step::after, .bookmark::after, .welcome-principles article::after {
+  content: ''; position: absolute; inset: -1px; border-radius: inherit; pointer-events: none; opacity: 0; padding: 1px;
+  background: radial-gradient(180px circle at var(--mx, 50%) var(--my, 50%), rgb(255 160 100 / .85), rgb(255 138 69 / .15) 45%, transparent 70%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  transition: opacity 260ms ease;
+}
+@media (hover: hover) {
+  .journey-step:hover::before, .journey-step:hover::after, .bookmark:hover::before, .bookmark:hover::after,
+  .welcome-principles article:hover::before, .welcome-principles article:hover::after, button.secondary:hover:not(:disabled)::before { opacity: 1; }
+}
+
+/* Setup path cards: legible on hover, the step number becomes a lit star */
+.journey-step, .journey-step:hover:not(:disabled) { color: var(--chalk); background: var(--glass) !important; box-shadow: inset 0 1px 0 var(--glass-edge); }
+.journey-step small { transition: color 220ms; }
+.journey-number { position: relative; transition: border-color 240ms, color 240ms, box-shadow 240ms, background-color 240ms, transform 320ms var(--ease-out); }
+@media (hover: hover) {
+  .journey-step:hover:not(:disabled) { transform: translateY(-2px); border-color: rgb(255 138 69 / .28); }
+  .journey-step:hover small { color: rgb(255 200 165 / .85); }
+  .journey-step:hover .journey-number:not(.complete) { color: #1a0e06; background: var(--rated); border-color: var(--rated); box-shadow: 0 0 0 4px rgb(255 138 69 / .14), 0 0 18px rgb(255 138 69 / .6); transform: rotate(-8deg) scale(1.06); }
+  .journey-step:hover .journey-number.complete { box-shadow: 0 0 0 4px rgb(113 180 155 / .14), 0 0 16px rgb(113 180 155 / .45); }
+}
+
+/* Principles are not actions: no lift, only the light */
+@media (hover: hover) { .welcome-principles article:hover { transform: none; box-shadow: inset 0 1px 0 var(--glass-edge), 0 24px 60px -30px rgb(0 0 0 / .7); } }
+.welcome-principles article:hover .welcome-number { box-shadow: 0 0 14px rgb(255 138 69 / .5); }
+.welcome-number { transition: box-shadow 300ms; }
+
+/* Secondary: glass that brightens toward the pointer */
+@media (hover: hover) { button.secondary:hover:not(:disabled) { transform: translateY(-1px); border-color: rgb(255 138 69 / .38); color: var(--chalk); background: rgb(28 32 42 / .72); } }
+
+/* Text buttons and links: the underline draws in from the left */
+/* Text buttons: always transparent; the underline brightens and lifts away on hover. */
+button.text-button, button.text-button:hover:not(:disabled), button.text-button:focus-visible:not(:disabled) {
+  background: transparent !important; box-shadow: none !important; border-color: transparent !important; transform: none !important;
+}
+button.text-button {
+  color: #ffad75; font-weight: 500; padding: 8px 2px; min-height: 0;
+  text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; text-decoration-color: rgb(255 173 117 / .4);
+  transition: color 200ms, text-decoration-color 200ms, text-underline-offset 260ms var(--ease-out);
+}
+@media (hover: hover) {
+  button.text-button:hover:not(:disabled) { color: #ffd2b3 !important; text-decoration-color: currentColor; text-underline-offset: 6px; }
+}
+button.text-button:disabled { color: rgb(166 170 182 / .5); text-decoration-color: transparent; }
+
+/* Orbit limits on the welcome mark respond to the pointer too */
+.mandate-limit { transition: transform 320ms var(--ease-out), border-color 240ms, box-shadow 240ms; }
+.mandate-limit i { transition: transform 240ms var(--ease-out), box-shadow 240ms; }
+@media (hover: hover) {
+  .mandate-orbit { pointer-events: auto; }
+  .mandate-limit:hover { border-color: var(--rated-line); box-shadow: 0 0 0 4px rgb(255 138 69 / .08), 0 12px 30px -12px rgb(255 138 69 / .5); }
+  .mandate-limit:hover i { transform: scale(1.6); box-shadow: 0 0 12px #ff8a45; }
+  .mandate-orbit:hover .mandate-mark { filter: drop-shadow(0 12px 50px rgb(255 138 69 / .45)); }
+}
+.mandate-mark { transition: filter 400ms ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  button:not([class]):not([role=tab]):not([aria-pressed])::after, button.primary::after { display: none; }
+  .journey-step:hover:not(:disabled), button.secondary:hover:not(:disabled), button:not([class]):not([role=tab]):not([aria-pressed]):hover:not(:disabled) { transform: none !important; }
+  .journey-step:hover .journey-number:not(.complete) { transform: none; }
+}
+
+/* Danger: same glass as secondary, but the light it catches is the overload red. */
+button.danger { color: #ffd9d5; border-color: rgb(240 108 97 / .28); position: relative; isolation: isolate; }
+button.danger::before { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none; opacity: 0;
+  background: radial-gradient(200px circle at var(--mx, 50%) var(--my, 50%), rgb(240 108 97 / .16), transparent 65%); transition: opacity 260ms ease; }
+@media (hover: hover) {
+  button.danger:hover:not(:disabled) { transform: translateY(-1px); background: rgb(40 22 24 / .6); border-color: rgb(240 108 97 / .55); color: #fff0ee; box-shadow: 0 10px 28px -14px rgb(240 108 97 / .6); }
+  button.danger:hover:not(:disabled)::before { opacity: 1; }
+}
+/* Disabled glass buttons stay readable instead of fading to 40%. */
+button.secondary:disabled, button.danger:disabled { opacity: 1; color: rgb(166 170 182 / .55); border-color: rgb(238 234 227 / .06); background: rgb(16 20 28 / .4); }
+button:disabled { cursor: not-allowed; }
+/* File picker */
+input::file-selector-button { font: 500 12px var(--ui); background: var(--glass-light); border: 1px solid var(--glass-edge-strong); color: var(--chalk); border-radius: 10px; padding: 8px 14px; transition: border-color 200ms, background-color 200ms; }
+input::file-selector-button:hover { border-color: var(--rated-line); background: rgb(28 32 42 / .75); }
+
