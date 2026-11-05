@@ -54,6 +54,36 @@ describe('hosted authorization and isolation', () => {
     expect((await f.call('login', { nonce: challenge.nonce, signature })).status).toBe(400);
     expect((await f.call('state', {}, good.body.token)).status).toBe(200);
   });
+  const from = (f: ReturnType<typeof setup>, ip: string, action: string, body: unknown = {}, extra: Record<string, string> = {}) =>
+    worker.fetch(new Request(`${origin}/v1/5042/${vault}/${action}`, { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: origin, 'CF-Connecting-IP': ip, ...extra }, body: JSON.stringify(body) }), f.env);
+  it('limits open sign-ins per connection without storing the raw address', async () => {
+    const f = setup();
+    for (let i = 0; i < 3; i++) expect((await from(f, '198.51.100.7', 'challenge')).status).toBe(200);
+    const blocked = await from(f, '198.51.100.7', 'challenge');
+    expect(blocked.status).toBe(400); expect((await blocked.json() as { error: string }).error).toContain('Too many');
+    expect((await from(f, '203.0.113.9', 'challenge')).status).toBe(200);
+    expect(JSON.stringify(f.data.get('challenges'))).not.toContain('198.51.100.7');
+  });
+  it('cannot be locked out by other connections filling every sign-in slot', async () => {
+    const f = setup();
+    for (let i = 0; i < 40; i++) await from(f, `192.0.2.${i}`, 'challenge');
+    const response = await from(f, '203.0.113.50', 'challenge'); expect(response.status).toBe(200);
+    const challenge = await response.json() as { nonce: string; message: string; client?: string };
+    expect(challenge.client).toBeUndefined();
+    const signature = await owner.signMessage({ message: challenge.message });
+    expect((await from(f, '203.0.113.50', 'login', { nonce: challenge.nonce, signature })).status).toBe(200);
+  });
+  it('ignores a caller-supplied client header', async () => {
+    const f = setup();
+    for (let i = 0; i < 3; i++) await from(f, '198.51.100.7', 'challenge', {}, { 'X-ArcMandate-Client': `spoof-${i}` });
+    expect((await from(f, '198.51.100.7', 'challenge', {}, { 'X-ArcMandate-Client': 'spoof-new' })).status).toBe(400);
+  });
+  it('answers 429 when the edge rate limiter refuses a sign-in', async () => {
+    const f = setup(); const limit = vi.fn().mockResolvedValue({ success: false }); f.env.AUTH_LIMITER = { limit };
+    const response = await from(f, '198.51.100.7', 'challenge');
+    expect(response.status).toBe(429); expect(mock.read).not.toHaveBeenCalled();
+    expect(limit.mock.calls[0][0].key).not.toContain('198.51.100.7');
+  });
   it('creates one encrypted agent even with duplicate requests; public state omits secrets', async () => {
     const f = setup(), token = await f.login();
     const results = await Promise.all([f.call('agent', {}, token), f.call('agent', {}, token)]);
@@ -67,8 +97,9 @@ describe('hosted authorization and isolation', () => {
     mock.read.mockResolvedValue({ ...(await mock.read()), active: true, agent, sessionId: '7' });
     const input = { recipient: owner.address, amount: '10000', startAt: Date.now() + 120_000, intervalSeconds: 60, count: 2 };
     const results = await Promise.all([f.call('plan', input, token), f.call('plan', input, token)]);
-    expect(results.map(x => x.status)).toEqual([200, 400]); expect(f.alarm()).toBe(input.startAt);
-    const id = results[0].body.plan.id;
+    // Exactly one concurrent request wins; arrival order at the actor is not fixed.
+    expect(results.map(x => x.status).sort()).toEqual([200, 400]); expect(f.alarm()).toBe(input.startAt);
+    const id = results.find(x => x.status === 200)!.body.plan.id;
     expect((await f.call('pause', { planId: 'old' }, token)).status).toBe(400);
     expect((await f.call('pause', { planId: id }, token)).body.plan.status).toBe('paused'); expect(f.alarm()).toBeNull();
     mock.read.mockResolvedValue({ ...(await mock.read()), sessionId: '8' });
