@@ -6,7 +6,7 @@
 
 Choose who gets paid, how much and when. Authorize the agent through the website, then let it execute your schedule—even with the browser closed. Opening or changing spending authority and withdrawing funds require your wallet **and** a separate post-quantum Vault Key.
 
-**[Open the app](https://arcmandate.vercel.app)** · [Explore the mainnet vault](https://arcmandate.vercel.app/?network=mainnet&vault=0x99cAae907095bBB95D8714ee2a23369dB2377d7A) · [View the contract](https://explorer.arc.io/address/0x99cAae907095bBB95D8714ee2a23369dB2377d7A) · [Developer guide](DEVELOPMENT.md)
+**[Open the app](https://arcmandate.vercel.app)** · [Explore the mainnet vault](https://arcmandate.vercel.app/?network=mainnet&vault=0x99cAae907095bBB95D8714ee2a23369dB2377d7A) · [View the contract](https://explorer.arc.io/address/0x99cAae907095bBB95D8714ee2a23369dB2377d7A)
 
 ## Why it exists
 
@@ -41,7 +41,7 @@ On **10 October 2026**, the hosted agent completed **two scheduled payments of 0
 | First scheduled payment | 0.01 USDC | 25254560 | [View transaction](https://explorer.arc.io/tx/0xa8ee649567be40eefc93cd894a1b8fa6d8b97c709073fcfcc6ff8a3c18e0f5a3) |
 | Second scheduled payment | 0.01 USDC | 25254796 | [View transaction](https://explorer.arc.io/tx/0x5cc09bb95d3f41789abd24059680f1c31ae7087b9c879708b4d0ddea64710897) |
 
-The receipts verify the onchain payments. Browser closure and service redeployment were observed during the acceptance run; those conditions are not established by the receipts alone. The demonstration session has since expired, so the public vault view is a historical example, not an ongoing payment plan.
+The receipts verify the onchain payments. Browser closure and service redeployment were observed during the live run; those conditions are not established by the receipts alone. The demonstration session has since expired, so the public vault view is a historical example, not an ongoing payment plan.
 
 ## How you use it
 
@@ -103,8 +103,6 @@ The service saves signed transaction bytes, hash, nonce and payment ID **before 
 - Vault payment funds and agent gas funds are separate. Each submitted agent payment has a 0.01 USDC network-fee cap; unused gas can be returned to the owner after freeze and pending-payment reconciliation, less a buffered fee.
 - Cloud/RPC outages, quotas or insufficient gas can delay or pause payments. Times missed by at least 60 seconds are skipped, without a catch-up burst. A transaction already broadcast may confirm after pause or stop; freeze takes effect when mined.
 
-See the [threat model](THREAT-MODEL.md) for the complete trust boundaries and remaining wallet/recovery integration issues.
-
 ## Build and verify
 
 The application uses **React, TypeScript and viem**, **Solidity** vault contracts, browser-based **SLH-DSA** signing, and **Cloudflare Workers + SQLite Durable Objects** for hosted execution.
@@ -134,9 +132,7 @@ Automated checks cover policy limits, recipient restrictions, expiry, replay rej
 
 | Read next | Purpose |
 | --- | --- |
-| [Developer guide](DEVELOPMENT.md) | Detailed web walkthrough, local setup, service deployment and transaction recovery |
-| [Threat model](THREAT-MODEL.md) | Key custody, authorization and execution assumptions |
 | [Vault contract](contracts/src/ArcMandateVault.sol) | Spending and management rules |
 | [Automation service](services/automation) | Scheduler, authentication, encrypted agent keys and durable execution |
 | [Web application](apps/web/src) | Wallet workflow, Vault Key and payment-plan interface |
-| [Deployment records](deployments) | Public contract and historical validation evidence |
+| [Mainnet deployment](deployments/arc-mainnet-2026-10-10.json) | Verified vault deployment record on Arc Mainnet |

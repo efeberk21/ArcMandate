@@ -23,18 +23,12 @@
     "build:web": "npm run artifacts && npm run build -w @arcmandate/web",
     "dev": "npm run dev -w @arcmandate/web",
     "preview": "npm run preview -w @arcmandate/web",
-    "smoke:web": "node scripts/web-smoke-server.mjs",
     "check": "npm run check:syntax && npm run typecheck && npm run test:ts && npm run build:web && npm run build:contracts && npm run test:contracts",
     "check:syntax": "node scripts/check-syntax.mjs",
     "check:toolchain": "node scripts/check-toolchain.mjs",
-    "preflight": "tsx scripts/preflight.ts && tsx scripts/pq-probe.ts",
-    "pq:probe": "tsx scripts/pq-probe.ts",
     "fixtures:generate": "tsx scripts/generate-digest-fixtures.ts",
-    "accounts:testnet": "tsx scripts/create-testnet-accounts.ts",
     "agent:pay": "tsx scripts/agent-pay.ts",
-    "agent:create": "tsx scripts/agent-create.ts",
-    "release:snapshot": "tsx scripts/release-snapshot.ts",
-    "demo:testnet": "tsx scripts/testnet-demo.ts"
+    "agent:create": "tsx scripts/agent-create.ts"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20261029.1",
