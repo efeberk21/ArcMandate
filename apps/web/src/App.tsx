@@ -1,5 +1,6 @@
 import { releaseNetwork, networkLabel } from './lib/release';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Analytics, type BeforeSendEvent } from '@vercel/analytics/react';
 import { encodeDeployData, encodeFunctionData, formatUnits, getAddress, isAddress, type Address, type Hex } from 'viem';
 import { ARC_NETWORKS, USDC_ADDRESS } from '@arcmandate/core';
 import { vaultAbi, vaultBytecode } from '@arcmandate/core/contracts';
@@ -46,6 +47,8 @@ type Review = {
   payment?: PaymentDraft;
 };
 type Ready = { review: Review; input: TransactionInput; quote: Quote; port: TransactionPort };
+// URLs can carry a vault address in the query string; keep it out of analytics.
+const withoutUrlParams = (event: BeforeSendEvent) => ({ ...event, url: event.url.split(/[?#]/)[0] });
 const usd = (value: bigint) => `${formatUnits(value, 6)} USDC`;
 const date = (timestamp: bigint) => new Date(Number(timestamp) * 1000).toLocaleString();
 const actionLabels: Record<Action, string> = { deploy: 'Vault creation', fund: 'Deposit', start: 'Spending session', 'owner-freeze': 'Freeze with owner', 'pq-freeze': 'Freeze with Vault Key', withdraw: 'Withdrawal', 'agent-gas': 'Agent network fees', 'agent-pay': 'Agent payment' };
@@ -782,5 +785,5 @@ export default function App() {
       {transaction.stage==='confirmed'&&<><p className="notice">Confirmed onchain. {displayedOperation?.action==='deploy'?'Your empty vault is saved. Prepare an agent, then deposit and open a session.':displayedOperation?.action==='start'?'Session rules are active. Open Automatic payments to review and activate a schedule.':displayedOperation?.action==='owner-freeze'||displayedOperation?.action==='pq-freeze'?'Session frozen. The owner can now review a withdrawal.':'The verified action effect is recorded in Activity.'}</p><button onClick={()=>{setDrawerOpen(false);if(displayedOperation?.action==='owner-freeze'||displayedOperation?.action==='pq-freeze'){setFundsView('withdraw');go('funds');}else {setAgentView('automatic');go('agent');}}}>Continue to next step</button></>}
     </section></TransactionDrawer>
     <footer><span>ArcMandate · {networkName}</span><p>Keep your encrypted Vault Key backup and password. Vault cards and agent configuration contain public metadata only.</p></footer></div></div>
-  </main></>;
+  </main><Analytics beforeSend={withoutUrlParams}/></>;
 }
